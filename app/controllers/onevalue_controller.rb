@@ -12,10 +12,11 @@ class OnevalueController < ApplicationController
   def getonevalue
 
     @addresses = Array.new
-    @addresses[0] = Address.all.find(params[:id])
+
+    @addresses[0] = {street: params[:street], citystatezip: params[:citystate]}
     @allData = Array.new
     distanceThreshold = 1000
-
+    @access = params[:access]
     @startTime = Time.now
     @sectionTimes = Array.new
 
@@ -26,7 +27,19 @@ class OnevalueController < ApplicationController
       metricsComments = Array.new
       urlsToHit = Array.new
       reason = Array.new
-      url = URI.parse('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=X1-ZWz1euzz31vnd7_5b1bv&address='+URI.escape(@addresses[q].street)+'&citystatezip='+URI.escape(@addresses[q].citystatezip))
+
+      if @access != "Neal-3o2&f>N-iB@D5ugHQmJ-QKV71" && @access != "Test-3o2&f>N-iB@D5ugHQmJ-QKV71"
+        metricsNames[0] = "INVALID ACCESS"
+        metrics[0]= "INVALID ACCESS"
+        metricsPass[0] = false
+        metricsComments[0]= "INVALID ACCESS"
+        reason.push("INVALID ACCESS")
+        @allData[q] = { names: metricsNames, numbers: metrics, passes: metricsPass, urls: urlsToHit, reason: reason, comments: metricsComments}
+        @sectionTimes = nil
+        return render 'getvalues'
+      end 
+
+      url = URI.parse('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=X1-ZWz1euzz31vnd7_5b1bv&address='+URI.escape(@addresses[q][:street])+'&citystatezip='+URI.escape(@addresses[q][:citystatezip]))
       req = Net::HTTP::Get.new(url.to_s)
       res = Net::HTTP.start(url.host, url.port) {|http|
         http.request(req)
@@ -44,6 +57,7 @@ puts @evalProp
         metricsComments[0]= "PROPERTY NOT FOUND"
         reason.push("NOT FOUND BY ZILLOW")
         @allData[q] = { names: metricsNames, numbers: metrics, passes: metricsPass, urls: urlsToHit, reason: reason, comments: metricsComments}
+        @sectionTimes = nil
         next
       end
       @zpid = @evalProp.at_xpath('//zpid').content
@@ -73,17 +87,17 @@ puts @evalProp
       metricsComments[0]= "< 5000000 & > 300000"
 
 
-      metricsNames[1] = "Investment Location"
-      metrics[1]=@evalProp.at_xpath('//results//address//zipcode').content
-      metricsPass[1] = Approved.find_by(zipcode: metrics[1])!=nil
+      metricsNames[1] = "Pre Approval Status"
+      metrics[1]= "0227" + rand(0..9).to_s + rand(0..9).to_s + @evalProp.at_xpath('//results//address//zipcode').content.to_s + rand(0..999).to_s + "-qdwveo-"+ rand(0..999).to_s
+      metricsPass[1] = Approved.find_by(zipcode: @evalProp.at_xpath('//results//address//zipcode').content)!=nil
       if metricsPass[1]
-        metricsComments[1]= "Found in database. Mapped to: " + Approved.find_by(zipcode: metrics[1])[:status].to_s
+        metricsComments[1]= "Found in database. Mapped to: " + Approved.find_by(zipcode: @evalProp.at_xpath('//results//address//zipcode').content)[:status].to_s
       else 
         metricsComments[1]= "Not Found in database"
       end
 
       metricsNames[2] = "Urban Density"
-      metrics[2]= Density.find_by(zipcode: metrics[1])[:densityofzip]
+      metrics[2]= Density.find_by(zipcode: (@evalProp.at_xpath('//results//address//zipcode').content).to_i)[:densityofzip]
       metricsPass[2] = metrics[2].to_f > 150
       metricsComments[2]= "> 150"
 

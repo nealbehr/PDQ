@@ -4,7 +4,7 @@ Rails.application.routes.draw do
 
   get "/getallvalues", :controller => "values", :action => "getvalues"
 
-  get "/getonevalue/:id", :controller => "onevalue", :action => "getonevalue"
+  get "/getonevalue/:street/:citystate/:access", :controller => "onevalue", :action => "getonevalue"
   
   get '/approveds/new', controller: 'approveds', action: 'new', as: 'new_approved'
   post '/approveds', controller: 'approveds', action: 'create', as: 'approveds'

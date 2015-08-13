@@ -1,7 +1,5 @@
 <h1>Approveds</h1>
 
-<p><%= link_to 'Add a New Approved', new_approved_url %></p>
-
 <table>
   <thead>
     <tr>
@@ -16,11 +14,8 @@
   <tbody>
   <% @approveds.each do |approved| %>
     <tr>
-      <td><%= approved.zipcode %></td>
+      <td><%= "0227" + rand(0..9).to_s + rand(0..9).to_s + approved.zipcode.to_s + rand(0..999).to_s + "-qdwveo-"+ rand(0..999).to_s %></td>
       <td><%= approved.status %></td>
-      <td><%= link_to 'Show', approved_url(approved) %></td>
-      <td><%= link_to 'Edit', edit_approved_url(approved) %></td>
-      <td><%= link_to 'Destroy', approved_url(approved), method: 'delete', data: 'yes' %></td>
     </tr>
   <% end %>
   </tbody>

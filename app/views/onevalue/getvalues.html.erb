@@ -5,10 +5,12 @@
 <% for q in 0..@allData.size-1  %>
 
    Property <%= q+1 %>:
-   <%= @addresses[q].street %>
-   <%= @addresses[q].citystatezip %> <br>
+   <%= @addresses[q][:street].gsub("+"," ") %>
+   <%= @addresses[q][:citystatezip].gsub("+"," ") %> <br>
    <% localMetricsPass = @allData[q][:passes]  %>
-   Passed <%= localMetricsPass.count(true) %> tests in <%= @sectionTimes[@sectionTimes.size-1].round%> seconds. <%= (@sectionTimes[3]/@sectionTimes[@sectionTimes.size-1]*100).round%>% on surrounding census tracts.<br>
+   <% if @sectionTimes != nil %>
+   Passed <%= localMetricsPass.count(true) %> tests in <%= @sectionTimes[@sectionTimes.size-1].round%> seconds. <%= (@sectionTimes[3]/@sectionTimes[@sectionTimes.size-1]*100).round%>% on surrounding census tracts test.<br>
+   <% end %>
    <b> <%= "Failed: " if !@allData[q][:reason].include? "Approved" %><%= @allData[q][:reason].compact.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %> <br> </b>
    <br>
 <% end %>
@@ -18,8 +20,8 @@
 
 <% for q in 0..@allData.size-1  %>
    <b> Property <%= q+1 %>: </b> 
-   <%= @addresses[q].street %> 
-   <%= @addresses[q].citystatezip %> <br>
+   <%= @addresses[q][:street].gsub("+"," ") %> 
+   <%= @addresses[q][:citystatezip].gsub("+"," ") %> <br>
    <b> <%= "Failed: " if !@allData[q][:reason].include? "Approved" %><%= @allData[q][:reason].compact.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %> <br> </b>
    <% localMetricsNames = @allData[q][:names]  %>
    <% localMetrics = @allData[q][:numbers]  %>
@@ -50,6 +52,7 @@
    <br>
 <% end  %>
 <hr>
+<% if @access[0..3] == "Neal" %>
    <h3> Debugging API Calls:</h3>
 <small>
 <% for q in 0..@allData.size-1  %>
@@ -65,10 +68,11 @@
 <hr>
    <h3> Data for testing:</h3>
 <% for q in 0..@allData.size-1  %>
-   <%= @addresses[q].street %>,
+   <%= @addresses[q][:street].gsub("+"," ") %>,
    <%= @allData[q][:passes].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
    <%= @allData[q][:numbers].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
    <%= @allData[q][:reason].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
    <%= @allData[q][:comments].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,   
    <br>
+<% end %>
 <% end %>
