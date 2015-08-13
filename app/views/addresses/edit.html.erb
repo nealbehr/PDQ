@@ -1,0 +1,17 @@
+<h1>Editing Address #<%= @address.id %></h1>
+
+<%= form_tag(address_url(@address), method: 'patch') do %>
+  <div>
+    <%= label_tag :street %><br />
+    <%= text_area_tag :street, @address.street %>
+  </div>
+
+  <div>
+    <%= label_tag :citystatezip %><br />
+    <%= text_area_tag :citystatezip, @address.citystatezip %>
+  </div>
+
+  <div>
+    <%= submit_tag "Update Address" %>
+  </div>
+<% end %>

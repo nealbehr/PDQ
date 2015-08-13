@@ -1,0 +1,17 @@
+<h1>Editing Density #<%= @density.id %></h1>
+
+<%= form_tag(density_url(@density), method: 'patch') do %>
+  <div>
+    <%= label_tag :zipcode %><br />
+    <%= number_field_tag :zipcode, @density.zipcode %>
+  </div>
+
+  <div>
+    <%= label_tag :densityofzip %><br />
+    <%= text_field_tag :densityofzip, @density.densityofzip %>
+  </div>
+
+  <div>
+    <%= submit_tag "Update Density" %>
+  </div>
+<% end %>

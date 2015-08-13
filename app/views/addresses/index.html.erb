@@ -1,0 +1,29 @@
+<h1>Addresses</h1>
+
+<p><%= link_to 'Add a New Address', new_address_url %></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Street</th>
+      <th>Citystatezip</th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+  <% @addresses.each do |address| %>
+    <tr>
+      <td width = 350><%= address.street %></td>
+      <td width = 250><%= address.citystatezip %></td>
+      <td width = 50><%= link_to 'Show', address_url(address) %></td>
+      <td width = 50><%= link_to 'Edit', edit_address_url(address) %></td>
+      <td width = 50><a href = /addresses/destroy/<%= address.id%>> Release</td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>
+
+

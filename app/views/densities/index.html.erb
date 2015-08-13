@@ -1,0 +1,28 @@
+<h1>Densities</h1>
+
+<p><%= link_to 'Add a New Density', new_density_url %></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Zipcode</th>
+      <th>Densityofzip</th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+  <% @densities.each do |density| %>
+    <tr>
+      <td><%= density.zipcode %></td>
+      <td><%= density.densityofzip %></td>
+      <td><%= link_to 'Show', density_url(density) %></td>
+      <td><%= link_to 'Edit', edit_density_url(density) %></td>
+      <td><%= link_to 'Destroy', density_url(density), method: 'delete', data: { confirm: "Do you really want to delete this density?" } %></td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>
+

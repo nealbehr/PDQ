@@ -1,0 +1,74 @@
+<% q=0 %>
+
+<h3> Summary </h3>
+
+<% for q in 0..@allData.size-1  %>
+
+   Property <%= q+1 %>:
+   <%= @addresses[q].street %>
+   <%= @addresses[q].citystatezip %> <br>
+   <% localMetricsPass = @allData[q][:passes]  %>
+   Passed <%= localMetricsPass.count(true) %> tests in <%= @sectionTimes[@sectionTimes.size-1].round%> seconds. <%= (@sectionTimes[3]/@sectionTimes[@sectionTimes.size-1]*100).round%>% on surrounding census tracts.<br>
+   <b> <%= "Failed: " if !@allData[q][:reason].include? "Approved" %><%= @allData[q][:reason].compact.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %> <br> </b>
+   <br>
+<% end %>
+
+<hr>
+   <h3> Property Details:</h3>
+
+<% for q in 0..@allData.size-1  %>
+   <b> Property <%= q+1 %>: </b> 
+   <%= @addresses[q].street %> 
+   <%= @addresses[q].citystatezip %> <br>
+   <b> <%= "Failed: " if !@allData[q][:reason].include? "Approved" %><%= @allData[q][:reason].compact.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %> <br> </b>
+   <% localMetricsNames = @allData[q][:names]  %>
+   <% localMetrics = @allData[q][:numbers]  %>
+   <% localMetricsPass = @allData[q][:passes]  %>
+   <% localUrlsToHit = @allData[q][:urls]  %>
+   <% localMetricsComments = @allData[q][:comments] %>
+   <table class = "table">
+   <tr>
+   <thead>
+   <tr>
+   <td> <b># </b></td>
+   <td> <b>Metric </b></td>
+   <td> <b>Value </b></td>
+   <td> <b>Pass </b></td>
+   <td> <b>Comments </b></td>      
+   </tr>
+   </thead>
+   <% for x in 0..localMetrics.size-1 %>
+      <tr>
+      <td> <%= x %> </td>
+      <td> <%= localMetricsNames[x] %></td>
+      <td> <%= localMetrics[x] %></td>
+      <td> <%= localMetricsPass[x] %></td>
+      <td> <%= localMetricsComments[x] %></td>
+      </tr>
+   <% end  %>
+   </table>
+   <br>
+<% end  %>
+<hr>
+   <h3> Debugging API Calls:</h3>
+<small>
+<% for q in 0..@allData.size-1  %>
+   <% localUrlsToHit = @allData[q][:urls]  %>
+   <b> Detailed APIs for property <%= q+1 %>: <br></b>
+   <% for x in 0..localUrlsToHit.size-1  %>
+      <%= localUrlsToHit[x] %>
+      <br>
+   <% end  %>
+   <%= @sectionTimes %>
+<% end  %>
+</small>
+<hr>
+   <h3> Data for testing:</h3>
+<% for q in 0..@allData.size-1  %>
+   <%= @addresses[q].street %>,
+   <%= @allData[q][:passes].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
+   <%= @allData[q][:numbers].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
+   <%= @allData[q][:reason].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
+   <%= @allData[q][:comments].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,   
+   <br>
+<% end %>

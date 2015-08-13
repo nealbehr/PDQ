@@ -1,0 +1,17 @@
+<h1>New Address</h1>
+
+<%= form_tag(addresses_url, method: 'post') do %>
+  <div>
+    <%= label_tag :street %><br />
+    <%= text_area_tag :street %>
+  </div>
+
+  <div>
+    <%= label_tag :citystatezip %><br />
+    <%= text_area_tag :citystatezip %>
+  </div>
+
+  <div>
+    <%= submit_tag "Create Address" %>
+  </div>
+<% end %>

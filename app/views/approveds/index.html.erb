@@ -1,0 +1,28 @@
+<h1>Approveds</h1>
+
+<p><%= link_to 'Add a New Approved', new_approved_url %></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Zipcode</th>
+      <th>Status</th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+  <% @approveds.each do |approved| %>
+    <tr>
+      <td><%= approved.zipcode %></td>
+      <td><%= approved.status %></td>
+      <td><%= link_to 'Show', approved_url(approved) %></td>
+      <td><%= link_to 'Edit', edit_approved_url(approved) %></td>
+      <td><%= link_to 'Destroy', approved_url(approved), method: 'delete', data: 'yes' %></td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>
+
