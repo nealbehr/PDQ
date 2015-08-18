@@ -18,12 +18,15 @@ class ValuesController < ApplicationController
 
     @startTime = Time.now
     @sectionTimes = Array.new
+    @sectionTimes.push(Time.now-@startTime)    
         
     for q in 0..@addresses.size-1
       metrics = Array.new
       metricsNames = Array.new
       metricsPass = Array.new
       metricsComments = Array.new
+      metricsUsage = Array.new
+      metricsCount = 0
       urlsToHit = Array.new
       reason = Array.new
       url = URI.parse('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=X1-ZWz1euzz31vnd7_5b1bv&address='+URI.escape(@addresses[q].street)+'&citystatezip='+URI.escape(@addresses[q].citystatezip))
@@ -38,12 +41,14 @@ class ValuesController < ApplicationController
 puts @evalProp
 
       if @evalProp.at_xpath('//zpid') == nil || @evalProp.at_xpath('//results//result//zestimate//amount') == nil
-        metricsNames[0] = "ZILLOW API FAIL"
-        metrics[0]= "PROPERTY NOT FOUND"
-        metricsPass[0] = false
-        metricsComments[0]= "PROPERTY NOT FOUND"
+        
+        metricsNames[metricsCount] = "ZILLOW API FAIL"
+        metrics[metricsCount]= "PROPERTY NOT FOUND"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "PROPERTY NOT FOUND"
+        metricsUsage[metricsCount] = "PROPERTY NOT FOUND"
         reason.push("NOT FOUND BY ZILLOW")
-        @allData[q] = { names: metricsNames, numbers: metrics, passes: metricsPass, urls: urlsToHit, reason: reason, comments: metricsComments}
+        @allData[q] = { names: metricsNames, numbers: metrics, passes: metricsPass, urls: urlsToHit, reason: reason, comments: metricsComments, usage: metricsUsage}
         next
       end
       @zpid = @evalProp.at_xpath('//zpid').content
@@ -67,36 +72,44 @@ puts @evalProp
 
 
 
-      metricsNames[0] = "Price"
-      metrics[0]=@evalProp.at_xpath('//results//result//zestimate//amount').content
-      metricsPass[0] = metrics[0].to_i < 5000000 && metrics[0].to_i > 300000
-      metricsComments[0]= "< 5000000 & > 300000"
+      
+      metricsNames[metricsCount] = "Zestimate"
+      metrics[metricsCount]=@evalProp.at_xpath('//results//result//zestimate//amount').content
+      metricsPass[metricsCount] = metrics[0].to_i < 5000000 && metrics[0].to_i > 300000
+      metricsComments[metricsCount]= "< 5000000 & > 300000"
+      metricsUsage[metricsCount] = "Price Range"
 
 
-      metricsNames[1] = "Investment Location"
-      metrics[1]=@evalProp.at_xpath('//results//address//zipcode').content
-      metricsPass[1] = Approved.find_by(zipcode: metrics[1])!=nil
-      if metricsPass[1]
-        metricsComments[1]= "Found in database. Mapped to: " + Approved.find_by(zipcode: metrics[1])[:status].to_s
+      
+      metricsCount += 1
+      metricsNames[metricsCount] = "Investment Location"
+      metrics[metricsCount]=@evalProp.at_xpath('//results//address//zipcode').content
+      metricsPass[metricsCount] = Approved.find_by(zipcode: metrics[metricsCount])!=nil
+      if metricsPass[metricsCount]
+        metricsComments[metricsCount]= "Found in database. Mapped to: " + Approved.find_by(zipcode: metrics[metricsCount])[:status].to_s
+        metricsUsage[metricsCount] = "MSA check"
       else 
-        metricsComments[1]= "Not Found in database"
+        metricsComments[metricsCount]= "Not Found in database"
+        metricsUsage[metricsCount] = "MSA check"
       end
-
-      metricsNames[2] = "Urban Density"
-      metrics[2]= Density.find_by(zipcode: metrics[1])[:densityofzip]
-      metricsPass[2] = metrics[2].to_f > 150
-      metricsComments[2]= "> 150"
+      
 
       if @evalProp.at_xpath("//response//results//result//lastSoldDate") == nil
-        metricsNames[3] = "Last sold history"
-        metrics[3]= "Not available"
-        metricsPass[3] = false
-        metricsComments[3]= "NA"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Last sold history"
+        metrics[metricsCount]= "Not available"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "NA"
+        metricsUsage[metricsCount] = "Recent Sale"
       else
-        metricsNames[3] = "Last sold history"
-        metrics[3]= Date.strptime(@evalProp.at_xpath("//response//results//result//lastSoldDate").content, "%m/%d/%Y").to_s.sub(",", "")
-        metricsPass[3] = Date.strptime(@evalProp.at_xpath("//response//results//result//lastSoldDate").content, "%m/%d/%Y") < Date.today - 365
-        metricsComments[3]= "Time from today: " + ((Date.strptime(@evalProp.at_xpath("//response//results//result//lastSoldDate").content, "%m/%d/%Y") - Date.today).to_i * -1).to_s + " days"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Last sold history"
+        metrics[metricsCount]= Date.strptime(@evalProp.at_xpath("//response//results//result//lastSoldDate").content, "%m/%d/%Y").to_s.sub(",", "")
+        metricsPass[metricsCount] = Date.strptime(@evalProp.at_xpath("//response//results//result//lastSoldDate").content, "%m/%d/%Y") < Date.today - 365
+        metricsComments[metricsCount]= "Time from today: " + ((Date.strptime(@evalProp.at_xpath("//response//results//result//lastSoldDate").content, "%m/%d/%Y") - Date.today).to_i * -1).to_s + " days"
+        metricsUsage[metricsCount] = "Recent Sale"
       end
       if @compOutput.xpath("//response//properties//comparables//comp")!= nil
         @comparables = @compOutput.xpath("//response//properties//comparables//comp")
@@ -105,32 +118,42 @@ puts @evalProp
           total += @comparables[x].attribute('score').value.to_f
         end
 
-        metricsNames[4] = "Zillow Comparable score"
-        metrics[4]= total/@comparables.size.to_f
-        metricsPass[4] = total/@comparables.size.to_f > 6.0
-        metricsComments[4]= " > 6.0"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Zillow Comparable score"
+        metrics[metricsCount]= (total/@comparables.size.to_f).round(2)
+        metricsPass[metricsCount] = total/@comparables.size.to_f > 6.0
+        metricsComments[metricsCount]= " > 6.0"
+        metricsUsage[metricsCount] = "Liquidity"
 
-        metricsNames[5] = "Zillow Comparable count"
-        metrics[5]= @comparables.size.to_i
-        metricsPass[5] = @comparables.size.to_i > 4
-        metricsComments[5]= "> 4"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Zillow Comparable count"
+        metrics[metricsCount]= @comparables.size.to_i
+        metricsPass[metricsCount] = @comparables.size.to_i > 4
+        metricsComments[metricsCount]= "> 4"
+        metricsUsage[metricsCount] = "Liquidity"
       else
-        metricsNames[4] = "Zillow Comparable score"
-        metrics[4]= "Comps not found"
-        metricsPass[4] = false
-        metricsComments[4]= "NA"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Zillow Comparable score"
+        metrics[metricsCount]= "Comps not found"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "NA"
+        metricsUsage[metricsCount] = "Liquidity"
 
-        metricsNames[5] = "Zillow Comparable count"
-        metrics[5]= "Comps not found"
-        metricsPass[5] = false
-        metricsComments[5]= "NA"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Zillow Comparable count"
+        metrics[metricsCount]= "Comps not found"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "NA"
+        metricsUsage[metricsCount] = "Liquidity"
       end
       @page = Nokogiri::HTML(open("http://www.zillow.com/homes/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content+"_zpid/"))
       scrappingtable = @page.css('div#hdp-unit-list').css('td')
  
       urlsToHit[3] = "http://www.zillow.com/homes/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content+"_zpid/"
-
-@sectionTimes.push(Time.now-@startTime)
 
       @distance = Array.new
       totalPrice = 0
@@ -219,113 +242,143 @@ puts @evalProp
         totalRecords += 1
       end
       if @evalProp.at_xpath('//response//result//bedrooms') != nil
-        metricsNames[6] = "Average beds in community"
-        metrics[6]= @evalProp.at_xpath('//response//result//bedrooms').content.to_f / (totalBeds.to_f/totalRecords.to_f)
-        metricsPass[6] = metrics[6] < 1.25 && metrics[6] > 0.75
-        metricsComments[6] = "Prop: " + @evalProp.at_xpath('//response//result//bedrooms').content.to_s + "  || Avg: " + (totalBeds.to_f/totalRecords.to_f).to_s
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Average beds in community"
+        metrics[metricsCount]= ((@evalProp.at_xpath('//response//result//bedrooms').content.to_f / (totalBeds.to_f/totalRecords.to_f)-1).to_f.round(3)*100).round(1)
+        metricsPass[metricsCount] = metrics[metricsCount] < 25 && metrics[metricsCount] > -25
+        metricsComments[metricsCount] = "% deviation from community within 25%   || Prop: " + @evalProp.at_xpath('//response//result//bedrooms').content.to_s + "  || Avg: " + (totalBeds.to_f/totalRecords.to_f).to_s
+        metricsUsage[metricsCount] = "Typicality"
       else
-        metricsNames[6] = "Average beds in community"
-        metrics[6] = "Not available"
-        metricsPass[6] = false
-        metricsComments[6]= "NA"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Average beds in community"
+        metrics[metricsCount] = "Not available"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "NA"
+        metricsUsage[metricsCount] = "Typicality"
       end
       if @evalProp.at_xpath('//response//result//bathrooms')!= nil
-        metricsNames[7] = "Average baths in community"
-        metrics[7]= @evalProp.at_xpath('//response//result//bathrooms').content.to_f / (totalBaths.to_f/totalRecords.to_f)
-        metricsPass[7] = metrics[7] < 1.25 && metrics[7] > 0.75
-        metricsComments[7]=  "Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (totalBaths.to_f/totalRecords.to_f).to_s
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Average baths in community"
+        metrics[metricsCount]= ((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (totalBaths.to_f/totalRecords.to_f)-1).to_f.round(3)*100).round(1)
+        metricsPass[metricsCount] = metrics[metricsCount] < 25 && metrics[metricsCount] > -25
+        metricsComments[metricsCount]=  "% deviation from community within 25%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (totalBaths.to_f/totalRecords.to_f).to_s
+        metricsUsage[metricsCount] = "Typicality"
       else
-        metricsNames[7] = "Average beds in community"
-        metrics[7] = "Not available"
-        metricsPass[7] = false
-        metricsComments[7]= "NA"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Average baths in community"
+        metrics[metricsCount] = "Not available"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "NA"
+        metricsUsage[metricsCount] = "Typicality"
       end
 
       if @evalProp.at_xpath('//response//result//finishedSqFt') != nil
-        metricsNames[8] = "Average SqFt in community"
-        metrics[8]= @evalProp.at_xpath('//response//result//finishedSqFt').content.to_f / (totalSqFt.to_f/totalRecords.to_f)
-        metricsPass[8] = metrics[8] < 1.40 && metrics[8] > 0.60
-        metricsComments[8]= "Prop: " + @evalProp.at_xpath('//response//result//finishedSqFt').content.to_s + "  || Avg: " + (totalSqFt.to_f/totalRecords.to_f).to_s
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Average SqFt in community"
+        metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//finishedSqFt').content.to_f / (totalSqFt.to_f/totalRecords.to_f)-1)*100).to_f.round(1))
+        metricsPass[metricsCount] = metrics[metricsCount] < 40 && metrics[metricsCount] > -40
+        metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//finishedSqFt').content.to_s + "  || Avg: " + (totalSqFt.to_f/totalRecords.to_f).to_s
+        metricsUsage[metricsCount] = "Typicality"
       else
-        metricsNames[8] = "Average beds in community"
-        metrics[8] = "Not available"
-        metricsPass[8] = false
-        metricsComments[8]= "NA"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Average SqFt in community"
+        metrics[metricsCount] = "Not available"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "NA"
+        metricsUsage[metricsCount] = "Typicality"
       end
 
-      metricsNames[9] = "Average Price in community"
-      metrics[9]= @evalProp.at_xpath('//response//result//zestimate//amount').content.to_f / (totalPrice.to_f/totalRecords.to_f)
-      metricsPass[9] = metrics[9] < 1.40 && metrics[9]  > 0.60
-      metricsComments[9]= "Prop: " + @evalProp.at_xpath('//response//result//zestimate//amount').content.to_s + "  || Avg: " + (totalPrice.to_f/totalRecords.to_f).to_s
+      
+      metricsCount += 1
+      metricsNames[metricsCount] = "Average Price in community"
+      metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//zestimate//amount').content.to_f / (totalPrice.to_f/totalRecords.to_f)-1)*100).to_f.round(1))     
+      metricsPass[metricsCount] = metrics[metricsCount] < 40 && metrics[metricsCount]  > -40
+      metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//zestimate//amount').content.to_s + "  || Avg: " + (totalPrice.to_f/totalRecords.to_f).to_s
+      metricsUsage[metricsCount] = "Typicality"
 
       if @evalProp.at_xpath('//useCode') == nil
-        metricsNames[10] = "Property use"
-        metrics[10]= "Not available"
-        metricsPass[10] = false
-        metricsComments[10]= "NA"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Property use"
+        metrics[metricsCount]= "Not available"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "NA"
+        metricsUsage[metricsCount] = "Typicality"
       else
-        metricsNames[10] = "Property use"
-        metrics[10]= @evalProp.at_xpath('//useCode').content
-        metricsPass[10] = metrics[10]=="SingleFamily"
-        metricsComments[10]= "Has to be Single family"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Property use"
+        metrics[metricsCount]= @evalProp.at_xpath('//useCode').content
+        metricsPass[metricsCount] = metrics[metricsCount]=="SingleFamily"
+        metricsComments[metricsCount]= "Has to be Single family"
+        metricsUsage[metricsCount] = "Property Type"
       end
 
       if @evalProp.at_xpath('//yearBuilt') == nil
-        metricsNames[11] = "Build Date (No new)"
-        metrics[11]= "Not available"
-        metricsPass[11] = false
-        metricsComments[11]= "NA"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Build Date (No new)"
+        metrics[metricsCount]= "Not available"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "NA"
+        metricsUsage[metricsCount] = "New Construction"
       else
-        metricsNames[11] = "Build Date (No new)"
-        metrics[11]= @evalProp.at_xpath('//yearBuilt').content
-        metricsPass[11] = metrics[11].to_i < Time.now.year
-        metricsComments[11]= "Can't be built this year"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Build Date (No new)"
+        metrics[metricsCount]= @evalProp.at_xpath('//yearBuilt').content
+        metricsPass[metricsCount] = metrics[metricsCount].to_i < Time.now.year
+        metricsComments[metricsCount]= "Can't be built this year"
+        metricsUsage[metricsCount] = "Construction"
       end
 
-      begin
-        metricsNames[12] = "Zestimate confidence"
-        metrics[12]= (((@evalProp.at_xpath('//zestimate//valuationRange//high').content.to_f - @evalProp.at_xpath('//zestimate//valuationRange//low').content.to_f) / metrics[0].to_f).round(2)*100).to_s
-        metricsPass[12] = (((@evalProp.at_xpath('//zestimate//valuationRange//high').content.to_f - @evalProp.at_xpath('//zestimate//valuationRange//low').content.to_f) / metrics[0].to_f).round(2)*100) < 30
-        metricsComments[12] =  @evalProp.at_xpath('//zestimate//valuationRange//low').content.to_s + "  -  " + @evalProp.at_xpath('//zestimate//valuationRange//high').content.to_s + "  ||  " + (((@evalProp.at_xpath('//zestimate//valuationRange//high').content.to_f - @evalProp.at_xpath('//zestimate//valuationRange//low').content.to_f) / metrics[0].to_f).round(2)*100).to_s + "%"
-      rescue StandardError=>e
-        metricsNames[12] = "Zestimate Confidence"
-        metics[12] = "Not available"
-        metricsPass[12] = false
-        metricsComments[12]= "NA"
-      end
+   
+      metricsCount += 1
+      metricsNames[metricsCount] = "Distance to Neighbors"
+      metrics[metricsCount]= (totalDistance.to_f/totalDistanceCount.to_f).to_f.round(2)
+      metricsPass[metricsCount] = totalDistance.to_f/totalDistanceCount.to_f < 700
+      metricsComments[metricsCount]= "< 700"
+      metricsUsage[metricsCount] = "Rurality"
 
-      metricsNames[13] = "Distance to Neighbors"
-      metrics[13]= totalDistance.to_f/totalDistanceCount.to_f
-      metricsPass[13] = totalDistance.to_f/totalDistanceCount.to_f < 700
-      metricsComments[13]= "< 700"
+      
+      metricsCount += 1
+      metricsNames[metricsCount] = "Number of Neighbors"
+      metrics[metricsCount]= totalDistanceCount.to_i
+      metricsPass[metricsCount] = totalDistanceCount.to_f>15
+      metricsComments[metricsCount]= "> 15"
+      metricsUsage[metricsCount] = "Rurality"
 
-      metricsNames[14] = "Number of Neighbors"
-      metrics[14]= totalDistanceCount.to_f
-      metricsPass[14] = totalDistanceCount.to_f>15
-      metricsComments[14]= "> 15"
-
-      metricsNames[15] = "Furthest Neighbor"
-      metrics[15]= @distance.map(&:to_f).max
-      metricsPass[15] = metrics[15].to_f < distanceThreshold
-      metricsComments[15]= "< " + distanceThreshold.to_s
-
-@sectionTimes.push(Time.now-@startTime-@sectionTimes.inject(:+))
+      
+      metricsCount += 1
+      metricsNames[metricsCount] = "Furthest Neighbor"
+      metrics[metricsCount]= @distance.map(&:to_f).max.to_f.round(2)
+      metricsPass[metricsCount] = metrics[metricsCount].to_f < distanceThreshold
+      metricsComments[metricsCount]= "< " + distanceThreshold.to_s
+      metricsUsage[metricsCount] = "Rurality"
 
       loopCounter = 0
       loop do
-        url = URI.parse("http://geocoding.geo.census.gov/geocoder/geographies/coordinates?x="+@evalProp.at_xpath('//result//address//longitude').content+"&y="+@evalProp.at_xpath('//result//address//latitude').content+"&benchmark=9&vintage=910&format=json")
+        url = URI.parse("http://geocoding.geo.census.gov/geocoder/geographies/coordinates?x="+@evalProp.at_xpath('//result//address//longitude').content+"&y="+@evalProp.at_xpath('//result//address//latitude').content+"&benchmark=4&vintage=4&format=json")
         req = Net::HTTP::Get.new(url)
         res = Net::HTTP.start(url.host, url.port) {|http|
           http.request(req)
         }
         @jsonOutputArea = JSON.parse(res.body)
-        urlsToHit[urlsToHit.size] = url
+        urlsToHit[urlsToHit.size] = url.to_s + " || "+ (@jsonOutputArea["result"]["geographies"]["Census Tracts"] == nil ? "Fail" : @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"])
 
-
-        break if loopCounter>10 || @jsonOutputArea["result"]["geographies"]["Census Tracts"] != nil
+        puts loopCounter
+        puts url if loopCounter>25
+        puts @jsonOutputArea if loopCounter>25
+        break if loopCounter>25 || @jsonOutputArea["result"]["geographies"]["Census Tracts"] != nil
         loopCounter += 1
       end
-      
+
       url = URI.parse("http://api.census.gov/data/2010/sf1?get=H0030001&for=tract:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"]+"&in=state:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["STATE"]+"+county:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["COUNTY"]+"&key=e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac")
       req = Net::HTTP::Get.new(url)
       res = Net::HTTP.start(url.host, url.port) {|http|
@@ -333,12 +386,24 @@ puts @evalProp
       }
       jsonOutputHouseholds = JSON.parse(res.body)
       urlsToHit[urlsToHit.size] = url
-      metricsNames[16] = "Census Tract Density"
-      metrics[16]= jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["AREALAND"].to_f/2589990.0)
-      metricsPass[16] = jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["AREALAND"].to_f/2589990.0)>500
-      metricsComments[16]= "Density of Census Tract: " + @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_s
 
-@sectionTimes.push(Time.now-@startTime-@sectionTimes.inject(:+))
+      metricsCount += 1
+      metricsNames[metricsCount] = "Urban Density"
+      metrics[metricsCount]= Density.find_by(zipcode: metrics[metricsNames.index("Investment Location")])[:densityofzip].to_f.round(2)
+      metricsPass[metricsCount] = metrics[metricsCount].to_f > 150
+      metricsComments[metricsCount]= "> 150 people/SqMi"
+      metricsUsage[metricsCount] = "Rurality"
+
+      
+      metricsCount += 1
+      metricsNames[metricsCount] = "Census Tract Density"
+      metrics[metricsCount]= (jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["AREALAND"].to_f/2589990.0)).to_f.round(2)
+      metricsPass[metricsCount] = jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["AREALAND"].to_f/2589990.0)>500
+      metricsComments[metricsCount]= "> 500 Houses/SqMi for tract: " + @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_s
+      metricsUsage[metricsCount] = "Rurality"
+
+
+
 
       cordAdj = Array.new
       cordAdj.push({xadj: +0.02, yadj: 0})
@@ -357,14 +422,18 @@ puts @evalProp
       for x in 0..7
         loopCounter = 0
         loop do
-          url = URI.parse("http://geocoding.geo.census.gov/geocoder/geographies/coordinates?x="+(startingX+cordAdj[x][:xadj]).to_s+"&y="+(startingY+cordAdj[x][:yadj]).to_s+"&benchmark=9&vintage=910&format=json")
+          url = URI.parse("http://geocoding.geo.census.gov/geocoder/geographies/coordinates?x="+(startingX+cordAdj[x][:xadj]).to_s+"&y="+(startingY+cordAdj[x][:yadj]).to_s+"&benchmark=4&vintage=4&format=json")
           req = Net::HTTP::Get.new(url)
           res = Net::HTTP.start(url.host, url.port) {|http|
             http.request(req)
           }
+
           @jsonOutputArea = JSON.parse(res.body)
-          urlsToHit[urlsToHit.size] = url
-          break if loopCounter>10 || @jsonOutputArea["result"]["geographies"]["Census Tracts"] != nil
+          urlsToHit[urlsToHit.size] = url.to_s + " || "+ (@jsonOutputArea["result"]["geographies"]["Census Tracts"] == nil ? "Fail" : @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"])
+        puts loopCounter
+        puts url if loopCounter>25
+        puts @jsonOutputArea if loopCounter>25
+          break if loopCounter>25 || @jsonOutputArea["result"]["geographies"]["Census Tracts"] != nil
           loopCounter += 1
         end
 
@@ -381,74 +450,14 @@ puts @evalProp
         censusTractDensities.push({censustract: @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"], tractdensity: jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["AREALAND"].to_f/2589990.0)})
 
       end
+      
+      metricsCount += 1
+      metricsNames[metricsCount] = "Surrounding Census Tract Density"
+      metrics[metricsCount]= censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity].to_f.round(2)
+      metricsPass[metricsCount] = !( (censusTractDensities.count{|holder| holder[:tractdensity] == censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity]} > 2 && metrics[metricsCount]<20) || (metrics[metricsCount] < 10))
+      metricsComments[metricsCount]= "> 10 houses/SqMi for tract: "+ censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:censustract].to_s + " in " +censusTractDensities.count{|holder| holder[:tractdensity] == censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity]}.to_s + " of 8 directions. Total of " + (censusTractDensities.uniq.size).to_s + " tested."
+      metricsUsage[metricsCount] = "Rurality"
 
-      puts censusTractDensities
-      metricsNames[17] = "Surrounding Census Tract Density"
-      metrics[17]= censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity]
-      metricsPass[17] = !( (censusTractDensities.count{|holder| holder[:tractdensity] == metrics[17]} > 2 && metrics[17]<20) || (metrics[17] < 10))
-      metricsComments[17]= "Census Tract: "+ censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:censustract].to_s + " in " +censusTractDensities.count{|holder| holder[:tractdensity] == metrics[17]}.to_s + " of 8 directions. Total of " + (censusTractDensities.uniq.size).to_s + " tested."
-
-      @sectionTimes.push(Time.now-@startTime-@sectionTimes.inject(:+))
-
-      begin
-
-        url = "https://maps.googleapis.com/maps/api/place/nearbysearch/xml?location="+@evalProp.at_xpath('//result//latitude').content+","+@evalProp.at_xpath('//result//longitude').content+"&radius=3500&types=bank&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"
-        urlsToHit[urlsToHit.size] = url
-        googlePlacesOutput = Nokogiri::XML(open(url))
-
-        metricsNames[18] = "Banks"
-        metrics[18]=googlePlacesOutput.xpath('//PlaceSearchResponse//result').count
-        metricsPass[18] = metrics[18]>0
-        metricsComments[18]= "Banks within 3500 meters (~2 miles)"
-
-        url = "https://maps.googleapis.com/maps/api/place/nearbysearch/xml?location="+@evalProp.at_xpath('//result//latitude').content+","+@evalProp.at_xpath('//result//longitude').content+"&radius=3500&types=grocery_or_supermarket&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"
-        urlsToHit[urlsToHit.size] = url
-        googlePlacesOutput = Nokogiri::XML(open(url))
-
-        metricsNames[19] = "Grocery Stores"
-        metrics[19]=googlePlacesOutput.xpath('//PlaceSearchResponse//result').count
-        metricsPass[19] = metrics[19]>0
-        metricsComments[19]= "Grocery stores or supermarkets within 3500 meters (~2 miles)"
-
-        url = "https://maps.googleapis.com/maps/api/place/nearbysearch/xml?location="+@evalProp.at_xpath('//result//latitude').content+","+@evalProp.at_xpath('//result//longitude').content+"&radius=16000&types=restaurant&minprice=3&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"
-        urlsToHit[urlsToHit.size] = url
-        googlePlacesOutput = Nokogiri::XML(open(url))
-
-        metricsNames[20] = "Nice restaurants"
-        metrics[20]=googlePlacesOutput.xpath('//PlaceSearchResponse//result').count
-        metricsPass[20] = metrics[20]>0
-        metricsComments[20]= "Restaurants with an expensive rating of 3 or more within 16000 meters (~10 miles)"
-
-
-        url = URI.parse("http://api.walkscore.com/score?format=json&lat="+@evalProp.at_xpath('//result//latitude').content+"&lon="+@evalProp.at_xpath('//result//longitude').content+"&wsapikey=8895883fa0b4f996d0344ccee841e098")
-        req = Net::HTTP::Get.new(url.to_s)
-        res = Net::HTTP.start(url.host, url.port) {|http|
-          http.request(req)
-        }
-        textOutput = res.body
-        urlsToHit[urlsToHit.size] = url
-        walkScore = JSON.parse(textOutput)
-
-        metricsNames[21] = "Walk Score"
-        metrics[21]=walkScore["walkscore"]
-        metricsPass[21] = metrics[21]>0
-        metricsComments[21]= "Walk Score's proprietary measure of neighborhood walkability"
-
-        url = URI.parse("http://transit.walkscore.com/transit/score/?lat="+@evalProp.at_xpath('//result//latitude').content+"&lon="+@evalProp.at_xpath('//result//longitude').content+"&city=Seattle&state=WA&wsapikey=8895883fa0b4f996d0344ccee841e098")
-        req = Net::HTTP::Get.new(url.to_s)
-        res = Net::HTTP.start(url.host, url.port) {|http|
-          http.request(req)
-        }
-        textOutput = res.body
-        urlsToHit[urlsToHit.size] = url
-        transitScore = JSON.parse(textOutput)
-
-        metricsNames[22] = "Transit Score"
-        metrics[22]=transitScore["transit_score"]
-        metricsPass[22] = metrics[22]>0
-        metricsComments[22]= "Walk Score's proprietary measure of neighborhood public transit"
-
-        @sectionTimes.push(Time.now-@startTime-@sectionTimes.inject(:+))
 
         url = URI.parse("http://www.zillow.com/ajax/homedetail/HomeValueChartData.htm?mt=1&zpid="+URI.escape(@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content)+"&format=json")
         req = Net::HTTP::Get.new("http://www.zillow.com"+url.request_uri)
@@ -470,83 +479,406 @@ puts @evalProp
           @homePrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
         end
 
-        metricsNames[23] = "Std. Dev. of price deltas"
-        metrics[23]= @differencesInPrices.standard_deviation.round
-        metricsPass[23] = metrics[23]>0
-        metricsComments[23]= "Standard Deviation of price differences from neighborhood"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Std. Dev. of price deltas"
+        metrics[metricsCount]= (@differencesInPrices.standard_deviation.to_f/metrics[0].to_f).round(3)
+        metricsPass[metricsCount] = metrics[metricsCount] < 0.25
+        metricsComments[metricsCount]= "< 0.25 || Standard Deviation of price differences from neighborhood as a percentage of overal zestimate"
+        metricsUsage[metricsCount] = "Volatility"
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Range of price deltas"
+        metrics[metricsCount]= (@differencesInPrices.range.to_f/metrics[0].to_f).round(3)
+        metricsPass[metricsCount] = metrics[metricsCount] < 0.80
+        metricsComments[metricsCount]= "< 0.80 || Total range of price difference from neighborhood as a percentage of overal zestimate"
+        metricsUsage[metricsCount] = "Volatility"
 
-        metricsNames[24] = "Average of price deltas"
-        metrics[24]= @differencesInPrices.average.round
-        metricsPass[24] = metrics[24]>0
-        metricsComments[24]= "Mean of price difference from neighborhood"
+        metricsCount += 1
+        metricsNames[metricsCount] = "Std. Dev. of historical home price"
+        metrics[metricsCount]= (@homePrices.standard_deviation.to_f/metrics[0].to_f).round(3)
+        metricsPass[metricsCount] = metrics[metricsCount] < 0.1
+        metricsComments[metricsCount]= "< 0.1 || Standard Deviation of historical home price as a percentage of overal zestimate"
+        metricsUsage[metricsCount] = "Volatility"
 
-        metricsNames[25] = "Range of price deltas"
-        metrics[25]= @differencesInPrices.range.round
-        metricsPass[25] = metrics[25]>0
-        metricsComments[25]= "Total range of price difference from neighborhood"
+        metricsCount += 1
+        metricsNames[metricsCount] = "Below are non-used variables"
+        metrics[metricsCount]= ""
+        metricsPass[metricsCount] = ""
+        metricsComments[metricsCount]= ""
+        metricsUsage[metricsCount] = ""
+     
+        metricsCount += 1
+        metricsNames[metricsCount] = "Average of historical home price"
+        metrics[metricsCount]= @homePrices.average.round
+        metricsPass[metricsCount] = metrics[metricsCount]>=0
+        metricsComments[metricsCount]= "Mean of price difference from neighborhood"
+        metricsUsage[metricsCount] = "Not Used"
+
+        metricsCount += 1
+        metricsNames[metricsCount] = "Range of historical home price"
+        metrics[metricsCount]= (@homePrices.range.to_f/metrics[0].to_f).round(3)
+        metricsPass[metricsCount] = metrics[metricsCount] < 0.50
+        metricsComments[metricsCount]= "Not tested: Total range of home prices as a percentage of overal zestimate"
+        metricsUsage[metricsCount] = "Not Used"
+
+        metricsCount += 1
+        metricsNames[metricsCount] = "Average of price deltas"
+        metrics[metricsCount]= @differencesInPrices.average.round
+        metricsPass[metricsCount] = metrics[metricsCount] >= 0
+        metricsComments[metricsCount]= "Mean of price difference from neighborhood"
+        metricsUsage[metricsCount] = "Not Used"
 
         urlsToHit.push(@differencesInPrices)
         urlsToHit.push(@neighborhoodPrices)        
         urlsToHit.push(@homePrices)
+        urlsToHit.push(censusTractDensities)
+
+      loop do
+        url = URI.parse("http://geocoding.geo.census.gov/geocoder/geographies/coordinates?x="+@evalProp.at_xpath('//result//address//longitude').content+"&y="+@evalProp.at_xpath('//result//address//latitude').content+"&benchmark=4&vintage=4&format=json")
+        req = Net::HTTP::Get.new(url)
+        res = Net::HTTP.start(url.host, url.port) {|http|
+          http.request(req)
+        }
+        @jsonOutputArea = JSON.parse(res.body)
+
+        puts loopCounter
+        puts url if loopCounter>25
+        puts @jsonOutputArea if loopCounter>25
+        break if loopCounter>25 || @jsonOutputArea["result"]["geographies"]["Census Tracts"] != nil
+        loopCounter += 1
+      end
+
+
+      url = URI.parse("http://api.census.gov/data/2013/acs1/profile?get=DP03_0025E,NAME&for=county:"+@jsonOutputArea["result"]["geographies"]["Counties"][0]["COUNTY"]+"&in=state:"+@jsonOutputArea["result"]["geographies"]["Counties"][0]["STATE"]+"&key=e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac")
+      req = Net::HTTP::Get.new(url)
+      res = Net::HTTP.start(url.host, url.port) {|http|
+        http.request(req)
+      }
+      jsonOutputCommute = JSON.parse(res.body)
+      urlsToHit[urlsToHit.size] = url
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "County Commute"
+      metrics[metricsCount]= jsonOutputCommute[1][0].to_f
+      metricsPass[metricsCount] = metrics[metricsCount]<60
+      metricsComments[metricsCount]= "< 60 minutes for: " + jsonOutputCommute[1][1].to_s
+      metricsUsage[metricsCount] = "Not Used"
+
+      url = URI.parse("http://api.census.gov/data/2013/acs1?get=B08012_001E,B08012_011E,B08012_012E,B08012_013E,NAME&for=county:"+@jsonOutputArea["result"]["geographies"]["Counties"][0]["COUNTY"]+"&in=state:"+@jsonOutputArea["result"]["geographies"]["Counties"][0]["STATE"]+"&key=e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac")
+      req = Net::HTTP::Get.new(url)
+      res = Net::HTTP.start(url.host, url.port) {|http|
+        http.request(req)
+      }
+
+      jsonOutputCommute = JSON.parse(res.body)
+      urlsToHit[urlsToHit.size] = url      
+      metricsCount += 1
+      metricsNames[metricsCount] = "Long Commute"
+      metrics[metricsCount]= (((jsonOutputCommute[1][1].to_f+jsonOutputCommute[1][2].to_f+jsonOutputCommute[1][3].to_f)/jsonOutputCommute[1][0].to_f)*100).round(1)
+      metricsPass[metricsCount] = metrics[metricsCount] < 50
+      metricsComments[metricsCount]= "< 50% commute longer than 45 minutes for: " + jsonOutputCommute[1][4].to_s
+      metricsUsage[metricsCount] = "Not Used"
+
+      metricsCountBeginBlock = metricsCount
+      begin
+
+        url = "https://maps.googleapis.com/maps/api/place/nearbysearch/xml?location="+@evalProp.at_xpath('//result//latitude').content+","+@evalProp.at_xpath('//result//longitude').content+"&radius=3500&types=bank&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"
+        urlsToHit[urlsToHit.size] = url
+        googlePlacesOutput = Nokogiri::XML(open(url))
+
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Banks"
+        metrics[metricsCount]=googlePlacesOutput.xpath('//PlaceSearchResponse//result').count
+        metricsPass[metricsCount] = metrics[metricsCount]>=0
+        metricsComments[metricsCount]= "Banks within 3500 meters (~2 miles)"
+        metricsUsage[metricsCount] = "Not Used"
+
+        url = "https://maps.googleapis.com/maps/api/place/nearbysearch/xml?location="+@evalProp.at_xpath('//result//latitude').content+","+@evalProp.at_xpath('//result//longitude').content+"&radius=3500&types=grocery_or_supermarket&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"
+        urlsToHit[urlsToHit.size] = url
+        googlePlacesOutput = Nokogiri::XML(open(url))
+
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Grocery Stores"
+        metrics[metricsCount]=googlePlacesOutput.xpath('//PlaceSearchResponse//result').count
+        metricsPass[metricsCount] = metrics[metricsCount]>=0
+        metricsComments[metricsCount]= "Grocery stores or supermarkets within 3500 meters (~2 miles)"
+        metricsUsage[metricsCount] = "Not Used"
+
+        url = "https://maps.googleapis.com/maps/api/place/nearbysearch/xml?location="+@evalProp.at_xpath('//result//latitude').content+","+@evalProp.at_xpath('//result//longitude').content+"&radius=16000&types=restaurant&minprice=3&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"
+        urlsToHit[urlsToHit.size] = url
+        googlePlacesOutput = Nokogiri::XML(open(url))
+
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Nice restaurants"
+        metrics[metricsCount]=googlePlacesOutput.xpath('//PlaceSearchResponse//result').count
+        metricsPass[metricsCount] = metrics[metricsCount]>=0
+        metricsComments[metricsCount]= "Restaurants with an expense rating of 3+ within 16000 meters (~10 miles)"
+        metricsUsage[metricsCount] = "Not Used"
+
+
+        url = URI.parse("http://api.walkscore.com/score?format=json&lat="+@evalProp.at_xpath('//result//latitude').content+"&lon="+@evalProp.at_xpath('//result//longitude').content+"&wsapikey=8895883fa0b4f996d0344ccee841e098")
+        req = Net::HTTP::Get.new(url.to_s)
+        res = Net::HTTP.start(url.host, url.port) {|http|
+          http.request(req)
+        }
+        textOutput = res.body
+        urlsToHit[urlsToHit.size] = url
+        walkScore = JSON.parse(textOutput)
+
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Walk Score"
+        metrics[metricsCount]=walkScore["walkscore"]
+        metricsPass[metricsCount] = metrics[metricsCount]>=0
+        metricsComments[metricsCount]= "Walkability - Walk Score's measure of neighborhood walkability"
+        metricsUsage[metricsCount] = "Not Used"
+
+        url = URI.parse("http://transit.walkscore.com/transit/score/?lat="+@evalProp.at_xpath('//result//latitude').content+"&lon="+@evalProp.at_xpath('//result//longitude').content+"&city=Seattle&state=WA&wsapikey=8895883fa0b4f996d0344ccee841e098")
+        req = Net::HTTP::Get.new(url.to_s)
+        res = Net::HTTP.start(url.host, url.port) {|http|
+          http.request(req)
+        }
+        textOutput = res.body
+        urlsToHit[urlsToHit.size] = url
+        transitScore = JSON.parse(textOutput)
+
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Transit Score"
+        metrics[metricsCount]=transitScore["transit_score"]
+        metricsPass[metricsCount] = metrics[metricsCount]>=0
+        metricsComments[metricsCount]= "Transit Access - Walk Score's measure of neighborhood public transit"
+        metricsUsage[metricsCount] = "Not Used"
+
+
 
       rescue Exception => e
         puts e.message
         puts e.backtrace.inspect
+        metricsCount = metricsCountBeginBlock + 5
       end
 
+     begin
+        
+        metricsCount += 1
+        metricsNames[metricsCount] = "Zestimate confidence"
+        metrics[metricsCount]= (((@evalProp.at_xpath('//zestimate//valuationRange//high').content.to_f - @evalProp.at_xpath('//zestimate//valuationRange//low').content.to_f) / metrics[0].to_f).round(2)*100).round()
+        metricsPass[metricsCount] = (((@evalProp.at_xpath('//zestimate//valuationRange//high').content.to_f - @evalProp.at_xpath('//zestimate//valuationRange//low').content.to_f) / metrics[0].to_f).round(2)*100) < 30
+        metricsComments[metricsCount] =  "< 30   ||  " + @evalProp.at_xpath('//zestimate//valuationRange//low').content.to_s + "  -  " + @evalProp.at_xpath('//zestimate//valuationRange//high').content.to_s + "  ||  " + (((@evalProp.at_xpath('//zestimate//valuationRange//high').content.to_f - @evalProp.at_xpath('//zestimate//valuationRange//low').content.to_f) / metrics[0].to_f).round(2)*100).round().to_s + "%"
+        metricsUsage[metricsCount] = "Not Used"
+      rescue StandardError=>e
+        
+        metricsNames[metricsCount] = "Zestimate Confidence"
+        metrics[metricsCount] = "Not available"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "NA"
+        metricsUsage[metricsCount] = "Not Used"
+      end
 
-      if metricsPass[3] == false
+      url = URI.parse("http://api.census.gov/data/2013/acs5?get=B10058_001E,B10058_002E,B06011_001E,NAME&for=county:"+@jsonOutputArea["result"]["geographies"]["Counties"][0]["COUNTY"]+"&in=state:"+@jsonOutputArea["result"]["geographies"]["Counties"][0]["STATE"]+"&key=e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac")
+      req = Net::HTTP::Get.new(url)
+      res = Net::HTTP.start(url.host, url.port) {|http|
+        http.request(req)
+      }
+
+      jsonOutputEmployment = JSON.parse(res.body)
+      urlsToHit[urlsToHit.size] = url      
+
+
+      url = URI.parse("http://api.census.gov/data/2010/acs5?get=B10058_001E,B10058_002E,B06011_001E,NAME&for=county:"+@jsonOutputArea["result"]["geographies"]["Counties"][0]["COUNTY"]+"&in=state:"+@jsonOutputArea["result"]["geographies"]["Counties"][0]["STATE"]+"&key=e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac")
+      req = Net::HTTP::Get.new(url)
+      res = Net::HTTP.start(url.host, url.port) {|http|
+        http.request(req)
+      }
+
+      jsonOutputEmploymentHistorical = JSON.parse(res.body)
+      urlsToHit[urlsToHit.size] = url      
+
+
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Labor Force Change"
+      metrics[metricsCount]= (((jsonOutputEmployment[1][1].to_f)/jsonOutputEmploymentHistorical[1][1].to_f)*100-100).round(2)
+      metricsPass[metricsCount] = metrics[metricsCount] > 6
+      metricsComments[metricsCount]= "> 6% increase in labor force over a three year period: " + jsonOutputEmployment[1][3].to_s
+      metricsUsage[metricsCount] = "Not Used"
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Employment Rate"
+      metrics[metricsCount]= (((jsonOutputEmployment[1][1].to_f)/jsonOutputEmployment[1][0].to_f)*100).round(2)
+      metricsPass[metricsCount] = metrics[metricsCount] > 50
+      metricsComments[metricsCount]= "> 50% Employment rate: " + jsonOutputEmployment[1][3].to_s
+      metricsUsage[metricsCount] = "Not Used"
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Employment rate historical"
+      metrics[metricsCount]= (((jsonOutputEmploymentHistorical[1][1].to_f)/jsonOutputEmploymentHistorical[1][0].to_f)*100).round(2)
+      metricsPass[metricsCount] = metrics[metricsCount] > 50
+      metricsComments[metricsCount]= "> 50% Employment rate: " + jsonOutputEmploymentHistorical[1][3].to_s
+      metricsUsage[metricsCount] = "Not Used"
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Employment rate change"
+      metrics[metricsCount]= (metrics[metricsNames.index("Employment Rate")] - metrics[metricsNames.index("Employment rate historical")]).round(2)
+      metricsPass[metricsCount] = metrics[metricsCount] > 0
+      metricsComments[metricsCount]= "> 0 (increasing) Employment rate: " + jsonOutputEmployment[1][3].to_s
+      metricsUsage[metricsCount] = "Not Used"
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Median Income"
+      metrics[metricsCount]= (jsonOutputEmployment[1][2].to_f).round(2)
+      metricsPass[metricsCount] = metrics[metricsCount] > 40000
+      metricsComments[metricsCount]= "> $40,000 Median Income: " + jsonOutputEmployment[1][3].to_s
+      metricsUsage[metricsCount] = "Not Used"
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Median Income change"
+      metrics[metricsCount]= (jsonOutputEmployment[1][2].to_f-jsonOutputEmploymentHistorical[1][2].to_f).round(2)
+      metricsPass[metricsCount] = metrics[metricsCount] > 0
+      metricsComments[metricsCount]= "> -$0 (increasing) Median income: " + jsonOutputEmployment[1][3].to_s
+      metricsUsage[metricsCount] = "Not Used"
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Future Metrics: Schools"
+      metrics[metricsCount]= ""
+      metricsPass[metricsCount] = true
+      metricsComments[metricsCount]= ""
+      metricsUsage[metricsCount] = "Not Used"
+
+
+      begin
+        metricsCount += 1
+        url = URI.parse("https://www.quandl.com/api/v1/datasets/ZILL/Z"+@evalProp.at_xpath('//result//address//zipcode').content+"_hf.json?api_key=dzW6tvV6wK_UAW87pXef")
+        jsonOutputForeclosure = JSON.parse(url.read)
+
+        if jsonOutputForeclosure["data"] == nil
+          puts "Had to nap for a second"
+          sleep 1
+          url = URI.parse("https://www.quandl.com/api/v1/datasets/ZILL/Z"+@evalProp.at_xpath('//result//address//zipcode').content+"_hf.json?api_key=dzW6tvV6wK_UAW87pXef")
+          jsonOutputForeclosure = JSON.parse(url.read)
+        end
+
+
+        urlsToHit.push(url.to_s)
+
+
+        metricsNames[metricsCount] = "Foreclosures"
+        metrics[metricsCount]= (jsonOutputForeclosure["data"][0][1].to_f+jsonOutputForeclosure["data"][1][1].to_f+jsonOutputForeclosure["data"][2][1].to_f)/3.0
+        metricsPass[metricsCount] = true
+        metricsComments[metricsCount]= "Zillow's estimate of the median market value of homes foreclosed (out of 10k) within the zip code "
+        metricsUsage[metricsCount] = "Not Used"
+      rescue Exception => e
+        metricsNames[metricsCount] = "Ratio: sale price vs. list price"
+        metrics[metricsCount]= "N/A"
+        metricsPass[metricsCount] = true
+        metricsComments[metricsCount]= "N/A"
+        metricsUsage[metricsCount] = "Not Used"
+
+        puts e.message
+        puts e.backtrace.inspect
+      end
+
+      begin
+        metricsCount += 1
+        url = URI.parse("https://www.quandl.com/api/v1/datasets/ZILL/Z"+@evalProp.at_xpath('//result//address//zipcode').content+"_slpr.json?api_key=dzW6tvV6wK_UAW87pXef")
+        jsonOutputSLPR = JSON.parse(url.read)
+
+        if jsonOutputForeclosure["data"] == nil
+          puts "Had to nap for a second"
+          sleep 1
+          url = URI.parse("https://www.quandl.com/api/v1/datasets/ZILL/Z"+@evalProp.at_xpath('//result//address//zipcode').content+"_slpr.json?api_key=dzW6tvV6wK_UAW87pXef")
+          jsonOutputSLPR = JSON.parse(url.read)
+        end
+
+
+        urlsToHit.push(url.to_s)
+
+
+        metricsNames[metricsCount] = "Ratio: sale price vs. list price"
+        metrics[metricsCount]= (jsonOutputSLPR["data"][0][1].to_f+jsonOutputSLPR["data"][1][1].to_f+jsonOutputSLPR["data"][2][1].to_f)/3.0
+        metricsPass[metricsCount] = true
+        metricsComments[metricsCount]= "Sale price vs list for area"
+        metricsUsage[metricsCount] = "Not Used"
+
+      rescue Exception => e
+
+        metricsNames[metricsCount] = "Ratio: sale price vs. list price"
+        metrics[metricsCount]= "N/A"
+        metricsPass[metricsCount] = true
+        metricsComments[metricsCount]= "N/A"
+        metricsUsage[metricsCount] = "Not Used"
+
+        puts e.message
+        puts e.backtrace.inspect
+      end
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Future metrics: Supply side"
+      metrics[metricsCount]= ""
+      metricsPass[metricsCount] = true
+      metricsComments[metricsCount]= "Days on market"
+      metricsUsage[metricsCount] = "Not Used"
+
+
+
+      if metricsPass[metricsNames.index("Last sold history")] == false
         reason[0]="Sold too recently"
       else
         reason[0]=nil
       end
-      if (metricsPass[13..15].count(false) + (metricsPass[2] ? 1 : 0) + metricsPass[16..17].count(false)) >= 2
+      if (metricsPass[metricsNames.index("Distance to Neighbors")..metricsNames.index("Surrounding Census Tract Density")].count(false)) >= 2
         reason[1]="Too rural"
       else
         reason[1]=nil
       end
-      if metricsPass[6..9].count(false) >= 2
+      if metricsPass[metricsNames.index("Average beds in community")..metricsNames.index("Average Price in community")].count(false) >= 2
         reason[2]="Atypical property"
       else
         reason[2]=nil
       end
-      if metricsPass[4..5].count(false) >= 2
+      if metricsPass[metricsNames.index("Zillow Comparable score")..metricsNames.index("Zillow Comparable count")].count(false) >= 2
         reason[3]="Illiquid market"
       else
         reason[3]=nil
       end
-      if metricsPass[0] == false
+      if metricsPass[metricsNames.index("Zestimate")] == false
         reason[4]="Outside of price range"
       else
         reason[4]=nil
       end
-      if metricsPass[10] == false
+      if metricsPass[metricsNames.index("Property use")] == false
         reason[5]="Not a single family home"
       else
         reason[5]=nil
       end      
-      if metricsPass[11] == false
+      if metricsPass[metricsNames.index("Build Date (No new)")] == false
         reason[6]="New construction - auto-review"
       else
         reason[6]=nil
       end
-      if metricsPass[1] == false
+      if metricsPass[metricsNames.index("Investment Location")] == false
         reason[7]="Not in MSAs"
       else
         reason[7]=nil
       end
-      if reason.compact.size == 0
-        reason[8]="Approved"
+      if metricsPass[metricsNames.index("Std. Dev. of price deltas")..metricsNames.index("Std. Dev. of historical home price")].count(false)>=2
+        reason[8]="Property Prices are too volatile"
       else
         reason[8]=nil
       end
+      if reason.compact.size == 0
+        reason[9]="Approved"
+      else
+        reason[9]=nil
+      end
 
-      @allData[q] = { names: metricsNames, numbers: metrics, passes: metricsPass, urls: urlsToHit, reason: reason, comments: metricsComments}
-
-    end
-
-@sectionTimes.push(Time.now-@startTime-@sectionTimes.inject(:+))
-@sectionTimes.push(@sectionTimes.inject(:+))
+      @allData[q] = { names: metricsNames, numbers: metrics, passes: metricsPass, urls: urlsToHit, reason: reason, comments: metricsComments, usage: metricsUsage}
+            @sectionTimes.push((Time.now-@startTime-@sectionTimes.inject(:+)).round)
+          end
 
     render 'getvalues'
 

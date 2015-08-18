@@ -11,21 +11,29 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150806185147) do
+ActiveRecord::Schema.define(version: 20150818185147) do
 
-  create_table "addresses", force: true do |t|
+  create_table "addresses", force: :cascade do |t|
     t.text "street"
     t.text "citystatezip"
   end
 
-  create_table "approveds", force: true do |t|
+  create_table "approveds", force: :cascade do |t|
     t.integer "zipcode"
     t.boolean "status"
   end
 
-  create_table "densities", force: true do |t|
+  create_table "densities", force: :cascade do |t|
     t.integer "zipcode"
     t.float   "densityofzip"
+  end
+
+  create_table "outputs", force: :cascade do |t|
+    t.text   "street"
+    t.text   "citystatezip"
+    t.float  "time"
+    t.text   "names"
+    t.string "testholders",  default: "--- []\n"
   end
 
 end

@@ -1,5 +1,4 @@
 <% q=0 %>
-
 <h3> Summary </h3>
 
 <% for q in 0..@allData.size-1  %>
@@ -8,7 +7,7 @@
    <%= @addresses[q].street %>
    <%= @addresses[q].citystatezip %> <br>
    <% localMetricsPass = @allData[q][:passes]  %>
-   Passed <%= localMetricsPass.count(true) %> tests in <%= @sectionTimes[@sectionTimes.size-1].round%> seconds. <%= (@sectionTimes[3]/@sectionTimes[@sectionTimes.size-1]*100).round%>% on surrounding census tracts.<br>
+   Passed <%= localMetricsPass.count(true) %> tests in <%= @sectionTimes[q+1]%> seconds.<br>
    <b> <%= "Failed: " if !@allData[q][:reason].include? "Approved" %><%= @allData[q][:reason].compact.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %> <br> </b>
    <br>
 <% end %>
@@ -26,24 +25,56 @@
    <% localMetricsPass = @allData[q][:passes]  %>
    <% localUrlsToHit = @allData[q][:urls]  %>
    <% localMetricsComments = @allData[q][:comments] %>
+   <% localMetricsUsage = @allData[q][:usage] %>
    <table class = "table">
    <tr>
    <thead>
    <tr>
    <td> <b># </b></td>
+   <td> <b>Usage </b></td>  
    <td> <b>Metric </b></td>
    <td> <b>Value </b></td>
    <td> <b>Pass </b></td>
    <td> <b>Comments </b></td>      
+ 
    </tr>
    </thead>
    <% for x in 0..localMetrics.size-1 %>
       <tr>
+
+      <% if localMetricsUsage[x]=="Not Used" %>
+      <td> <i> <%= x %> </i> </td>
+      <td> <i> Not Used </td> </i>     
+      <td> <i> <%= localMetricsNames[x] %></i></td>
+      <td> <i> <%= localMetrics[x] %></i></td>
+      <td> <i> <% if localMetricsPass[x] %>
+         <%= localMetricsPass[x] %>
+         <% end %>
+         <b>
+         <% if !localMetricsPass[x] %>
+         <%= localMetricsPass[x].to_s.upcase %>
+         <% end %>
+         </b>
+         </i>
+      </td>
+      <td> <i> <%= localMetricsComments[x] %></i></td>
+      <% end %>
+      <% if localMetricsUsage[x]!="Not Used" %>
       <td> <%= x %> </td>
+      <td> <%= localMetricsUsage[x] %></td>      
       <td> <%= localMetricsNames[x] %></td>
       <td> <%= localMetrics[x] %></td>
-      <td> <%= localMetricsPass[x] %></td>
+      <td> <% if localMetricsPass[x] %>
+         <%= localMetricsPass[x] %>
+         <% end %>
+         <b>
+         <% if !localMetricsPass[x] %>
+         <%= localMetricsPass[x].to_s.upcase %>
+         <% end %>
+         </b>
+      </td>
       <td> <%= localMetricsComments[x] %></td>
+      <% end %>
       </tr>
    <% end  %>
    </table>
@@ -59,7 +90,6 @@
       <%= localUrlsToHit[x] %>
       <br>
    <% end  %>
-   <%= @sectionTimes %>
 <% end  %>
 </small>
 <hr>

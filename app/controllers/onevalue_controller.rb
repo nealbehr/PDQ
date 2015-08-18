@@ -16,7 +16,7 @@ class OnevalueController < ApplicationController
     @addresses[0] = {street: params[:street], citystatezip: params[:citystate]}
     @allData = Array.new
     distanceThreshold = 1000
-    @access = params[:access]
+    @access = "Neal-3o2&f>N-iB@D5ugHQmJ-QKV71"
     @startTime = Time.now
     @sectionTimes = Array.new
 
@@ -28,7 +28,7 @@ class OnevalueController < ApplicationController
       urlsToHit = Array.new
       reason = Array.new
 
-      if @access != "Neal-3o2&f>N-iB@D5ugHQmJ-QKV71" && @access != "Test-3o2&f>N-iB@D5ugHQmJ-QKV71"
+      if @access != "Neal-youllneverguess" && @access != "Test-youllneverguess"
         metricsNames[0] = "INVALID ACCESS"
         metrics[0]= "INVALID ACCESS"
         metricsPass[0] = false
@@ -514,7 +514,7 @@ puts @evalProp
       else
         reason[0]=nil
       end
-      if (metricsPass[13..15].count(false) + (metricsPass[2] ? 1 : 0) + metricsPass[16..17].count(false)) >= 2
+      if (metricsPass[13..15].count(false) + (metricsPass[2] ? 0 : 1) + metricsPass[16..17].count(false)) >= 2
         reason[1]="Too rural"
       else
         reason[1]=nil
