@@ -1,34 +1,35 @@
 <% q=0 %>
 <h3> Summary </h3>
 
-<% for q in 0..@allData.size-1  %>
+<% for q in 0..@addresses.size-1  %>
 
    Property <%= q+1 %>:
    <%= @addresses[q].street %>
    <%= @addresses[q].citystatezip %> <br>
-   <% localMetricsPass = @allData[q][:passes]  %>
-   Passed <%= localMetricsPass.count(true) %> tests in <%= @sectionTimes[q+1]%> seconds.<br>
-   <b> <%= "Failed: " if !@allData[q][:reason].include? "Approved" %><%= @allData[q][:reason].compact.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %> <br> </b>
+   <% puts q %>
+   <% puts @addresses[q].street.to_s.upcase.strip %>
+   <% localMetricsPass = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).passes.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub(" ","").split(",")  %>
+   Passed <%= localMetricsPass.count("true") %> tests in <%= @sectionTimes[q+1]%> seconds.<br>
+   <b> <%= "Failed: " if !@allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.include? "Approved" %><%= @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %> <br> </b>
    <br>
 <% end %>
-
 <hr>
    <h3> Property Details:</h3>
 
-<% for q in 0..@allData.size-1  %>
+<% for q in 0..@addresses.size-1  %>
    <b> Property <%= q+1 %>: </b> 
    <%= @addresses[q].street %> 
    <%= @addresses[q].citystatezip %> <br>
-   <b> <%= "Failed: " if !@allData[q][:reason].include? "Approved" %><%= @allData[q][:reason].compact.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %> <br> </b>
-   <% localMetricsNames = @allData[q][:names]  %>
-   <% localMetrics = @allData[q][:numbers]  %>
-   <% localMetricsPass = @allData[q][:passes]  %>
-   <% localUrlsToHit = @allData[q][:urls]  %>
-   <% localMetricsComments = @allData[q][:comments] %>
-   <% localMetricsUsage = @allData[q][:usage] %>
+   <b> <%= "Failed: " if !@allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.include? "Approved" %><%= @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %> 
+   </b>
+   <% localMetricsNames = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).names.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+   <% localMetrics = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).numbers.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+   <% localMetricsPass = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).passes.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+   <% localMetricsComments = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).comments.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",") %>
+   <% localMetricsUsage = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).usage.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",") %>
    <table class = "table">
-   <tr>
-   <thead>
+      <tr>
+         <thead>
    <tr>
    <td> <b># </b></td>
    <td> <b>Usage </b></td>  
@@ -83,22 +84,13 @@
 <hr>
    <h3> Debugging API Calls:</h3>
 <small>
-<% for q in 0..@allData.size-1  %>
-   <% localUrlsToHit = @allData[q][:urls]  %>
+<% for q in 0..@addresses.size-1  %>
+   <% localUrlsToHit = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).urls.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
    <b> Detailed APIs for property <%= q+1 %>: <br></b>
    <% for x in 0..localUrlsToHit.size-1  %>
-      <%= localUrlsToHit[x] %>
+      <%= localUrlsToHit[x].gsub("THESENTINEL",",") %>
       <br>
    <% end  %>
 <% end  %>
 </small>
 <hr>
-   <h3> Data for testing:</h3>
-<% for q in 0..@allData.size-1  %>
-   <%= @addresses[q].street %>,
-   <%= @allData[q][:passes].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
-   <%= @allData[q][:numbers].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
-   <%= @allData[q][:reason].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
-   <%= @allData[q][:comments].to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,   
-   <br>
-<% end %>

@@ -1,0 +1,149 @@
+<h1>Outputs</h1>
+<% if @start == -1 %>
+<table>
+   <tr class="border_bottom"> 
+      <td> Prop # </td>
+      <td> Address </td>
+      <td> Decision </td>
+      <td width = 100> Release </td> 
+      <td width = 100> Inspect </td>
+      <td width = 100> Run ID </td>
+      <td width = 100> Zillow </td>
+   </tr> 
+
+   <% @outputs.each do |output| %>
+   <tr> 
+      <td width = 65> <b> <%= output.id %>: </b> </td>
+      <td width = 500> <%= output.street %> <%= output.citystatezip %> </td>
+      <td width = 150> <%= output.reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} >= 2 ? "Failed multiple" : "" %>
+         <%= output.reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} == 1 ? output.reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub(",","").gsub("nil","") : ""%>
+         <%= output.reason.include?("Approved") ? "Approved" : "" %>    
+         </td>
+      <td width = 100> <a href = /outputs/destroy/<%= output.id %>> Release </a> </td> 
+      <td width = 100> <a href = /inspect/<%= output.id %>> Inspect </a> </td>
+      <td width = 100> <%= output.runid %> </td>
+      <td width = 100> <a href = <%= "http://www.zillow.com/homedetails/"+output.zpid.to_s+"_zpid/" %>> Zillow </a> 
+   </tr> 
+   <% end %>
+</table>
+<br>
+<br>
+<% @outputs.each do |output| %>
+<b> Property <%= output.id %>: </b> <%= output.time %> seconds  | |  <a href = /outputs/destroy/<%= output.id%>> Release for recalculation </a> <br>
+<%= output.street %> 
+<%= output.citystatezip %> <br>
+<b> <%= "Failed: " if !output.reason.include? "Approved" %><%= output.reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %>
+</b>
+<% localMetricsNames = output.names.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+<% localMetrics = output.numbers.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+<% localMetricsPass = output.passes.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+<% localMetricsComments = output.comments.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",") %>
+<% localMetricsUsage = output.usage.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",") %>
+<table class = "table">
+   <tr>
+      <thead>
+         <tr>
+            <td> <b># </b></td>
+            <td> <b>Usage </b></td>  
+            <td> <b>Metric </b></td>
+            <td> <b>Value </b></td>
+            <td> <b>Pass </b></td>
+            <td> <b>Comments </b></td>      
+
+         </tr>
+      </thead>
+      <% for x in 0..localMetrics.size-1 %>
+      <tr>
+         <% if localMetricsUsage[x].to_s.upcase.strip =="NOT USED" %>
+         <td> <i> <%= x %> </i> </td>
+         <td> <i> Not Used </td> </i>     
+         <td> <i> <%= localMetricsNames[x] %></i></td>
+         <td> <i> <%= localMetrics[x] %></i></td>
+         <td> <i> <% if localMetricsPass[x].to_s.upcase.strip == "TRUE" %>
+            <%= localMetricsPass[x] %>
+            <% end %>
+            <b>
+               <% if localMetricsPass[x].to_s.upcase.strip != "TRUE" %>
+               <%= localMetricsPass[x].to_s.upcase %>
+               <% end %>
+            </b>
+         </i>
+      </td>
+      <td> <i> <%= localMetricsComments[x] %></i></td>
+      <% end %>
+      <% if localMetricsUsage[x].to_s.upcase.strip !="NOT USED" %>
+      <td> <%= x %> </td>
+      <td> <%= localMetricsUsage[x] %></td>      
+      <td> <%= localMetricsNames[x] %></td>
+      <td> <%= localMetrics[x] %></td>
+      <td> <% if localMetricsPass[x].to_s.upcase.strip == "TRUE" %>
+         <%= localMetricsPass[x] %>
+         <% end %>
+         <b>
+            <% if localMetricsPass[x].to_s.upcase.strip != "TRUE" %>
+            <%= localMetricsPass[x].to_s.upcase %>
+            <% end %>
+         </b>
+      </td>
+      <td> <%= localMetricsComments[x] %></td>
+      <% end %>
+   </tr>
+   <% end  %>
+</table>
+<br>
+<% end  %>
+<hr>
+<h3> Debugging API Calls:</h3>
+<small>
+   <% @outputs.each do |output|  %>
+   <% localUrlsToHit = output.urls.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+   <b> Detailed APIs for property <%= output.id %>: <br></b>
+   <% for x in 0..localUrlsToHit.size-1  %>
+   <%= localUrlsToHit[x].gsub("THESENTINEL",",") %>
+   <br>
+   <% end  %>
+   <% end  %>
+</small>
+<hr>
+
+<% end %>
+<h3> Data for export:</h3>
+<table>
+   <tr class="border_bottom">
+      <td width = 200> Headers </td>
+      <td>
+         Street, 
+         <% @outputs.first.names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
+         <%= name.to_s + " pass," %>
+         <% end %>
+         <% @outputs.first.names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
+         <%= name.to_s + " numbers," %>
+         <% end %>
+         <% for qcount in 0..9 %>
+         <%= "Reason "+ qcount.to_s + "," %>
+         <% end %>
+         <% @outputs.first.names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
+         <%= name.to_s + " comments," %>
+         <% end %>
+         --THE-END--
+      </td>
+   </tr>
+
+   <% @outputs.each do |output|  %>
+   <% if output.id.to_f <= @end.to_f && output.id.to_f >= @start.to_f %>
+   <tr class="border_bottom">
+      <td width = 200>Property: <%= output.id.to_s %>  |  |  
+         <%= output.street.to_s %> 
+      </td>
+      <td> <%= output.street.to_s %>,
+         <%= output.passes.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
+         <%= output.numbers.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
+         <%= output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
+         <%= output.comments.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,
+         --THE-END--
+      </td>
+   </tr>  
+   <% end %>
+   <% end %>
+</table>
+<hr>

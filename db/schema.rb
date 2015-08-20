@@ -32,8 +32,15 @@ ActiveRecord::Schema.define(version: 20150818185147) do
     t.text   "street"
     t.text   "citystatezip"
     t.float  "time"
-    t.text   "names"
-    t.string "testholders",  default: "--- []\n"
+    t.text   "zpid"
+    t.text   "runid"
+    t.string "names",        default: "--- []\n"
+    t.string "numbers",      default: "--- []\n"
+    t.string "passes",       default: "--- []\n"
+    t.string "urls",         default: "--- []\n"
+    t.string "reason",       default: "--- []\n"
+    t.string "comments",     default: "--- []\n"
+    t.string "usage",        default: "--- []\n"
   end
 
 end

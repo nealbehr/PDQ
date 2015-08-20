@@ -13,8 +13,8 @@ class AddressesController < ApplicationController
 
   def create
     @address = Address.new
-    @address.street = params[:street]
-    @address.citystatezip = params[:citystatezip]
+    @address.street = URI.unescape(params[:street].to_s.upcase.gsub(",","").gsub("+"," ").strip)
+    @address.citystatezip = URI.unescape(params[:citystatezip].to_s.upcase.gsub(",","").gsub("+"," ").strip)
 
     if @address.save
       redirect_to addresses_url, notice: "Address created successfully."
@@ -45,4 +45,14 @@ class AddressesController < ApplicationController
 
     redirect_to addresses_url, notice: "Address deleted."
   end
+
+  def destroyall
+    @address = Address.all
+    @address.each do |worker|
+      worker.destroy
+    end
+
+    redirect_to addresses_url, notice: "All Addresses Deleted."
+  end
+
 end

@@ -1,6 +1,7 @@
 <h1>Addresses</h1>
 
 <p><%= link_to 'Add a New Address', new_address_url %></p>
+<p><a href = /addresses/destroy/all> Release all addresses </a></p>
 
 <table>
   <thead>
@@ -20,7 +21,7 @@
       <td width = 250><%= address.citystatezip %></td>
       <td width = 50><%= link_to 'Show', address_url(address) %></td>
       <td width = 50><%= link_to 'Edit', edit_address_url(address) %></td>
-      <td width = 50><a href = /addresses/destroy/<%= address.id%>> Release</td>
+      <td width = 50><a href = /addresses/destroy/<%= address.id%>> Release </a></td>
     </tr>
   <% end %>
   </tbody>

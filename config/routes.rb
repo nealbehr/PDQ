@@ -2,10 +2,13 @@ Rails.application.routes.draw do
   # Routes for the Approved resource:
   # CREATE
 
-  get "/getallvalues", :controller => "values", :action => "getvalues"
-
+  get "/getvalues", :controller => "values", :action => "getvalues"
+  get "/getvalues/:street/:citystatezip", :controller => "values", :action => "getvalues"
+  get "/getvalues/:path/:street/:citystatezip", :controller => "values", :action => "getvalues"
+  
   get "/getonevalue/:street/:citystate/:access", :controller => "onevalue", :action => "getonevalue"
   
+
   get '/approveds/new', controller: 'approveds', action: 'new', as: 'new_approved'
   post '/approveds', controller: 'approveds', action: 'create', as: 'approveds'
 
@@ -52,8 +55,26 @@ Rails.application.routes.draw do
   patch '/addresses/:id', controller: 'addresses', action: 'update'
 
   # DELETE
+  get "/addresses/destroy/all", controller: 'addresses', action: 'destroyall'
   get "/addresses/destroy/:id", controller: 'addresses', action: 'destroy'
+
   #------------------------------
+
+  # Routes for the Outputs resource:
+  # CREATE
+  get '/outputs/new', controller: 'outputs', action: 'new', as: 'new_outputs'
+  post '/outputs', controller: 'outputs', action: 'create', as: 'outputs'
+  # DELETE
+  get '/outputs/destroy/:id', controller: 'outputs', action: 'destroy'
+  # READ
+  get '/outputs', controller: 'outputs', action: 'index'
+  get '/outputs/:start/:end', controller: 'outputs', action: 'dataforexport'
+  get '/outputs/:id', controller: 'outputs', action: 'dataforexport1'
+
+  get '/inspect/:id', controller: 'inspect', action: 'inspect'
+  get '/inspect/:street/:citystatezip', controller: 'inspect', action: 'inspectaddress'
+
+
 
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".

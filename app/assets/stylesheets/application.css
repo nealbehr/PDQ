@@ -13,3 +13,7 @@
  *= require_tree .
  *= require_self
  */
+
+tr.border_bottom td {
+  border-bottom:1pt solid gray;
+}
