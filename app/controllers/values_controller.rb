@@ -574,6 +574,41 @@ class ValuesController < ApplicationController
 
       metricsCountBeginBlock = metricsCount
       begin
+        url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=33.65,-84.42|30.3,-97.7|39.18,-76.67|42.37,-71.03|35.22,-80.93|41.9,-87.65|39.05,-84.67|41.42,-81.87|41.57,-81.48|32.85,-96.85|39.75,-104.87|42.42,-83.02|29.97,-95.35|39.73,-86.27|30.5,-81.7|39.32,-94.72|36.08,-115.17|33.93,-118.4|35.05,-90|25.82,-80.28|42.95,-87.9|44.88,-93.22|36.12,-86.68|40.77,-73.98|41.98,-87.9|39.88,-75.25|33.43,-112.02|40.5,-80.22|43.65,-70.32|41.73,-71.43|33.95,-117.45|38.52,-121.5|38.75,-90.37|29.53,-98.47|32.73,-117.17|37.73,-122.22|37.37,-121.92|47.45,-122.3|27.97,-82.53|36.9,-76.2|38.85,-77.04&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+        googleDistancesOutput = Nokogiri::XML(open(url))
+        puts googleDistancesOutput
+        urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
+        puts googleDistancesOutput.xpath('//element//distance//value')
+        metricsCount += 1
+        metricsNames[metricsCount] = "Distance from MSA"
+        metrics[metricsCount]=googleDistancesOutput.xpath('//element//duration//value').min { |a, b| a.content.to_i <=> b.content.to_i }.content.to_i
+        puts metrics[metricsCount]
+        metricsPass[metricsCount] = metrics[metricsCount]>=0
+        cities = Array.new
+        cities = "Atlanta GA,Austin TX,Baltimore MD,Boston MA,Charlotte NC,Chicago IL,Cincinnati OH,Cleveland OH,Columbus OH,Dallas TX,Denver CO,Detroit MI,Houston TX,Indianapolis IN,Jacksonville FL,Kansas City MO,Las Vegas NV,Los Angeles CA,Memphis TN,Miami FL,Milwaukee WI,Minneapolis MN,Nashville TN,New York NY,Orlando FL,Philadelphia PA,Phoenix AZ,Pittsburgh PA,Portland OR,Providence RI,Riverside CA,Sacramento CA,St. Louis MO,San Antonio TX,San Diego CA,San Francisco CA,San Jose CA,Seattle WA,Tampa FL,Virginia Beach VA,Washington DC".split(",")
+
+        puts googleDistancesOutput.xpath('//element//duration//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i }
+        metricsComments[metricsCount]= "Distance in seconds driving time | Closest MSA: " + cities[googleDistancesOutput.xpath('//element//duration//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+        metricsUsage[metricsCount] = "Not Used"
+
+        workforces = Array.new
+        workforces = "4128542,1381331,2187210,3744480,1751922,7419620,1657936,1658349,1504446,4963109,2029770,3399461,4570593,1473547,1080706,1567194,1543923,10223746,1023699,4607068,1225598,2647344,1334458,15787016,1740904,4778663,3281566,1949585,1792977,1303941,3226951,1705161,2213914,1677027,2498726,3582965,1467959,2803623,2298692,1340947,4547518".split(",")
+
+        metricsCount += 1
+        metricsNames[metricsCount] = "Distance from MSA - Weighted"
+        metrics[metricsCount]= (metrics[metricsNames.index("Distance from MSA")].to_f / (workforces[googleDistancesOutput.xpath('//element//duration//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Distance from MSA")].to_i } ]).to_f)*3000000
+        metricsPass[metricsCount] = metrics[metricsCount] >= 0
+        metricsComments[metricsCount]= "Distance in seconds driving time divided by total Employment in the MSA | Closest MSA: " + cities[googleDistancesOutput.xpath('//element//duration//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Distance from MSA")].to_i } ]
+        metricsUsage[metricsCount] = "Not Used"
+      rescue Exception => e
+        puts e.message
+        puts e.backtrace.inspect
+        metricsCount = metricsCountBeginBlock + 2
+      end
+
+
+      metricsCountBeginBlock = metricsCount
+      begin
         loop do
           url = URI.parse("http://geocoding.geo.census.gov/geocoder/geographies/coordinates?x="+@evalProp.at_xpath('//result//address//longitude').content.to_s+"&y="+@evalProp.at_xpath('//result//address//latitude').content.to_s+"&benchmark=4&vintage=4&format=json")
           req = Net::HTTP::Get.new(url)
