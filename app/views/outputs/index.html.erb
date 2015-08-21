@@ -5,24 +5,24 @@
       <td> Prop # </td>
       <td> Address </td>
       <td> Decision </td>
-      <td width = 100> Release </td> 
       <td width = 100> Inspect </td>
-      <td width = 100> Run ID </td>
       <td width = 100> Zillow </td>
+      <td width = 100> Run ID </td>
+      <td width = 100> Release </td> 
    </tr> 
 
    <% @outputs.each do |output| %>
    <tr> 
       <td width = 65> <b> <%= output.id %>: </b> </td>
       <td width = 500> <%= output.street %> <%= output.citystatezip %> </td>
-      <td width = 150> <%= output.reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} >= 2 ? "Failed multiple" : "" %>
-         <%= output.reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} == 1 ? output.reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub(",","").gsub("nil","") : ""%>
-         <%= output.reason.include?("Approved") ? "Approved" : "" %>    
+      <td width = 150> <%= output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} >= 2 ? "Failed multiple" : "" %>
+         <%= output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} == 1 ? output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub(",","").gsub("nil","") : ""%>
+         <%= output.reason.to_s.include?("Approved") ? "Approved" : "" %>    
          </td>
-      <td width = 100> <a href = /outputs/destroy/<%= output.id %>> Release </a> </td> 
       <td width = 100> <a href = /inspect/<%= output.id %>> Inspect </a> </td>
-      <td width = 100> <%= output.runid %> </td>
       <td width = 100> <a href = <%= "http://www.zillow.com/homedetails/"+output.zpid.to_s+"_zpid/" %>> Zillow </a> 
+      <td width = 100> <%= output.runid %> </td>
+      <td width = 100> <a href = /outputs/destroy/<%= output.id %>> Release </a> </td> 
    </tr> 
    <% end %>
 </table>
@@ -32,13 +32,13 @@
 <b> Property <%= output.id %>: </b> <%= output.time %> seconds  | |  <a href = /outputs/destroy/<%= output.id%>> Release for recalculation </a> <br>
 <%= output.street %> 
 <%= output.citystatezip %> <br>
-<b> <%= "Failed: " if !output.reason.include? "Approved" %><%= output.reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %>
+<b> <%= "Failed: " if !output.reason.to_s.include? "Approved" %><%= output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %>
 </b>
-<% localMetricsNames = output.names.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
-<% localMetrics = output.numbers.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
-<% localMetricsPass = output.passes.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
-<% localMetricsComments = output.comments.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",") %>
-<% localMetricsUsage = output.usage.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",") %>
+<% localMetricsNames = output.names.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+<% localMetrics = output.numbers.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+<% localMetricsPass = output.passes.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+<% localMetricsComments = output.comments.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",") %>
+<% localMetricsUsage = output.usage.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",") %>
 <table class = "table">
    <tr>
       <thead>
@@ -96,7 +96,7 @@
 <h3> Debugging API Calls:</h3>
 <small>
    <% @outputs.each do |output|  %>
-   <% localUrlsToHit = output.urls.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
+   <% localUrlsToHit = output.urls.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
    <b> Detailed APIs for property <%= output.id %>: <br></b>
    <% for x in 0..localUrlsToHit.size-1  %>
    <%= localUrlsToHit[x].gsub("THESENTINEL",",") %>
