@@ -2,7 +2,7 @@ Rails.application.routes.draw do
   # Routes for the Approved resource:
   # CREATE
 
-  map.root :controller => 'addresses', :action => "index"
+  root :controller => 'addresses', :action => "index"
 
   get "/getvalues", :controller => "values", :action => "getvalues"
   get "/getvalues/:street/:citystatezip", :controller => "values", :action => "getvalues"
