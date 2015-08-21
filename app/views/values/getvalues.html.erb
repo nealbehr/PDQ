@@ -9,8 +9,13 @@
    <% puts q %>
    <% puts @addresses[q].street.to_s.upcase.strip %>
    <% localMetricsPass = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).passes.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub(" ","").split(",")  %>
+   
    Passed <%= localMetricsPass.count("true") %> tests in <%= @sectionTimes[q+1]%> seconds.<br>
-   <b> <%= "Failed: " if !@allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.to_s.include? "Approved" %><%= @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %> <br> </b>
+   
+   <b> <%= "Failed: " if !@allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.to_s.include? "Approved" %>
+
+      <%= @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %> <br> </b>
+   
    <br>
 <% end %>
 <hr>
@@ -20,7 +25,7 @@
    <b> Property <%= q+1 %>: </b> 
    <%= @addresses[q].street %> 
    <%= @addresses[q].citystatezip %> <br>
-   <b> <%= "Failed: " if !@allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.include? "Approved" %><%= @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %> 
+   <b> <%= "Failed: " if !@allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.to_s.include? "Approved" %><%= @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %> 
    </b>
    <% localMetricsNames = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).names.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
    <% localMetrics = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).numbers.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
