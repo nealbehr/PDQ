@@ -41,7 +41,6 @@ class ValuesController < ApplicationController
       @output = Output.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip))
       if @output != nil
         puts "Found Property in database: " + @addresses[q].street.to_s.upcase.strip
-        puts "% Done: " + (q.to_f/(@addresses.size-1).to_f).to_s
         @sectionTimes.push((Time.now-@startTime-@sectionTimes.inject(:+)).round)
         next
       end
