@@ -2,18 +2,18 @@
 <% if @start == -1 %>
 <table>
    <tr class="border_bottom"> 
-      <td> Prop # </td>
+      <td> # </td>
       <td> Address </td>
       <td> Decision </td>
       <td width = 100> Inspect </td>
       <td width = 100> Zillow </td>
-      <td width = 100> Run ID </td>
-      <td width = 100> Release </td> 
+      <td width = 150> Run ID </td>
+      <td> Release </td> 
    </tr> 
 
    <% @outputs.each do |output| %>
    <tr> 
-      <td width = 65> <b> <%= output.id %>: </b> </td>
+      <td width = 45> <b> <%= output.id %>: </b> </td>
       <td width = 500> <%= output.street %> <%= output.citystatezip %> </td>
       <td width = 150> <%= output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} >= 2 ? "Failed multiple" : "" %>
          <%= output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} == 1 ? output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub(",","").gsub("nil","") : ""%>
@@ -21,8 +21,8 @@
          </td>
       <td width = 100> <a href = /inspect/<%= output.id %>> Inspect </a> </td>
       <td width = 100> <a href = <%= "http://www.zillow.com/homedetails/"+output.zpid.to_s+"_zpid/" %>> Zillow </a> 
-      <td width = 100> <%= output.runid %> </td>
-      <td width = 100> <a href = /outputs/destroy/<%= output.id %>> Release </a> </td> 
+      <td width = 150> <%= output.runid %> </td>
+      <td> <a href = /outputs/destroy/<%= output.id %>> Release </a> </td> 
    </tr> 
    <% end %>
 </table>

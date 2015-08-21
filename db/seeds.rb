@@ -7,6 +7,8 @@
 #   Mayor.create(name: 'Emanuel', city: cities.first)
 
 
+Output.destroy_all
+
 Address.destroy_all
 
 Address.create!([

@@ -13,14 +13,14 @@ class ValuesController < ApplicationController
 
     if params[:street] == nil || params[:citystatezip]== nil
       @addresses = Address.all
-      runID = Date::today.to_s
+      runID = "Run: " + @addresses.size.to_s + ": "+ Date::today.to_s
     else
       @addresses = Array.new
       @address = Address.new
       @address.street = URI.unescape(params[:street].to_s.upcase.gsub(",","").gsub("+"," ").strip)
       @address.citystatezip = URI.unescape(params[:citystatezip].to_s.upcase.gsub(",","").gsub("+"," ").strip)
       @addresses[0] = @address
-      runID = "Ad Hoc"
+      runID = params[:path].to_s.capitalize + ": " +Date::today.to_s
     end
     @allOutput = Output.all
     distanceThreshold = 1000
