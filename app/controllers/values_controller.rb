@@ -117,15 +117,20 @@ class ValuesController < ApplicationController
 
       
       metricsCount += 1
-      metricsNames[metricsCount] = "Investment Location"
-      metrics[metricsCount]=@evalProp.at_xpath('//results//address//zipcode').content
-      metricsPass[metricsCount] = Approved.find_by(zipcode: metrics[metricsCount])!=nil
-      if metricsPass[metricsCount]
-        metricsComments[metricsCount]= "Found in database. Mapped to: " + Approved.find_by(zipcode: metrics[metricsCount])[:status].to_s
-        metricsUsage[metricsCount] = "MSA check"
-      else 
-        metricsComments[metricsCount]= "Not Found in database"
-        metricsUsage[metricsCount] = "MSA check"
+      metricsNames[metricsCount] = "Pre-approval"
+      metricsUsage[metricsCount] = "MSA check"
+      if Approved.find_by(zipcode: @evalProp.at_xpath('//results//address//zipcode').content.to_i)==nil
+        metrics[metricsCount] = -1
+        metricsPass[metricsCount] = false 
+        metricsComments[metricsCount]= "Not found in database"
+      elsif Approved.find_by(zipcode: @evalProp.at_xpath('//results//address//zipcode').content.to_i)[:status]
+        metrics[metricsCount] = 1
+        metricsPass[metricsCount] = true 
+        metricsComments[metricsCount]= "Found in database. Mapped to true"
+      else
+        metrics[metricsCount] = 0
+        metricsPass[metricsCount] = true 
+        metricsComments[metricsCount]= "Found in database. Mapped to false"
       end
       
 
@@ -426,7 +431,7 @@ class ValuesController < ApplicationController
 
       metricsCount += 1
       metricsNames[metricsCount] = "Urban Density"
-      metrics[metricsCount]= Density.find_by(zipcode: metrics[metricsNames.index("Investment Location")])[:densityofzip].to_f.round(2)
+      metrics[metricsCount]= Density.find_by(zipcode: @evalProp.at_xpath('//results//address//zipcode').content.to_i)[:densityofzip].to_f.round(2)
       metricsPass[metricsCount] = metrics[metricsCount].to_f > 150
       metricsComments[metricsCount]= "> 150 people/SqMi"
       metricsUsage[metricsCount] = "Rurality"
@@ -576,18 +581,13 @@ class ValuesController < ApplicationController
       begin
         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=33.65,-84.42|30.3,-97.7|39.18,-76.67|42.37,-71.03|35.22,-80.93|41.9,-87.65|39.05,-84.67|41.42,-81.87|41.57,-81.48|32.85,-96.85|39.75,-104.87|42.42,-83.02|29.97,-95.35|39.73,-86.27|30.5,-81.7|39.32,-94.72|36.08,-115.17|33.93,-118.4|35.05,-90|25.82,-80.28|42.95,-87.9|44.88,-93.22|36.12,-86.68|40.77,-73.98|41.98,-87.9|39.88,-75.25|33.43,-112.02|40.5,-80.22|43.65,-70.32|41.73,-71.43|33.95,-117.45|38.52,-121.5|38.75,-90.37|29.53,-98.47|32.73,-117.17|37.73,-122.22|37.37,-121.92|47.45,-122.3|27.97,-82.53|36.9,-76.2|38.85,-77.04&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
         googleDistancesOutput = Nokogiri::XML(open(url))
-        puts googleDistancesOutput
         urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
-        puts googleDistancesOutput.xpath('//element//distance//value')
         metricsCount += 1
         metricsNames[metricsCount] = "Distance from MSA"
         metrics[metricsCount]=googleDistancesOutput.xpath('//element//duration//value').min { |a, b| a.content.to_i <=> b.content.to_i }.content.to_i
-        puts metrics[metricsCount]
         metricsPass[metricsCount] = metrics[metricsCount]>=0
         cities = Array.new
         cities = "Atlanta GA,Austin TX,Baltimore MD,Boston MA,Charlotte NC,Chicago IL,Cincinnati OH,Cleveland OH,Columbus OH,Dallas TX,Denver CO,Detroit MI,Houston TX,Indianapolis IN,Jacksonville FL,Kansas City MO,Las Vegas NV,Los Angeles CA,Memphis TN,Miami FL,Milwaukee WI,Minneapolis MN,Nashville TN,New York NY,Orlando FL,Philadelphia PA,Phoenix AZ,Pittsburgh PA,Portland OR,Providence RI,Riverside CA,Sacramento CA,St. Louis MO,San Antonio TX,San Diego CA,San Francisco CA,San Jose CA,Seattle WA,Tampa FL,Virginia Beach VA,Washington DC".split(",")
-
-        puts googleDistancesOutput.xpath('//element//duration//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i }
         metricsComments[metricsCount]= "Distance in seconds driving time | Closest MSA: " + cities[googleDistancesOutput.xpath('//element//duration//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
         metricsUsage[metricsCount] = "Not Used"
 
@@ -940,7 +940,7 @@ class ValuesController < ApplicationController
       else
         reason[6]=nil
       end
-      if metricsPass[metricsNames.index("Investment Location")] == false
+      if metricsPass[metricsNames.index("Pre-approval")] == false
         reason[7]="Not in MSAs"
       else
         reason[7]=nil
