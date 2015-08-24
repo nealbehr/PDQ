@@ -6,8 +6,6 @@
    Property <%= q+1 %>:
    <%= @addresses[q].street %>
    <%= @addresses[q].citystatezip %> <br>
-   <% puts q %>
-   <% puts @addresses[q].street.to_s.upcase.strip %>
    <% localMetricsPass = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).passes.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub(" ","").split(",")  %>
    
    Passed <%= localMetricsPass.count("true") %> tests in <%= @sectionTimes[q+1]%> seconds.<br>
