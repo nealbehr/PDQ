@@ -110,7 +110,7 @@
 <h3> Data for export:</h3>
 <table>
    <tr class="border_bottom">
-      <td width = 200> Headers </td>
+      <td width = 200> Headers, </td>
       <td>
          Street, 
          <% @outputs.first.names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
@@ -133,7 +133,7 @@
    <% if output.id.to_f <= @end.to_f && output.id.to_f >= @start.to_f %>
    <tr class="border_bottom">
       <td width = 200>Property: <%= output.id.to_s %>  |  |  
-         <%= output.street.to_s %> 
+         <%= output.street.to_s %>, 
       </td>
       <td> <%= output.street.to_s %>,
          <%= output.passes.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","") %>,

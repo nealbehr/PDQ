@@ -6,6 +6,8 @@
 <%= @output.citystatezip %> <br>
 <b> <%= "Failed: " if !@output.reason.to_s.include? "Approved" %><%= @output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %>
 </b>
+<br>
+<a href = <%= "http://www.zillow.com/homedetails/"+@output.zpid.to_s+"_zpid/" %>> Zillow Link </a> 
 <hr>
 <% localMetricsNames = @output.names.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
 <% localMetrics = @output.numbers.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
