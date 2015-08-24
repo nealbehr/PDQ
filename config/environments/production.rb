@@ -1,6 +1,8 @@
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 ENV["SSL_CERT_FILE"] = "C:/RailsInstaller/Ruby2.1.0/lib/ruby/2.1.0/rubygems/ssl_certs/cacert.pem"
+
+  config.assets.raise_runtime_errors = true
   # Code is not reloaded between requests.
   config.cache_classes = true
 
