@@ -195,7 +195,7 @@ class ValuesController < ApplicationController
       scrappingtable = @page.css('div#hdp-unit-list').css('td')
 
       urlsToHit.push("http://www.zillow.com/homes/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content+"_zpid/")
-
+puts "got the data from zillow" 
       @distance = Array.new
       totalPrice = 0
       totalBeds = 0
@@ -267,7 +267,7 @@ class ValuesController < ApplicationController
           totalDistance += d
           totalDistanceCount += 1
         end
-
+puts "property: " + x.to_s + " distance complete"
 
         if scrappingtable[5*x+2].content == "--" || scrappingtable[5*x+3].content == "--" || scrappingtable[5*x+4].content == "--" || scrappingtable[5*x+1].content == "--"
           next
@@ -281,6 +281,7 @@ class ValuesController < ApplicationController
         totalBaths += scrappingtable[5*x+3].content.to_f
         totalSqFt += scrappingtable[5*x+4].content.to_s.sub(",","").to_f
         totalRecords += 1
+puts "property: " + x.to_s + " typicality complete"        
       end
       if @evalProp.at_xpath('//response//result//bedrooms') != nil
 
@@ -584,7 +585,7 @@ class ValuesController < ApplicationController
 
 
       begin
-        if @evalProp.at_xpath('//results//address//state'.content.to_s == "CA"
+        if @evalProp.at_xpath('//results//address//state').content.to_s == "CA"
           url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=33.93,-118.4|33.95,-117.45|38.52,-121.5|32.73,-117.17|37.73,-122.22|37.37,-121.92&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
           cities = Array.new
           cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA".split(",")
