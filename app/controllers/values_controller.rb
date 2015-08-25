@@ -583,7 +583,7 @@ class ValuesController < ApplicationController
 
 
 
-    begin
+      begin
         if @evalProp.at_xpath('//results//address//state'.content.to_s == "CA"
           url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=33.93,-118.4|33.95,-117.45|38.52,-121.5|32.73,-117.17|37.73,-122.22|37.37,-121.92&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
           cities = Array.new
@@ -602,14 +602,17 @@ class ValuesController < ApplicationController
          cities = "Boston MA,New York NY,Providence RI,Albany NY,Buffalo NY".split(",")
          workforces = Array.new
          workforces = "3744480,15787016,1303941,712141,923681".split(",")
-        elsif @evalProp.at_xpath('//results//address//state').content.to_s == "NJ" || @evalProp.at_xpath('//results//address//state').content.to_s == "PA" || @evalProp.at_xpath('//results//address//state').content.to_s == "MA" || @evalProp.at_xpath('//results//address//state').content.to_s == "VA" || @evalProp.at_xpath('//results//address//state').content.to_s == "DE" || @evalProp.at_xpath('//results//address//state').content.to_s == "DC"
+       elsif @evalProp.at_xpath('//results//address//state').content.to_s == "NJ" || @evalProp.at_xpath('//results//address//state').content.to_s == "PA" || @evalProp.at_xpath('//results//address//state').content.to_s == "MA" || @evalProp.at_xpath('//results//address//state').content.to_s == "VA" || @evalProp.at_xpath('//results//address//state').content.to_s == "DE" || @evalProp.at_xpath('//results//address//state').content.to_s == "DC"
          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=39.18,-76.67|39.88,-75.25|40.5,-80.22|36.9,-76.2|38.85,-77.04|40.77,-73.98&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
          cities = "Baltimore MD,Philadelphia PA,Pittsburgh PA,Virginia Beach VA,Washington DC,New York NY".split(",")
          workforces = Array.new
          workforces = "2187210,4778663,1949585,1340947,4547518,15787016".split(",")
-        end
-       googleDistancesOutput = Nokogiri::XML(open(url))
+       else
+        puts "We're screwed"
+        puts "We're really screwed"
+      end
+      googleDistancesOutput = Nokogiri::XML(open(url))
        urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
        metricsCount += 1
        metricsNames[metricsCount] = "Distance from MSA"
