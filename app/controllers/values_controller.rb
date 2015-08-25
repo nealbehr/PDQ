@@ -584,25 +584,25 @@ class ValuesController < ApplicationController
 
 
     begin
-        if @evalProp.at_xpath('//results//address//state') == "CA"
+        if @evalProp.at_xpath('//results//address//state'.content.to_s == "CA"
           url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=33.93,-118.4|33.95,-117.45|38.52,-121.5|32.73,-117.17|37.73,-122.22|37.37,-121.92&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
           cities = Array.new
           cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA".split(",")
           workforces = Array.new
           workforces = "10223746,3226951,1705161,2498726,3582965,1467959".split(",")
-        elsif @evalProp.at_xpath('//results//address//state') == "OR" || @evalProp.at_xpath('//results//address//state') == "WA"
+        elsif @evalProp.at_xpath('//results//address//state').content.to_s == "OR" || @evalProp.at_xpath('//results//address//state').content.to_s == "WA"
          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=43.65,-70.32|47.45,-122.3&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
          cities = "Portland OR,Seattle WA".split(",")
          workforces = Array.new
          workforces = "1792977,2803623".split(",")
-       elsif @evalProp.at_xpath('//results//address//state') == "NY" || @evalProp.at_xpath('//results//address//state') == "MA" || @evalProp.at_xpath('//results//address//state') == "RI" || @evalProp.at_xpath('//results//address//state') == "CT" || @evalProp.at_xpath('//results//address//state') == "VT" || @evalProp.at_xpath('//results//address//state') == "NH" || @evalProp.at_xpath('//results//address//state') == "ME"
+       elsif @evalProp.at_xpath('//results//address//state').content.to_s == "NY" || @evalProp.at_xpath('//results//address//state').content.to_s == "MA" || @evalProp.at_xpath('//results//address//state').content.to_s == "RI" || @evalProp.at_xpath('//results//address//state').content.to_s == "CT" || @evalProp.at_xpath('//results//address//state').content.to_s == "VT" || @evalProp.at_xpath('//results//address//state').content.to_s == "NH" || @evalProp.at_xpath('//results//address//state').content.to_s == "ME"
          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=42.37,-71.03|40.77,-73.98|41.73,-71.43|42.75,-73.8|42.93,-78.73&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
          cities = "Boston MA,New York NY,Providence RI,Albany NY,Buffalo NY".split(",")
          workforces = Array.new
          workforces = "3744480,15787016,1303941,712141,923681".split(",")
-        elsif @evalProp.at_xpath('//results//address//state') == "NJ" || @evalProp.at_xpath('//results//address//state') == "PA" || @evalProp.at_xpath('//results//address//state') == "MA" || @evalProp.at_xpath('//results//address//state') == "VA" || @evalProp.at_xpath('//results//address//state') == "DE" || @evalProp.at_xpath('//results//address//state') == "DC"
+        elsif @evalProp.at_xpath('//results//address//state').content.to_s == "NJ" || @evalProp.at_xpath('//results//address//state').content.to_s == "PA" || @evalProp.at_xpath('//results//address//state').content.to_s == "MA" || @evalProp.at_xpath('//results//address//state').content.to_s == "VA" || @evalProp.at_xpath('//results//address//state').content.to_s == "DE" || @evalProp.at_xpath('//results//address//state').content.to_s == "DC"
          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=39.18,-76.67|39.88,-75.25|40.5,-80.22|36.9,-76.2|38.85,-77.04|40.77,-73.98&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
          cities = "Baltimore MD,Philadelphia PA,Pittsburgh PA,Virginia Beach VA,Washington DC,New York NY".split(",")
