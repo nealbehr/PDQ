@@ -68,6 +68,7 @@ Rails.application.routes.draw do
   post '/outputs', controller: 'outputs', action: 'create', as: 'outputs'
   # DELETE
   get '/outputs/destroy/:id', controller: 'outputs', action: 'destroy'
+  get '/outputs/destroy/:start/:end', controller: 'outputs', action: 'destroyrange'
   # READ
   get '/outputs', controller: 'outputs', action: 'index'
   get '/outputs/:start/:end', controller: 'outputs', action: 'dataforexport'

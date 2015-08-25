@@ -27,4 +27,13 @@ class OutputsController < ApplicationController
 
   	redirect_to outputs_url, notice: "Record deleted."
   end
+
+  def destroyrange
+    for worker in params[:start]..params[:end]
+      @outputs = Output.find_by(id: worker)
+      next if @outputs == nil
+      @outputs.destroy
+    end
+    redirect_to outputs_url, notice: "Records deleted."
+  end
 end
