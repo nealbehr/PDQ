@@ -206,14 +206,16 @@ puts "got the data from zillow"
       totalDistanceCount = 0
       for x in 0..scrappingtable.size/5-1
         skipflag = false
-        url = URI.parse("http://rpc.geocoder.us/service/json?address="+URI.escape(scrappingtable[5*x+0].content))
+        url = URI.parse("http://nominatim.openstreetmap.org/search/"+URI.escape(scrappingtable[5*x+0].content) +"?format=json&addressdetails=1")
         req = Net::HTTP::Get.new(url.to_s)
         res = Net::HTTP.start(url.host, url.port) {|http|
           http.request(req)
         }
+        puts url.to_s
         urlsToHit[4+x] = "Success: " + url.to_s.gsub(",","THESENTINEL")
         textOutput = res.body
-        if textOutput.include? "500 Internal Server Error"
+        puts textOutput
+        if !textOutput.include? "house"
           url = "https://maps.googleapis.com/maps/api/geocode/xml?address=" + URI.escape(scrappingtable[5*x+0].content)+ "&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"
           geocoderOutput = Nokogiri::XML(open(url))
           if geocoderOutput.at_xpath('//location_type') == nil
@@ -229,8 +231,10 @@ puts "got the data from zillow"
           end
         else
           jsonOutput = JSON.parse(textOutput)
+          puts jsonOutput[0]["lat"]
+          puts jsonOutput[0]["lon"]
           lat2 = jsonOutput[0]["lat"].to_f
-          lon2 = jsonOutput[0]["long"].to_f
+          lon2 = jsonOutput[0]["lon"].to_f
         end
         
         if skipflag == false
