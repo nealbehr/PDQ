@@ -195,7 +195,6 @@ class ValuesController < ApplicationController
       scrappingtable = @page.css('div#hdp-unit-list').css('td')
 
       urlsToHit.push("http://www.zillow.com/homes/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content+"_zpid/")
-puts "got the data from zillow" 
       @distance = Array.new
       totalPrice = 0
       totalBeds = 0
@@ -211,10 +210,8 @@ puts "got the data from zillow"
         res = Net::HTTP.start(url.host, url.port) {|http|
           http.request(req)
         }
-        puts url.to_s
         urlsToHit[4+x] = "Success: " + url.to_s.gsub(",","THESENTINEL")
         textOutput = res.body
-        puts textOutput
         if !textOutput.include? "house"
           url = "https://maps.googleapis.com/maps/api/geocode/xml?address=" + URI.escape(scrappingtable[5*x+0].content)+ "&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"
           geocoderOutput = Nokogiri::XML(open(url))
@@ -231,8 +228,6 @@ puts "got the data from zillow"
           end
         else
           jsonOutput = JSON.parse(textOutput)
-          puts jsonOutput[0]["lat"]
-          puts jsonOutput[0]["lon"]
           lat2 = jsonOutput[0]["lat"].to_f
           lon2 = jsonOutput[0]["lon"].to_f
         end
@@ -271,7 +266,6 @@ puts "got the data from zillow"
           totalDistance += d
           totalDistanceCount += 1
         end
-puts "property: " + x.to_s + " distance complete"
 
         if scrappingtable[5*x+2].content == "--" || scrappingtable[5*x+3].content == "--" || scrappingtable[5*x+4].content == "--" || scrappingtable[5*x+1].content == "--"
           next
@@ -284,8 +278,7 @@ puts "property: " + x.to_s + " distance complete"
         totalBeds += scrappingtable[5*x+2].content.to_f
         totalBaths += scrappingtable[5*x+3].content.to_f
         totalSqFt += scrappingtable[5*x+4].content.to_s.sub(",","").to_f
-        totalRecords += 1
-puts "property: " + x.to_s + " typicality complete"        
+        totalRecords += 1    
       end
       if @evalProp.at_xpath('//response//result//bedrooms') != nil
 
@@ -420,7 +413,7 @@ puts "property: " + x.to_s + " typicality complete"
         @jsonOutputArea = JSON.parse(res.body)
         urlsToHit[urlsToHit.size] = url.to_s + " || "+ (@jsonOutputArea["result"]["geographies"]["Census Tracts"] == nil ? "Fail" : @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"])
 
-        puts loopCounter
+        puts "Loop Counter: " + loopCounter.to_s
         puts url if loopCounter>25
         puts @jsonOutputArea if loopCounter>25
         break if loopCounter>25 || @jsonOutputArea["result"]["geographies"]["Census Tracts"] != nil
@@ -478,7 +471,7 @@ puts "property: " + x.to_s + " typicality complete"
 
           @jsonOutputArea = JSON.parse(res.body)
           urlsToHit[urlsToHit.size] = url.to_s + " || "+ (@jsonOutputArea["result"]["geographies"]["Census Tracts"] == nil ? "Fail" : @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"])
-          puts loopCounter
+        puts "Loop Counter: " + loopCounter.to_s
           puts url if loopCounter>25
           puts @jsonOutputArea if loopCounter>25
           break if loopCounter>25 || @jsonOutputArea["result"]["geographies"]["Census Tracts"] != nil
@@ -590,13 +583,13 @@ puts "property: " + x.to_s + " typicality complete"
 
       begin
         if @evalProp.at_xpath('//results//address//state').content.to_s == "CA"
-          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=33.93,-118.4|33.95,-117.45|38.52,-121.5|32.73,-117.17|37.73,-122.22|37.37,-121.92&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
           cities = Array.new
           cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA".split(",")
           workforces = Array.new
           workforces = "10223746,3226951,1705161,2498726,3582965,1467959".split(",")
         elsif @evalProp.at_xpath('//results//address//state').content.to_s == "OR" || @evalProp.at_xpath('//results//address//state').content.to_s == "WA"
-         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=43.65,-70.32|47.45,-122.3&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
          cities = "Portland OR,Seattle WA".split(",")
          workforces = Array.new
@@ -621,19 +614,34 @@ puts "property: " + x.to_s + " typicality complete"
        urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
        metricsCount += 1
        metricsNames[metricsCount] = "Distance from MSA"
-       metrics[metricsCount]=googleDistancesOutput.xpath('//element//duration//value').min { |a, b| a.content.to_i <=> b.content.to_i }.content.to_i
+       metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').min { |a, b| a.content.to_i <=> b.content.to_i }.content.to_i
        metricsPass[metricsCount] = metrics[metricsCount]>=0
-       metricsComments[metricsCount]= "Distance in seconds driving time | Closest MSA: " + cities[googleDistancesOutput.xpath('//element//duration//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+       metricsComments[metricsCount]= "Distance in seconds driving time | Closest MSA: " + cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
        metricsUsage[metricsCount] = "Not Used"
 
+       metricsCount += 1
+       metricsNames[metricsCount] = "Second Distance from MSA"
+       metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').sort { |a, b| a.content.to_i <=> b.content.to_i }[1].content.to_i
+       metricsPass[metricsCount] = metrics[metricsCount]>=0
+       metricsComments[metricsCount]= "Distance in seconds driving time | Second closest MSA: " + cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+       metricsUsage[metricsCount] = "Not Used"
 
 
        metricsCount += 1
        metricsNames[metricsCount] = "Distance from MSA - Weighted"
-       metrics[metricsCount]= (metrics[metricsNames.index("Distance from MSA")].to_f / (workforces[googleDistancesOutput.xpath('//element//duration//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Distance from MSA")].to_i } ]).to_f)*3000000
+       metrics[metricsCount]= (metrics[metricsNames.index("Distance from MSA")].to_f / (workforces[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Distance from MSA")].to_i } ]).to_f)*3000000
        metricsPass[metricsCount] = metrics[metricsCount] >= 0
-       metricsComments[metricsCount]= "Distance in seconds driving time divided by total Employment in the MSA | Closest MSA: " + cities[googleDistancesOutput.xpath('//element//duration//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Distance from MSA")].to_i } ]
+       metricsComments[metricsCount]= "Distance in seconds driving time divided by total Employment in the MSA | Closest MSA: " + cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Distance from MSA")].to_i } ]
        metricsUsage[metricsCount] = "Not Used"
+
+       metricsCount += 1
+       metricsNames[metricsCount] = "Second Distance from MSA - Weighted"
+       metrics[metricsCount]= (metrics[metricsNames.index("Second Distance from MSA")].to_f / (workforces[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Distance from MSA")].to_i } ]).to_f)*3000000
+       metricsPass[metricsCount] = metrics[metricsCount] >= 0
+       metricsComments[metricsCount]= "Distance in seconds driving time divided by total Employment in the MSA | Second Closest MSA: " + cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Second Distance from MSA")].to_i } ]
+       metricsUsage[metricsCount] = "Not Used"
+
+
     rescue Exception => e
       puts e.message
       puts e.backtrace.inspect
@@ -650,7 +658,7 @@ puts "property: " + x.to_s + " typicality complete"
           http.request(req)
         }
         @jsonOutputArea = JSON.parse(res.body)
-        puts loopCounter
+        puts "Loop Counter: " + loopCounter.to_s
         puts url if loopCounter>25
         puts @jsonOutputArea if loopCounter>25
         break if loopCounter>25 || @jsonOutputArea["result"]["geographies"]["Counties"] != nil
