@@ -496,8 +496,8 @@ class ValuesController < ApplicationController
       metricsCount += 1
       metricsNames[metricsCount] = "Surrounding Census Tract Density"
       metrics[metricsCount]= censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity].to_f.round(2)
-      metricsPass[metricsCount] = metrics[metricsCount] > 50.0
-      metricsComments[metricsCount]= "> 50 houses/SqMi for tract: "+ censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:censustract].to_s + " in " +censusTractDensities.count{|holder| holder[:tractdensity] == censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity]}.to_s + " of 8 directions. Total of " + (censusTractDensities.uniq.size).to_s + " tested."
+      metricsPass[metricsCount] = metrics[metricsCount] > 35.0
+      metricsComments[metricsCount]= "> 35 houses/SqMi for tract: "+ censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:censustract].to_s + " in " +censusTractDensities.count{|holder| holder[:tractdensity] == censusTractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity]}.to_s + " of 8 directions. Total of " + (censusTractDensities.uniq.size).to_s + " tested."
       metricsUsage[metricsCount] = "Rurality"
 
 
