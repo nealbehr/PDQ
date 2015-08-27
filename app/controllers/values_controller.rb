@@ -554,6 +554,82 @@ class ValuesController < ApplicationController
       metricsComments[metricsCount]= ">= 3.5 || Average school rating"
       metricsUsage[metricsCount] = "Schools"
 
+      begin
+        if @evalProp.at_xpath('//results//address//state').content.to_s == "CA"
+          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886|34.4258,-119.7142&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+          cities = Array.new
+          cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA,Santa Barbara CA".split(",")
+          workforces = Array.new
+          workforces = "10223746,3226951,1705161,2498726,3582965,1467959,341011".split(",")
+        elsif @evalProp.at_xpath('//results//address//state').content.to_s == "OR" || @evalProp.at_xpath('//results//address//state').content.to_s == "WA"
+         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+         cities = Array.new
+         cities = "Portland OR,Seattle WA".split(",")
+         workforces = Array.new
+         workforces = "1792977,2803623".split(",")
+       elsif @evalProp.at_xpath('//results//address//state').content.to_s == "NY" || @evalProp.at_xpath('//results//address//state').content.to_s == "MA" || @evalProp.at_xpath('//results//address//state').content.to_s == "RI" || @evalProp.at_xpath('//results//address//state').content.to_s == "CT" || @evalProp.at_xpath('//results//address//state').content.to_s == "VT" || @evalProp.at_xpath('//results//address//state').content.to_s == "NH" || @evalProp.at_xpath('//results//address//state').content.to_s == "ME"
+         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=42.37,-71.03|40.77,-73.98|41.73,-71.43|42.75,-73.8|42.93,-78.73&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+         cities = Array.new
+         cities = "Boston MA,New York NY,Providence RI,Albany NY,Buffalo NY".split(",")
+         workforces = Array.new
+         workforces = "3744480,15787016,1303941,712141,923681".split(",")
+       elsif @evalProp.at_xpath('//results//address//state').content.to_s == "NJ" || @evalProp.at_xpath('//results//address//state').content.to_s == "PA" || @evalProp.at_xpath('//results//address//state').content.to_s == "MA" || @evalProp.at_xpath('//results//address//state').content.to_s == "VA" || @evalProp.at_xpath('//results//address//state').content.to_s == "DE" || @evalProp.at_xpath('//results//address//state').content.to_s == "DC"
+         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=39.18,-76.67|39.88,-75.25|40.5,-80.22|36.9,-76.2|38.85,-77.04|40.77,-73.98&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+         cities = Array.new
+         cities = "Baltimore MD,Philadelphia PA,Pittsburgh PA,Virginia Beach VA,Washington DC,New York NY".split(",")
+         workforces = Array.new
+         workforces = "2187210,4778663,1949585,1340947,4547518,15787016".split(",")
+       else
+        puts "We're screwed"
+        puts "We're really screwed"
+      end
+      googleDistancesOutput = Nokogiri::XML(open(url))
+      urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
+
+      ranges = Array.new
+      ranges = [{city: "Baltimore MD", range: 100000}, {city: "Philadelphia PA", range: 100000}, {city: "Pittsburgh PA", range: 100000}, {city: "Virginia Beach VA", range: 100000}, {city: "Washington DC", range: 100000}, {city: "New York NY", range: 100000}, {city: "Boston MA", range: 100000}, {city: "New York NY", range: 100000}, {city: "Providence RI", range: 100000}, {city: "Albany NY", range: 50000}, {city: "Buffalo NY", range: 50000}, {city: "Los Angeles CA", range: 100000}, {city: "Riverside CA", range: 25000}, {city: "Sacramento CA", range: 38000}, {city: "San Diego CA", range: 75000}, {city: "San Francisco CA", range: 75000}, {city: "San Jose CA", range: 75000}, {city: "Santa Barbara CA", range: 38000}, {city: "Portland OR", range: 22000}, {city: "Seattle WA", range: 61000}]
+
+      puts ranges[ranges.index { |x| x[:city] =="Baltimore MD"}][:range]
+
+
+
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Distance from MSA"
+      metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').min { |a, b| a.content.to_i <=> b.content.to_i }.content.to_i
+      city = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+      puts "found city"
+      range = ranges[ranges.index { |x| x[:city] == city}][:range]
+      puts "found range"
+      metricsPass[metricsCount] = metrics[metricsCount] <= range
+      metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
+      metricsUsage[metricsCount] = "MSA dist"
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Second Distance from MSA"
+      metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').sort { |a, b| a.content.to_i <=> b.content.to_i }[1].content.to_i
+      city = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+      range = ranges[ranges.index { |x| x[:city] == city}][:range]
+      metricsPass[metricsCount] = metrics[metricsCount] <= range
+      metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
+      metricsUsage[metricsCount] = "MSA Dist"
+
+
+    rescue Exception => e
+     metricsCount += 1
+     metricsNames[metricsCount] = "Distance from MSA"
+     metrics[metricsCount]= "NA"
+     metricsPass[metricsCount] = false
+     metricsComments[metricsCount]= "Distance check failed"
+     metricsUsage[metricsCount] = "Rurality"
+     metricsCount += 1
+     metricsNames[metricsCount] = "Second Distance from MSA"
+     metrics[metricsCount]= "NA"
+     metricsPass[metricsCount] = false
+     metricsComments[metricsCount]= "Distance check failed"
+     metricsUsage[metricsCount] = "Rurality"
+   end
+
 
       metricsCount += 1
       metricsNames[metricsCount] = "Below are non-used variables"
@@ -587,88 +663,6 @@ class ValuesController < ApplicationController
       urlsToHit.push(@neighborhoodPrices.to_s.gsub(",","THESENTINEL"))        
       urlsToHit.push(@homePrices.to_s.gsub(",","THESENTINEL"))
       urlsToHit.push(censusTractDensities.to_s.gsub(",","THESENTINEL"))
-
-
-      metricsCountBeginBlock = metricsCount
-      
-
-
-
-      begin
-        if @evalProp.at_xpath('//results//address//state').content.to_s == "CA"
-          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886|34.4258,-119.7142&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
-          cities = Array.new
-          cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA,Santa Barbara CA".split(",")
-          workforces = Array.new
-          workforces = "10223746,3226951,1705161,2498726,3582965,1467959,341011".split(",")
-        elsif @evalProp.at_xpath('//results//address//state').content.to_s == "OR" || @evalProp.at_xpath('//results//address//state').content.to_s == "WA"
-         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
-         cities = Array.new
-         cities = "Portland OR,Seattle WA".split(",")
-         workforces = Array.new
-         workforces = "1792977,2803623".split(",")
-       elsif @evalProp.at_xpath('//results//address//state').content.to_s == "NY" || @evalProp.at_xpath('//results//address//state').content.to_s == "MA" || @evalProp.at_xpath('//results//address//state').content.to_s == "RI" || @evalProp.at_xpath('//results//address//state').content.to_s == "CT" || @evalProp.at_xpath('//results//address//state').content.to_s == "VT" || @evalProp.at_xpath('//results//address//state').content.to_s == "NH" || @evalProp.at_xpath('//results//address//state').content.to_s == "ME"
-         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=42.37,-71.03|40.77,-73.98|41.73,-71.43|42.75,-73.8|42.93,-78.73&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
-         cities = Array.new
-         cities = "Boston MA,New York NY,Providence RI,Albany NY,Buffalo NY".split(",")
-         workforces = Array.new
-         workforces = "3744480,15787016,1303941,712141,923681".split(",")
-       elsif @evalProp.at_xpath('//results//address//state').content.to_s == "NJ" || @evalProp.at_xpath('//results//address//state').content.to_s == "PA" || @evalProp.at_xpath('//results//address//state').content.to_s == "MA" || @evalProp.at_xpath('//results//address//state').content.to_s == "VA" || @evalProp.at_xpath('//results//address//state').content.to_s == "DE" || @evalProp.at_xpath('//results//address//state').content.to_s == "DC"
-         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=39.18,-76.67|39.88,-75.25|40.5,-80.22|36.9,-76.2|38.85,-77.04|40.77,-73.98&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
-         cities = Array.new
-         cities = "Baltimore MD,Philadelphia PA,Pittsburgh PA,Virginia Beach VA,Washington DC,New York NY".split(",")
-         workforces = Array.new
-         workforces = "2187210,4778663,1949585,1340947,4547518,15787016".split(",")
-       else
-        puts "We're screwed"
-        puts "We're really screwed"
-      end
-      googleDistancesOutput = Nokogiri::XML(open(url))
-       urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
-
-       ranges = Array.new
-       ranges = [{city: "Baltimore MD", range: 100000}, {city: "Philadelphia PA", range: 100000}, {city: "Pittsburgh PA", range: 100000}, {city: "Virginia Beach VA", range: 100000}, {city: "Washington DC", range: 100000}, {city: "New York NY", range: 100000}, {city: "Boston MA", range: 100000}, {city: "New York NY", range: 100000}, {city: "Providence RI", range: 100000}, {city: "Albany NY", range: 50000}, {city: "Buffalo NY", range: 50000}, {city: "Los Angeles CA", range: 100000}, {city: "Riverside CA", range: 25000}, {city: "Sacramento CA", range: 38000}, {city: "San Diego CA", range: 75000}, {city: "San Francisco CA", range: 75000}, {city: "San Jose CA", range: 75000}, {city: "Santa Barbara CA", range: 38000}, {city: "Portland OR", range: 22000}, {city: "Seattle WA", range: 61000}]
-
-       puts ranges[ranges.index { |x| x[:city] =="Baltimore MD"}][:range]
-
-
-
-
-       metricsCount += 1
-       metricsNames[metricsCount] = "Distance from MSA"
-       metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').min { |a, b| a.content.to_i <=> b.content.to_i }.content.to_i
-       city = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
-       puts "found city"
-       range = ranges[ranges.index { |x| x[:city] == city}][:range]
-       puts "found range"
-       metricsPass[metricsCount] = metrics[metricsCount] <= range
-       metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
-       metricsUsage[metricsCount] = "Rurality"
-
-       metricsCount += 1
-       metricsNames[metricsCount] = "Second Distance from MSA"
-       metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').sort { |a, b| a.content.to_i <=> b.content.to_i }[1].content.to_i
-       city = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
-       range = ranges[ranges.index { |x| x[:city] == city}][:range]
-       metricsPass[metricsCount] = metrics[metricsCount] <= range
-       metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
-       metricsUsage[metricsCount] = "Rurality"
-
-
-    rescue Exception => e
-       metricsCount += 1
-       metricsNames[metricsCount] = "Distance from MSA"
-       metrics[metricsCount]= "NA"
-       metricsPass[metricsCount] = false
-       metricsComments[metricsCount]= "Distance check failed"
-       metricsUsage[metricsCount] = "Rurality"
-       metricsCount += 1
-       metricsNames[metricsCount] = "Second Distance from MSA"
-       metrics[metricsCount]= "NA"
-       metricsPass[metricsCount] = false
-       metricsComments[metricsCount]= "Distance check failed"
-       metricsUsage[metricsCount] = "Rurality"
-    end
 
 
     metricsCountBeginBlock = metricsCount
