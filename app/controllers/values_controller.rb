@@ -431,8 +431,8 @@ class ValuesController < ApplicationController
       metricsCount += 1
       metricsNames[metricsCount] = "Urban Density"
       metrics[metricsCount]= Density.find_by(zipcode: @evalProp.at_xpath('//results//address//zipcode').content.to_i)[:densityofzip].to_f.round(2)
-      metricsPass[metricsCount] = metrics[metricsCount].to_f > 150
-      metricsComments[metricsCount]= "> 150 people/SqMi"
+      metricsPass[metricsCount] = metrics[metricsCount].to_f > 500
+      metricsComments[metricsCount]= "> 500 people/SqMi"
       metricsUsage[metricsCount] = "Rurality"
 
       
@@ -455,6 +455,7 @@ class ValuesController < ApplicationController
       cordAdj.push({xadj: +0.02, yadj: -0.02})
       cordAdj.push({xadj: -0.02, yadj: +0.02})
       cordAdj.push({xadj: -0.02, yadj: -0.02})
+
 
       censusTractDensities = Array.new
       startingX = @evalProp.at_xpath('//result//address//longitude').content.to_f
@@ -541,6 +542,18 @@ class ValuesController < ApplicationController
       metricsPass[metricsCount] = metrics[metricsCount] < 0.1
       metricsComments[metricsCount]= "< 0.1 || Standard Deviation of historical home price as a percentage of overal zestimate"
       metricsUsage[metricsCount] = "Volatility"
+      
+      schoolScores = Array.new
+      metricsCount += 1
+      metricsNames[metricsCount] = "Schools"
+      schoolScores[0] = @page.css("div[class='nearby-schools-rating']")[0].css("span").text.to_s.gsub("(assigned)","").to_i
+      schoolScores[1] = @page.css("div[class='nearby-schools-rating']")[1].css("span").text.to_s.gsub("(assigned)","").to_i
+      schoolScores[2] = @page.css("div[class='nearby-schools-rating']")[2].css("span").text.to_s.gsub("(assigned)","").to_i
+      metrics[metricsCount]= (schoolScores[0]+schoolScores[1]+schoolScores[2]).to_f/3.0
+      metricsPass[metricsCount] = metrics[metricsCount] >= 3.5
+      metricsComments[metricsCount]= ">= 3.5 || Average school rating"
+      metricsUsage[metricsCount] = "Schools"
+
 
       metricsCount += 1
       metricsNames[metricsCount] = "Below are non-used variables"
@@ -583,11 +596,11 @@ class ValuesController < ApplicationController
 
       begin
         if @evalProp.at_xpath('//results//address//state').content.to_s == "CA"
-          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886|34.4258,-119.7142&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
           cities = Array.new
-          cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA".split(",")
+          cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA,Santa Barbara CA".split(",")
           workforces = Array.new
-          workforces = "10223746,3226951,1705161,2498726,3582965,1467959".split(",")
+          workforces = "10223746,3226951,1705161,2498726,3582965,1467959,341011".split(",")
         elsif @evalProp.at_xpath('//results//address//state').content.to_s == "OR" || @evalProp.at_xpath('//results//address//state').content.to_s == "WA"
          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
@@ -612,40 +625,49 @@ class ValuesController < ApplicationController
       end
       googleDistancesOutput = Nokogiri::XML(open(url))
        urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
+
+       ranges = Array.new
+       ranges = [{city: "Baltimore MD", range: 100000}, {city: "Philadelphia PA", range: 100000}, {city: "Pittsburgh PA", range: 100000}, {city: "Virginia Beach VA", range: 100000}, {city: "Washington DC", range: 100000}, {city: "New York NY", range: 100000}, {city: "Boston MA", range: 100000}, {city: "New York NY", range: 100000}, {city: "Providence RI", range: 100000}, {city: "Albany NY", range: 50000}, {city: "Buffalo NY", range: 50000}, {city: "Los Angeles CA", range: 100000}, {city: "Riverside CA", range: 25000}, {city: "Sacramento CA", range: 38000}, {city: "San Diego CA", range: 75000}, {city: "San Francisco CA", range: 75000}, {city: "San Jose CA", range: 75000}, {city: "Santa Barbara CA", range: 38000}, {city: "Portland OR", range: 22000}, {city: "Seattle WA", range: 61000}]
+
+       puts ranges[ranges.index { |x| x[:city] =="Baltimore MD"}][:range]
+
+
+
+
        metricsCount += 1
        metricsNames[metricsCount] = "Distance from MSA"
        metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').min { |a, b| a.content.to_i <=> b.content.to_i }.content.to_i
-       metricsPass[metricsCount] = metrics[metricsCount]>=0
-       metricsComments[metricsCount]= "Distance in seconds driving time | Closest MSA: " + cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
-       metricsUsage[metricsCount] = "Not Used"
+       city = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+       puts "found city"
+       range = ranges[ranges.index { |x| x[:city] == city}][:range]
+       puts "found range"
+       metricsPass[metricsCount] = metrics[metricsCount] <= range
+       metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
+       metricsUsage[metricsCount] = "Rurality"
 
        metricsCount += 1
        metricsNames[metricsCount] = "Second Distance from MSA"
        metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').sort { |a, b| a.content.to_i <=> b.content.to_i }[1].content.to_i
-       metricsPass[metricsCount] = metrics[metricsCount]>=0
-       metricsComments[metricsCount]= "Distance in seconds driving time | Second closest MSA: " + cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
-       metricsUsage[metricsCount] = "Not Used"
-
-
-       metricsCount += 1
-       metricsNames[metricsCount] = "Distance from MSA - Weighted"
-       metrics[metricsCount]= (metrics[metricsNames.index("Distance from MSA")].to_f / (workforces[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Distance from MSA")].to_i } ]).to_f)*3000000
-       metricsPass[metricsCount] = metrics[metricsCount] >= 0
-       metricsComments[metricsCount]= "Distance in seconds driving time divided by total Employment in the MSA | Closest MSA: " + cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Distance from MSA")].to_i } ]
-       metricsUsage[metricsCount] = "Not Used"
-
-       metricsCount += 1
-       metricsNames[metricsCount] = "Second Distance from MSA - Weighted"
-       metrics[metricsCount]= (metrics[metricsNames.index("Second Distance from MSA")].to_f / (workforces[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Distance from MSA")].to_i } ]).to_f)*3000000
-       metricsPass[metricsCount] = metrics[metricsCount] >= 0
-       metricsComments[metricsCount]= "Distance in seconds driving time divided by total Employment in the MSA | Second Closest MSA: " + cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsNames.index("Second Distance from MSA")].to_i } ]
-       metricsUsage[metricsCount] = "Not Used"
+       city = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+       range = ranges[ranges.index { |x| x[:city] == city}][:range]
+       metricsPass[metricsCount] = metrics[metricsCount] <= range
+       metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
+       metricsUsage[metricsCount] = "Rurality"
 
 
     rescue Exception => e
-      puts e.message
-      puts e.backtrace.inspect
-      metricsCount = metricsCountBeginBlock + 2
+       metricsCount += 1
+       metricsNames[metricsCount] = "Distance from MSA"
+       metrics[metricsCount]= "NA"
+       metricsPass[metricsCount] = false
+       metricsComments[metricsCount]= "Distance check failed"
+       metricsUsage[metricsCount] = "Rurality"
+       metricsCount += 1
+       metricsNames[metricsCount] = "Second Distance from MSA"
+       metrics[metricsCount]= "NA"
+       metricsPass[metricsCount] = false
+       metricsComments[metricsCount]= "Distance check failed"
+       metricsUsage[metricsCount] = "Rurality"
     end
 
 
@@ -992,10 +1014,20 @@ class ValuesController < ApplicationController
       else
         reason[8]=nil
       end
-      if reason.compact.size == 0
-        reason[9]="Approved"
+      if metricsPass[metricsNames.index("Schools")]==false
+        reason[9]="Bad Schools"
       else
         reason[9]=nil
+      end
+      if (metricsPass[metricsNames.index("Distance from MSA")] || metricsPass[metricsNames.index("Second Distance from MSA")]) == false
+        reason[10]="MSA Distance"
+      else
+        reason[10]=nil
+      end
+      if reason.compact.size == 0
+        reason[11]="Approved"
+      else
+        reason[11]=nil
       end
 
       @newOutput = Output.new
