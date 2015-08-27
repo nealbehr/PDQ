@@ -546,12 +546,26 @@ class ValuesController < ApplicationController
       schoolScores = Array.new
       metricsCount += 1
       metricsNames[metricsCount] = "Schools"
-      schoolScores[0] = @page.css("div[class='nearby-schools-rating']")[0].css("span").text.to_s.gsub("(assigned)","").to_i
-      schoolScores[1] = @page.css("div[class='nearby-schools-rating']")[1].css("span").text.to_s.gsub("(assigned)","").to_i
-      schoolScores[2] = @page.css("div[class='nearby-schools-rating']")[2].css("span").text.to_s.gsub("(assigned)","").to_i
-      metrics[metricsCount]= (schoolScores[0]+schoolScores[1]+schoolScores[2]).to_f/3.0
+      begin
+        schoolScores.push(@page.css("div[class='nearby-schools-rating']")[0].css("span").text.to_s.gsub("(assigned)","").to_i)
+      rescue
+      end
+      begin
+        schoolScores.push(@page.css("div[class='nearby-schools-rating']")[1].css("span").text.to_s.gsub("(assigned)","").to_i)
+      rescue
+      end
+      begin
+        schoolScores.push(@page.css("div[class='nearby-schools-rating']")[2].css("span").text.to_s.gsub("(assigned)","").to_i)
+      rescue
+      end 
+      if schoolScores.length.to_f >= 1
+        metrics[metricsCount]= (schoolScores.inject{|sum,x| sum + x }).to_f/schoolScores.length.to_f
+      else
+        metrics[metricsCount]=0
+      end
+
       metricsPass[metricsCount] = metrics[metricsCount] >= 3.5
-      metricsComments[metricsCount]= ">= 3.5 || Average school rating"
+      metricsComments[metricsCount]= ">= 3.5 || Average school rating across " + schoolScores.length.to_s
       metricsUsage[metricsCount] = "Schools"
 
       begin
@@ -589,18 +603,11 @@ class ValuesController < ApplicationController
       ranges = Array.new
       ranges = [{city: "Baltimore MD", range: 100000}, {city: "Philadelphia PA", range: 100000}, {city: "Pittsburgh PA", range: 100000}, {city: "Virginia Beach VA", range: 100000}, {city: "Washington DC", range: 100000}, {city: "New York NY", range: 100000}, {city: "Boston MA", range: 100000}, {city: "New York NY", range: 100000}, {city: "Providence RI", range: 100000}, {city: "Albany NY", range: 50000}, {city: "Buffalo NY", range: 50000}, {city: "Los Angeles CA", range: 100000}, {city: "Riverside CA", range: 25000}, {city: "Sacramento CA", range: 38000}, {city: "San Diego CA", range: 75000}, {city: "San Francisco CA", range: 75000}, {city: "San Jose CA", range: 75000}, {city: "Santa Barbara CA", range: 38000}, {city: "Portland OR", range: 22000}, {city: "Seattle WA", range: 61000}]
 
-      puts ranges[ranges.index { |x| x[:city] =="Baltimore MD"}][:range]
-
-
-
-
       metricsCount += 1
       metricsNames[metricsCount] = "Distance from MSA"
       metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').min { |a, b| a.content.to_i <=> b.content.to_i }.content.to_i
       city = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
-      puts "found city"
       range = ranges[ranges.index { |x| x[:city] == city}][:range]
-      puts "found range"
       metricsPass[metricsCount] = metrics[metricsCount] <= range
       metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
       metricsUsage[metricsCount] = "MSA dist"
