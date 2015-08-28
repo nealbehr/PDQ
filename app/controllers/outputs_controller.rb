@@ -4,6 +4,7 @@ class OutputsController < ApplicationController
   	@outputs = Output.all
   	@start = -1
   	@end = 100000
+    @forexport = false
     render 'index'
   end
 
@@ -11,6 +12,7 @@ class OutputsController < ApplicationController
   	@outputs = Output.all
   	@start = params[:start]
   	@end = params[:end]
+    @forexport = true
     render 'index'
   end
 
@@ -18,6 +20,7 @@ class OutputsController < ApplicationController
   	@outputs = Output.all
   	@start = params[:id]
   	@end = params[:id]
+    @forexport = true
     render 'index'
   end
 

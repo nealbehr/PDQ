@@ -1,5 +1,6 @@
 <h1>Outputs</h1>
-<% if @start == -1 %>
+<a href = /outputs/1/1000000> Copy for export </a>
+<% if @forexport == false %>
 <table>
    <tr class="border_bottom"> 
       <td> # </td>
@@ -28,85 +29,10 @@
 </table>
 <br>
 <br>
-<% @outputs.each do |output| %>
-<b> Property <%= output.id %>: </b> <%= output.time %> seconds  | |  <a href = /outputs/destroy/<%= output.id%>> Release for recalculation </a> <br>
-<%= output.street %> 
-<%= output.citystatezip %> <br>
-<b> <%= "Failed: " if !output.reason.to_s.include? "Approved" %><%= output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %>
-</b>
-<% localMetricsNames = output.names.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
-<% localMetrics = output.numbers.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
-<% localMetricsPass = output.passes.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
-<% localMetricsComments = output.comments.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",") %>
-<% localMetricsUsage = output.usage.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",") %>
-<table class = "table">
-   <tr>
-      <thead>
-         <tr>
-            <td> <b># </b></td>
-            <td> <b>Usage </b></td>  
-            <td> <b>Metric </b></td>
-            <td> <b>Value </b></td>
-            <td> <b>Pass </b></td>
-            <td> <b>Comments </b></td>      
-
-         </tr>
-      </thead>
-      <% for x in 0..localMetrics.size-1 %>
-      <tr>
-         <% if localMetricsUsage[x].to_s.upcase.strip =="NOT USED" %>
-         <td> <i> <%= x %> </i> </td>
-         <td> <i> Not Used </td> </i>     
-         <td> <i> <%= localMetricsNames[x] %></i></td>
-         <td> <i> <%= localMetrics[x] %></i></td>
-         <td> <i> <% if localMetricsPass[x].to_s.upcase.strip == "TRUE" %>
-            <%= localMetricsPass[x] %>
-            <% end %>
-            <b>
-               <% if localMetricsPass[x].to_s.upcase.strip != "TRUE" %>
-               <%= localMetricsPass[x].to_s.upcase %>
-               <% end %>
-            </b>
-         </i>
-      </td>
-      <td> <i> <%= localMetricsComments[x] %></i></td>
-      <% end %>
-      <% if localMetricsUsage[x].to_s.upcase.strip !="NOT USED" %>
-      <td> <%= x %> </td>
-      <td> <%= localMetricsUsage[x] %></td>      
-      <td> <%= localMetricsNames[x] %></td>
-      <td> <%= localMetrics[x] %></td>
-      <td> <% if localMetricsPass[x].to_s.upcase.strip == "TRUE" %>
-         <%= localMetricsPass[x] %>
-         <% end %>
-         <b>
-            <% if localMetricsPass[x].to_s.upcase.strip != "TRUE" %>
-            <%= localMetricsPass[x].to_s.upcase %>
-            <% end %>
-         </b>
-      </td>
-      <td> <%= localMetricsComments[x] %></td>
-      <% end %>
-   </tr>
-   <% end  %>
-</table>
-<br>
-<% end  %>
-<hr>
-<h3> Debugging API Calls:</h3>
-<small>
-   <% @outputs.each do |output|  %>
-   <% localUrlsToHit = output.urls.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",")  %>
-   <b> Detailed APIs for property <%= output.id %>: <br></b>
-   <% for x in 0..localUrlsToHit.size-1  %>
-   <%= localUrlsToHit[x].gsub("THESENTINEL",",") %>
-   <br>
-   <% end  %>
-   <% end  %>
-</small>
-<hr>
-
 <% end %>
+
+
+<% if @forexport == true %>
 <h3> Data for export:</h3>
 <table>
    <tr class="border_bottom">
@@ -147,3 +73,4 @@
    <% end %>
 </table>
 <hr>
+<% end %>
