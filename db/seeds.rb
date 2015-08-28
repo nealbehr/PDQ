@@ -7,6 +7,12 @@
 #   Mayor.create(name: 'Emanuel', city: cities.first)
 
 
+
+
+Density.destroy_all
+
+puts "Densities Done"
+
 Address.destroy_all
 
 Address.create!([
@@ -214,12 +220,6 @@ Address.create!([
 	])
 
 puts "Addresses Done"
-
-Density.destroy_all
-
-puts "Densities Done"
-
-
 
 if Approved.count < 100
 
