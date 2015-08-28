@@ -35,7 +35,7 @@
       <td> <i> <%= localMetricsNames[x] %></i></td>
       <td> <i> <%= localMetrics[x] %></i></td>
       <td> <i> <% if localMetricsPass[x].to_s.upcase.strip == "T" %>
-         <%= localMetricsPass[x] %>
+         True
          <% end %>
          <b>
             <% if localMetricsPass[x].to_s.upcase.strip != "T" %>
@@ -52,7 +52,7 @@
       <td> <%= localMetricsNames[x] %></td>
       <td> <%= localMetrics[x] %></td>
       <td> <% if localMetricsPass[x].to_s.upcase.strip == "T" %>
-         <%= localMetricsPass[x] %>
+         True
          <% end %>
          <b>
             <% if localMetricsPass[x].to_s.upcase.strip != "T" %>
