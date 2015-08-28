@@ -990,17 +990,17 @@ class ValuesController < ApplicationController
         reason[3]=nil
       end
       if metricsPass[metricsNames.index("Zestimate")] == false
-        reason[4]="Outside of price range"
+        reason[4]="out of $ range"
       else
         reason[4]=nil
       end
       if metricsPass[metricsNames.index("Property use")] == false
-        reason[5]="Not a single family home"
+        reason[5]="Not single fam"
       else
         reason[5]=nil
       end      
       if metricsPass[metricsNames.index("Build Date (No new)")] == false
-        reason[6]="New construction - auto-review"
+        reason[6]="New construction"
       else
         reason[6]=nil
       end
@@ -1010,7 +1010,7 @@ class ValuesController < ApplicationController
         reason[7]=nil
       end
       if metricsPass[metricsNames.index("Std. Dev. of price deltas")..metricsNames.index("Std. Dev. of historical home price")].count(false)>=2
-        reason[8]="Property Prices are too volatile"
+        reason[8]="Prices volatile"
       else
         reason[8]=nil
       end
