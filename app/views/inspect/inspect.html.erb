@@ -34,12 +34,12 @@
       <td> <i> Not Used </td> </i>     
       <td> <i> <%= localMetricsNames[x] %></i></td>
       <td> <i> <%= localMetrics[x] %></i></td>
-      <td> <i> <% if localMetricsPass[x].to_s.upcase.strip == "TRUE" %>
+      <td> <i> <% if localMetricsPass[x].to_s.upcase.strip == "T" %>
          <%= localMetricsPass[x] %>
          <% end %>
          <b>
-            <% if localMetricsPass[x].to_s.upcase.strip != "TRUE" %>
-            <%= localMetricsPass[x].to_s.upcase %>
+            <% if localMetricsPass[x].to_s.upcase.strip != "T" %>
+               FALSE
             <% end %>
          </b> </i>
       </td>
@@ -51,11 +51,11 @@
       <td> <%= localMetricsUsage[x] %></td>      
       <td> <%= localMetricsNames[x] %></td>
       <td> <%= localMetrics[x] %></td>
-      <td> <% if localMetricsPass[x].to_s.upcase.strip == "TRUE" %>
+      <td> <% if localMetricsPass[x].to_s.upcase.strip == "T" %>
          <%= localMetricsPass[x] %>
          <% end %>
          <b>
-            <% if localMetricsPass[x].to_s.upcase.strip != "TRUE" %>
+            <% if localMetricsPass[x].to_s.upcase.strip != "T" %>
             <%= localMetricsPass[x].to_s.upcase %>
             <% end %>
          </b>
