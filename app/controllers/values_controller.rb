@@ -71,7 +71,6 @@ class ValuesController < ApplicationController
         @newOutput = Output.new      
         @newOutput.street = @addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip
         @newOutput.citystatezip = @addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip
-        @newOutput.time = 12.0
         @newOutput.names = metricsNames
         @newOutput.numbers = metrics
         @newOutput.passes = metricsPass
@@ -430,7 +429,7 @@ class ValuesController < ApplicationController
 
       metricsCount += 1
       metricsNames[metricsCount] = "Urban Density"
-      metrics[metricsCount]= Density.find_by(zipcode: @evalProp.at_xpath('//results//address//zipcode').content.to_i)[:densityofzip].to_f.round(2)
+      metrics[metricsCount]= getaZCTADensity(@evalProp.at_xpath('//results//address//zipcode').content.to_i).to_f.round(2)
       metricsPass[metricsCount] = metrics[metricsCount].to_f > 500
       metricsComments[metricsCount]= "> 500 people/SqMi"
       metricsUsage[metricsCount] = "Rurality"
@@ -1034,7 +1033,6 @@ class ValuesController < ApplicationController
       @newOutput = Output.new
       @newOutput.street = @addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip
       @newOutput.citystatezip = @addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip
-      @newOutput.time = 12.0
       @newOutput.names = metricsNames
       @newOutput.numbers = metrics
       @newOutput.passes = metricsPass

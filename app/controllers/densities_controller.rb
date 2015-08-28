@@ -1,5 +1,7 @@
 class DensitiesController < ApplicationController
 
+
+
   def index
     @densities = Density.all
   end
