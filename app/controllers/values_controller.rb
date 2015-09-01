@@ -202,6 +202,8 @@ class ValuesController < ApplicationController
       totalRecords = 0
       totalDistance = 0
       totalDistanceCount = 0
+      totalDistanceSansOutliers = 0
+      totalDistanceCountSansOutliers = 0
       for x in 0..scrappingtable.size/5-1
         skipflag = false
         url = URI.parse("http://nominatim.openstreetmap.org/search/"+URI.escape(scrappingtable[5*x+0].content) +"?format=json&addressdetails=1")
@@ -262,9 +264,16 @@ class ValuesController < ApplicationController
             end
           end
           @distance[x] = d
+          if d > 2500
+            totalDistanceSansOutliers += d          
+            totalDistanceCountSansOutliers += 1
+          end
           totalDistance += d
           totalDistanceCount += 1
+
         end
+
+        urlsToHit.push(@distance.to_s.gsub(",","THESENTINEL"))
 
         if scrappingtable[5*x+2].content == "--" || scrappingtable[5*x+3].content == "--" || scrappingtable[5*x+4].content == "--" || scrappingtable[5*x+1].content == "--"
           next
@@ -284,7 +293,7 @@ class ValuesController < ApplicationController
         metricsCount += 1
         metricsNames[metricsCount] = "Average beds in community"
         metrics[metricsCount]= ((@evalProp.at_xpath('//response//result//bedrooms').content.to_f / (totalBeds.to_f/totalRecords.to_f)-1).to_f.round(3)*100).round(1)
-        metricsPass[metricsCount] = metrics[metricsCount] < 25 && metrics[metricsCount] > -25
+        metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount] > -66
         metricsComments[metricsCount] = "% deviation from community within 25%   || Prop: " + @evalProp.at_xpath('//response//result//bedrooms').content.to_s + "  || Avg: " + (totalBeds.to_f/totalRecords.to_f).to_s
         metricsUsage[metricsCount] = "Typicality"
       else
@@ -292,7 +301,7 @@ class ValuesController < ApplicationController
         metricsCount += 1
         metricsNames[metricsCount] = "Average beds in community"
         metrics[metricsCount] = "Not available"
-        metricsPass[metricsCount] = false
+        metricsPass[metricsCount] = true
         metricsComments[metricsCount]= "NA"
         metricsUsage[metricsCount] = "Typicality"
       end
@@ -301,7 +310,7 @@ class ValuesController < ApplicationController
         metricsCount += 1
         metricsNames[metricsCount] = "Average baths in community"
         metrics[metricsCount]= ((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (totalBaths.to_f/totalRecords.to_f)-1).to_f.round(3)*100).round(1)
-        metricsPass[metricsCount] = metrics[metricsCount] < 25 && metrics[metricsCount] > -25
+        metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount] > -66
         metricsComments[metricsCount]=  "% deviation from community within 25%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (totalBaths.to_f/totalRecords.to_f).to_s
         metricsUsage[metricsCount] = "Typicality"
       else
@@ -309,7 +318,7 @@ class ValuesController < ApplicationController
         metricsCount += 1
         metricsNames[metricsCount] = "Average baths in community"
         metrics[metricsCount] = "Not available"
-        metricsPass[metricsCount] = false
+        metricsPass[metricsCount] = metrics[metricsCount-1]=="Not avialable" ? false : true
         metricsComments[metricsCount]= "NA"
         metricsUsage[metricsCount] = "Typicality"
       end
@@ -567,6 +576,7 @@ class ValuesController < ApplicationController
       metricsComments[metricsCount]= ">= 3.5 || Average school rating across " + schoolScores.length.to_s
       metricsUsage[metricsCount] = "Schools"
 
+      metricsCountBeginBlock = metricsCount
       begin
         if @evalProp.at_xpath('//results//address//state').content.to_s == "CA"
           url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886|34.4258,-119.7142&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
@@ -586,7 +596,7 @@ class ValuesController < ApplicationController
          cities = "Boston MA,New York NY,Providence RI,Albany NY,Buffalo NY".split(",")
          workforces = Array.new
          workforces = "3744480,15787016,1303941,712141,923681".split(",")
-       elsif @evalProp.at_xpath('//results//address//state').content.to_s == "NJ" || @evalProp.at_xpath('//results//address//state').content.to_s == "PA" || @evalProp.at_xpath('//results//address//state').content.to_s == "MA" || @evalProp.at_xpath('//results//address//state').content.to_s == "VA" || @evalProp.at_xpath('//results//address//state').content.to_s == "DE" || @evalProp.at_xpath('//results//address//state').content.to_s == "DC"
+       elsif @evalProp.at_xpath('//results//address//state').content.to_s == "NJ" || @evalProp.at_xpath('//results//address//state').content.to_s == "PA" || @evalProp.at_xpath('//results//address//state').content.to_s == "MD" || @evalProp.at_xpath('//results//address//state').content.to_s == "VA" || @evalProp.at_xpath('//results//address//state').content.to_s == "DE" || @evalProp.at_xpath('//results//address//state').content.to_s == "DC"
          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=39.18,-76.67|39.88,-75.25|40.5,-80.22|36.9,-76.2|38.85,-77.04|40.77,-73.98&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
          cities = "Baltimore MD,Philadelphia PA,Pittsburgh PA,Virginia Beach VA,Washington DC,New York NY".split(",")
@@ -600,7 +610,7 @@ class ValuesController < ApplicationController
       urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
 
       ranges = Array.new
-      ranges = [{city: "Baltimore MD", range: 100000}, {city: "Philadelphia PA", range: 100000}, {city: "Pittsburgh PA", range: 100000}, {city: "Virginia Beach VA", range: 100000}, {city: "Washington DC", range: 100000}, {city: "New York NY", range: 100000}, {city: "Boston MA", range: 100000}, {city: "New York NY", range: 100000}, {city: "Providence RI", range: 100000}, {city: "Albany NY", range: 50000}, {city: "Buffalo NY", range: 50000}, {city: "Los Angeles CA", range: 100000}, {city: "Riverside CA", range: 25000}, {city: "Sacramento CA", range: 38000}, {city: "San Diego CA", range: 75000}, {city: "San Francisco CA", range: 75000}, {city: "San Jose CA", range: 75000}, {city: "Santa Barbara CA", range: 38000}, {city: "Portland OR", range: 22000}, {city: "Seattle WA", range: 61000}]
+      ranges = [{city: "Baltimore MD", range: 100000}, {city: "Philadelphia PA", range: 100000}, {city: "Pittsburgh PA", range: 100000}, {city: "Virginia Beach VA", range: 100000}, {city: "Washington DC", range: 100000}, {city: "New York NY", range: 100000}, {city: "Boston MA", range: 100000}, {city: "New York NY", range: 100000}, {city: "Providence RI", range: 100000}, {city: "Albany NY", range: 50000}, {city: "Buffalo NY", range: 50000}, {city: "Los Angeles CA", range: 100000}, {city: "Riverside CA", range: 25000}, {city: "Sacramento CA", range: 34000}, {city: "San Diego CA", range: 75000}, {city: "San Francisco CA", range: 75000}, {city: "San Jose CA", range: 75000}, {city: "Santa Barbara CA", range: 34000}, {city: "Portland OR", range: 22000}, {city: "Seattle WA", range: 61000}]
 
       metricsCount += 1
       metricsNames[metricsCount] = "Distance from MSA"
@@ -622,19 +632,20 @@ class ValuesController < ApplicationController
 
 
     rescue Exception => e
-     metricsCount += 1
-     metricsNames[metricsCount] = "Distance from MSA"
-     metrics[metricsCount]= "NA"
-     metricsPass[metricsCount] = false
-     metricsComments[metricsCount]= "Distance check failed"
-     metricsUsage[metricsCount] = "Rurality"
-     metricsCount += 1
-     metricsNames[metricsCount] = "Second Distance from MSA"
-     metrics[metricsCount]= "NA"
-     metricsPass[metricsCount] = false
-     metricsComments[metricsCount]= "Distance check failed"
-     metricsUsage[metricsCount] = "Rurality"
-   end
+      metricsCount = metricsCountBeginBlock
+      metricsCount += 1
+      metricsNames[metricsCount] = "Distance from MSA"
+      metrics[metricsCount]= "NA"
+      metricsPass[metricsCount] = false
+      metricsComments[metricsCount]= "Distance check failed"
+      metricsUsage[metricsCount] = "Rurality"
+      metricsCount += 1
+      metricsNames[metricsCount] = "Second Distance from MSA"
+      metrics[metricsCount]= "NA"
+      metricsPass[metricsCount] = false
+      metricsComments[metricsCount]= "Distance check failed"
+      metricsUsage[metricsCount] = "Rurality"
+    end
 
 
       metricsCount += 1
@@ -979,7 +990,7 @@ class ValuesController < ApplicationController
       else
         reason[1]=nil
       end
-      if metricsPass[metricsNames.index("Average beds in community")..metricsNames.index("Average Price in community")].count(false) >= 2
+      if metricsPass[metricsNames.index("Average beds in community")..metricsNames.index("Average Price in community")].count(false) >= 2 
         reason[2]="Atypical property"
       else
         reason[2]=nil
