@@ -1,5 +1,7 @@
 class OutputsController < ApplicationController
 
+  require 'uri'
+
   def index
   	@outputs = Output.all
   	@start = -1
@@ -8,7 +10,16 @@ class OutputsController < ApplicationController
     render 'index'
   end
 
-  def dataforexport
+  def datarun
+    @outputs = Output.where(runid: params[:rangeID])
+    @start = 0
+    @end = 1000000
+    @forexport = true
+    render 'index'
+  end
+
+
+  def datarange
   	@outputs = Output.all
   	@start = params[:start]
   	@end = params[:end]
@@ -16,7 +27,7 @@ class OutputsController < ApplicationController
     render 'index'
   end
 
-  def dataforexport1
+  def data
   	@outputs = Output.all
   	@start = params[:id]
   	@end = params[:id]
@@ -39,4 +50,18 @@ class OutputsController < ApplicationController
     end
     redirect_to outputs_url, notice: "Records deleted."
   end
+
+  def destroyrun
+    @outputs = Output.all
+    @outputs.each do |worker|
+      puts params[:rangeID]
+      puts worker.runid
+      puts worker.runid == params[:rangeID]
+      if worker.runid == params[:rangeID]
+        worker.destroy
+      end
+    end
+    redirect_to outputs_url, notice: "Records deleted."
+  end
+
 end

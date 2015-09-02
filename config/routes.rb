@@ -68,11 +68,15 @@ Rails.application.routes.draw do
   post '/outputs', controller: 'outputs', action: 'create', as: 'outputs'
   # DELETE
   get '/outputs/destroy/:id', controller: 'outputs', action: 'destroy'
+  get '/outputs/destroy/run/:rangeID', controller: 'outputs', action: 'destroyrun'
   get '/outputs/destroy/:start/:end', controller: 'outputs', action: 'destroyrange'
+
+
   # READ
   get '/outputs', controller: 'outputs', action: 'index'
-  get '/outputs/:start/:end', controller: 'outputs', action: 'dataforexport'
-  get '/outputs/:id', controller: 'outputs', action: 'dataforexport1'
+  get '/outputs/run/:rangeID', controller: 'outputs', action: 'datarun'
+  get '/outputs/:start/:end', controller: 'outputs', action: 'datarange'
+  get '/outputs/:id', controller: 'outputs', action: 'data'
 
   get '/inspect/:id', controller: 'inspect', action: 'inspect'
   get '/inspect/:street/:citystatezip', controller: 'inspect', action: 'inspectaddress'

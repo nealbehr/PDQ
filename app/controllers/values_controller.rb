@@ -264,7 +264,7 @@ class ValuesController < ApplicationController
             end
           end
           @distance[x] = d
-          if d > 2500
+          if d < 2500
             totalDistanceSansOutliers += d          
             totalDistanceCountSansOutliers += 1
           end
@@ -274,6 +274,8 @@ class ValuesController < ApplicationController
         end
 
         urlsToHit.push(@distance.to_s.gsub(",","THESENTINEL"))
+        urlsToHit.push(totalDistanceSansOutliers.to_s.gsub(",","THESENTINEL"))
+        urlsToHit.push(totalDistanceCountSansOutliers.to_s.gsub(",","THESENTINEL"))
 
         if scrappingtable[5*x+2].content == "--" || scrappingtable[5*x+3].content == "--" || scrappingtable[5*x+4].content == "--" || scrappingtable[5*x+1].content == "--"
           next
@@ -294,7 +296,7 @@ class ValuesController < ApplicationController
         metricsNames[metricsCount] = "Average beds in community"
         metrics[metricsCount]= ((@evalProp.at_xpath('//response//result//bedrooms').content.to_f / (totalBeds.to_f/totalRecords.to_f)-1).to_f.round(3)*100).round(1)
         metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount] > -66
-        metricsComments[metricsCount] = "% deviation from community within 25%   || Prop: " + @evalProp.at_xpath('//response//result//bedrooms').content.to_s + "  || Avg: " + (totalBeds.to_f/totalRecords.to_f).to_s
+        metricsComments[metricsCount] = "% deviation from community within 66%   || Prop: " + @evalProp.at_xpath('//response//result//bedrooms').content.to_s + "  || Avg: " + (totalBeds.to_f/totalRecords.to_f).to_s
         metricsUsage[metricsCount] = "Typicality"
       else
 
@@ -311,7 +313,7 @@ class ValuesController < ApplicationController
         metricsNames[metricsCount] = "Average baths in community"
         metrics[metricsCount]= ((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (totalBaths.to_f/totalRecords.to_f)-1).to_f.round(3)*100).round(1)
         metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount] > -66
-        metricsComments[metricsCount]=  "% deviation from community within 25%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (totalBaths.to_f/totalRecords.to_f).to_s
+        metricsComments[metricsCount]=  "% deviation from community within 66%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (totalBaths.to_f/totalRecords.to_f).to_s
         metricsUsage[metricsCount] = "Typicality"
       else
 

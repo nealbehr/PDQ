@@ -1,3 +1,4 @@
+
 <h1>Outputs</h1>
 <a href = /outputs/1/1000000> Copy for export </a>
 <% if @forexport == false %>
@@ -22,7 +23,7 @@
          </td>
       <td width = 100> <a href = /inspect/<%= output.id %>> Inspect </a> </td>
       <td width = 100> <a href = <%= "http://www.zillow.com/homedetails/"+output.zpid.to_s+"_zpid/" %>> Zillow </a> 
-      <td width = 150> <%= output.runid %> </td>
+      <td width = 150> <a href = /outputs/run/<%= URI.escape(output.runid) %>> <%= output.runid %> </a> </td>
       <td> <a href = /outputs/destroy/<%= output.id %>> Release </a> </td> 
    </tr> 
    <% end %>
