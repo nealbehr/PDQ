@@ -273,9 +273,6 @@ class ValuesController < ApplicationController
 
         end
 
-        urlsToHit.push(@distance.to_s.gsub(",","THESENTINEL"))
-        urlsToHit.push(totalDistanceSansOutliers.to_s.gsub(",","THESENTINEL"))
-        urlsToHit.push(totalDistanceCountSansOutliers.to_s.gsub(",","THESENTINEL"))
 
         if scrappingtable[5*x+2].content == "--" || scrappingtable[5*x+3].content == "--" || scrappingtable[5*x+4].content == "--" || scrappingtable[5*x+1].content == "--"
           next
@@ -290,6 +287,11 @@ class ValuesController < ApplicationController
         totalSqFt += scrappingtable[5*x+4].content.to_s.sub(",","").to_f
         totalRecords += 1    
       end
+
+      urlsToHit.push(@distance.to_s.gsub(",","THESENTINEL"))
+      urlsToHit.push(totalDistanceSansOutliers.to_s.gsub(",","THESENTINEL"))
+      urlsToHit.push(totalDistanceCountSansOutliers.to_s.gsub(",","THESENTINEL"))
+      
       if @evalProp.at_xpath('//response//result//bedrooms') != nil
 
         metricsCount += 1
