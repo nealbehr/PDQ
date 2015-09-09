@@ -33,4 +33,16 @@ require 'net/http'
     render 'inspect'
   end
 
+  def decision
+    outputs = Output.all
+    street = params[:street]
+    citystatezip = params[:citystatezip]
+    @waiting = false
+    @output = outputs.find_by(street: URI.unescape(street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip))
+    if @output == nil
+      @waiting = true
+    end
+    render 'decision'
+  end
+
 end

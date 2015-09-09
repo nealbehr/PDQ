@@ -10,7 +10,6 @@ class ValuesController < ApplicationController
   require 'time'
 
   def getvalues
-
     if params[:street] == nil || params[:citystatezip]== nil
       @addresses = Address.all
       runID = "Run: " + @addresses.size.to_s + ": "+ Date::today.to_s

@@ -80,7 +80,7 @@ Rails.application.routes.draw do
 
   get '/inspect/:id', controller: 'inspect', action: 'inspect'
   get '/inspect/:street/:citystatezip', controller: 'inspect', action: 'inspectaddress'
-
+  get '/inspect/decision/:street/:citystatezip', controller: 'inspect', action: 'decision'
 
 
   # The priority is based upon order of creation: first created -> highest priority.
