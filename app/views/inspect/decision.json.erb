@@ -3,7 +3,7 @@
 <% if @waiting == false %>
 "street": "<%= @output.street %>",
 "citystatezip": "<%= @output.citystatezip %>",
-"status": "<%= (@output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} >= 2 ? "Escalate: Multiple" : "").to_s + (@output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} == 1 ? "Escalate: " + @output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub(",","").gsub("nil","") : "").to_s.strip + (@output.reason.to_s.include?("Approved") ? "Approved" : "").to_s %>"
+"status": "<%= (@output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} >= 2 ? "Escalate: Multiple" : "").to_s + (@output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").split(",").count{|x| x != "nil" && x != " nil" && x != " Approved"} == 1 ? "Escalate: " + @output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub(",","").gsub("nil","").to_s.strip : "").to_s.strip + (@output.reason.to_s.include?("Approved") ? "Approved" : "").to_s %>"
 <% else %>
 "street": "Incomplete",
 "citystatezip": "Incomplete",
