@@ -1,0 +1,9 @@
+<% url = URI.parse("http://pdq.herokuapp.com/inspect/decision/172+Mill+Brook+Road/San+Bruno+CA+94066.json") %>
+<% req = Net::HTTP::Get.new(url.to_s) %> 
+<% res = Net::HTTP.start(url.host, url.port) {|http| %> 
+ <%   http.request(req) } %> 
+<% textOutput = res.body %> 
+<%= jsonOutput = JSON.parse(textOutput) %>
+<br> 
+<%= jsonOutput["complete"] %>
+<%= jsonOutput["status"] %>

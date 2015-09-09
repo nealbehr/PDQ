@@ -1,5 +1,10 @@
 class AddressesController < ApplicationController
 
+  def test
+    render 'test'
+  end
+
+
   def index
     @addresses = Address.all
   end

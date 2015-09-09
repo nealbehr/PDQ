@@ -4,6 +4,8 @@ Rails.application.routes.draw do
 
   root :controller => 'addresses', :action => "index"
 
+  get "/test", :controller => "addresses", :action => "test"
+
   get "/getvalues", :controller => "values", :action => "getvalues"
   get "/getvalues/:street/:citystatezip", :controller => "values", :action => "getvalues"
   get "/getvalues/:path/:street/:citystatezip", :controller => "values", :action => "getvalues"
