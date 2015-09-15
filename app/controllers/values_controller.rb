@@ -545,11 +545,14 @@ class ValuesController < ApplicationController
       for time in 0..[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-1
         @differencesInPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]-jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
 
-        @neighborhoodPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
+        @neighborhoodPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
 
-        @homePrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
+        @homePrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
       end
-
+      changeInHomePrice = {change: jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"], time: jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"], percent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f, yearly: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f/(jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[0]["points"].last["y"]-jsonOutput[0]["points"][-12]["y"], recentpercent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"][-12]["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f}
+      urlsToHit.push(changeInHomePrice)
+      changeInNeighborhoodPrice = {change: jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"], time: jsonOutput[1]["points"].last["x"] - jsonOutput[1]["points"].first["x"], percent: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f, yearly: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f/(jsonOutput[1]["points"].last["x"] - jsonOutput[1]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[1]["points"].last["y"]-jsonOutput[1]["points"][-12]["y"], recentpercent: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"][-12]["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f}
+      urlsToHit.push(changeInNeighborhoodPrice)
 
       metricsCount += 1
       metricsNames[metricsCount] = "Std. Dev. of price deltas"
@@ -998,6 +1001,66 @@ class ValuesController < ApplicationController
       metricsPass[metricsCount] = true
       metricsComments[metricsCount]= "Days on market"
       metricsUsage[metricsCount] = "Not Used"
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Change in home prices"
+      metrics[metricsCount]= changeInHomePrice[:percent]
+      metricsPass[metricsCount] = true
+      metricsComments[metricsCount]= "Percentage change in home prices"
+      metricsUsage[metricsCount] = "Not Used"
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "One year change in home prices"
+      metrics[metricsCount]= changeInHomePrice[:recentpercent]
+      metricsPass[metricsCount] = true
+      metricsComments[metricsCount]= "One year percentage change in home prices"
+      metricsUsage[metricsCount] = "Not Used"      
+
+
+      metricsCountBeginBlock = metricsCount
+      begin
+        urlsToHit.push("http://www.homesnap.com/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//state').content+"/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//city').content.to_s.gsub(" ","-")+"/"+@addresses[q].street.to_s.upcase.gsub(" RD", " ROAD").gsub(" LN", " LANE").gsub(" ST"," STREET").gsub(" DR", " DRIVE").gsub(" AVE", " AVENUE").gsub(" PL", " PLACE").gsub(" CT", " COURT").gsub(" BLVD", " BOULEVARD").gsub(" BL", " BOULEVARD").gsub(" CIR", " CIRCLE").gsub(" PKWY"," PARKWAY").gsub(" ","-"))        
+        @page = Nokogiri::HTML(open("http://www.homesnap.com/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//state').content+"/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//city').content.to_s.gsub(" ","-")+"/"+@addresses[q].street.to_s.upcase.gsub(" RD", " ROAD").gsub(" LN", " LANE").gsub(" ST"," STREET").gsub(" DR", " DRIVE").gsub(" AVE", " AVENUE").gsub(" PL", " PLACE").gsub(" CT", " COURT").gsub(" BLVD", " BOULEVARD").gsub(" BL", " BOULEVARD").gsub(" CIR", " CIRCLE").gsub(" PKWY"," PARKWAY").gsub(" ","-")))
+        metricsCount += 1
+        metricsNames[metricsCount] = "Homescore"
+        metrics[metricsCount]= @page.css("div[class='pfValue homescore']").text[0..1]
+        metricsPass[metricsCount] = true
+        metricsComments[metricsCount]= "Homescore"
+        metricsUsage[metricsCount] = "Not Used"  
+
+        metricsCount += 1
+        metricsNames[metricsCount] = "Homesnap - Last Sale Date"
+        begin
+          metrics[metricsCount]= Date.strptime(@page.css("div[class='pfValue lastsaledate']").text, "%m/%d/%Y").to_s.sub(",", "")      
+        rescue
+          metrics[metricsCount]=@page.css("div[class='pfValue lastsaledate']").text.to_s.gsub(",","")
+        end
+        metricsPass[metricsCount] = true
+        metricsComments[metricsCount]= "Homesnap's - Last Sale Date"
+        metricsUsage[metricsCount] = "Not Used"  
+
+      rescue
+        metricsCount = metricsCountBeginBlock
+        metricsCount += 1
+        metricsNames[metricsCount] = "Homescore"
+        metrics[metricsCount]= "Not Found"
+        metricsPass[metricsCount] = true
+        metricsComments[metricsCount]= "Homescore"
+        metricsUsage[metricsCount] = "Not Used"  
+
+
+        metricsCount += 1
+        metricsNames[metricsCount] = "Homesnap - Last Sale Date"
+        metrics[metricsCount]= "Not Found"   
+        metricsPass[metricsCount] = true
+        metricsComments[metricsCount]= "Homesnap's - Last Sale Date"
+        metricsUsage[metricsCount] = "Not Used"  
+
+
+        puts "ended up in the rescue, Whoops"
+      end
+
+
 
 
 
