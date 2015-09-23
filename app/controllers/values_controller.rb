@@ -549,11 +549,17 @@ class ValuesController < ApplicationController
 
         @homePrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
       end
-      changeInHomePrice = {change: jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"], time: jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"], percent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f, yearly: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f/(jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[0]["points"].last["y"]-jsonOutput[0]["points"][-12]["y"], recentpercent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"][-12]["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f}
-      urlsToHit.push(changeInHomePrice)
-      changeInNeighborhoodPrice = {change: jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"], time: jsonOutput[1]["points"].last["x"] - jsonOutput[1]["points"].first["x"], percent: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f, yearly: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f/(jsonOutput[1]["points"].last["x"] - jsonOutput[1]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[1]["points"].last["y"]-jsonOutput[1]["points"][-12]["y"], recentpercent: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"][-12]["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f}
-      urlsToHit.push(changeInNeighborhoodPrice)
-
+      begin
+        changeInHomePrice = {change: jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"], time: jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"], percent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f, yearly: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f/(jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[0]["points"].last["y"]-jsonOutput[0]["points"][-12]["y"], recentpercent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"][-12]["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f}
+        urlsToHit.push(changeInHomePrice)
+        changeInNeighborhoodPrice = {change: jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"], time: jsonOutput[1]["points"].last["x"] - jsonOutput[1]["points"].first["x"], percent: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f, yearly: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f/(jsonOutput[1]["points"].last["x"] - jsonOutput[1]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[1]["points"].last["y"]-jsonOutput[1]["points"][-12]["y"], recentpercent: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"][-12]["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f}
+        urlsToHit.push(changeInNeighborhoodPrice)
+      rescue
+        changeInHomePrice = {change: 0, time: 0, percent: 0, yearly: 0, recentchange: 0, recentpercent: 0}
+        urlsToHit.push(changeInHomePrice)
+        changeInNeighborhoodPrice = {change: 0, time: 0, percent: 0, yearly: 0, recentchange: 0, recentpercent: 0}
+        urlsToHit.push(changeInNeighborhoodPrice)    
+      end
       metricsCount += 1
       metricsNames[metricsCount] = "Std. Dev. of price deltas"
       metrics[metricsCount]= (@differencesInPrices.standard_deviation.to_f/metrics[0].to_f).round(3)
@@ -1038,7 +1044,6 @@ class ValuesController < ApplicationController
         metricsPass[metricsCount] = true
         metricsComments[metricsCount]= "Homesnap's - Last Sale Date"
         metricsUsage[metricsCount] = "Not Used"  
-
       rescue
         metricsCount = metricsCountBeginBlock
         metricsCount += 1
