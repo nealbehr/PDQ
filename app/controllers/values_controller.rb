@@ -1062,7 +1062,7 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Not Used"  
 
 
-        puts "ended up in the rescue, Whoops"
+        puts "Ended up in the homesnap rescue, typical"
       end
 
 
