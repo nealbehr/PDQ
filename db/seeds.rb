@@ -48,7 +48,7 @@ Address.create!([
 
 puts "Addresses Done"
 
-if Approved.count < 100
+if Approved.count < 1826
 
 	Approved.destroy_all
 
