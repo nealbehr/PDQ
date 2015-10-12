@@ -29,6 +29,7 @@ class ValuesController < ApplicationController
     @sectionTimes.push(Time.now-@startTime)    
 
     for q in 0..@addresses.size-1
+
       metrics = Array.new
       metricsNames = Array.new
       metricsPass = Array.new
@@ -42,9 +43,6 @@ class ValuesController < ApplicationController
         @sectionTimes.push((Time.now-@startTime-@sectionTimes.inject(:+)).round)
         next
       end
-
-
-
 
       url = URI.parse('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=X1-ZWz1euzz31vnd7_5b1bv&address='+URI.escape(@addresses[q].street)+'&citystatezip='+URI.escape(@addresses[q].citystatezip))
       req = Net::HTTP::Get.new(url.to_s)
@@ -118,20 +116,20 @@ class ValuesController < ApplicationController
       metricsCount += 1
       metricsNames[metricsCount] = "Pre-approval"
       metricsUsage[metricsCount] = "MSA check"
-      if Approved.find_by(zipcode: @evalProp.at_xpath('//results//address//zipcode').content.to_i)==nil
-        metrics[metricsCount] = -1
-        metricsPass[metricsCount] = false 
-        metricsComments[metricsCount]= "Not found in database"
-      elsif Approved.find_by(zipcode: @evalProp.at_xpath('//results//address//zipcode').content.to_i)[:status]
-        metrics[metricsCount] = 1
-        metricsPass[metricsCount] = true 
-        metricsComments[metricsCount]= "Found in database. Mapped to true"
-      else
-        metrics[metricsCount] = 0
-        metricsPass[metricsCount] = true 
-        metricsComments[metricsCount]= "Found in database. Mapped to false"
+
+
+      metrics[metricsCount]= getaPrequal(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
+      metricsPass[metricsCount] = metrics[metricsCount] == 1 ? true : false
+      if metrics[metricsCount] == -1
+        metricsComments[metricsCount] = "Not found in database"
+      elsif metrics[metricsCount] == 1 
+        metricsComments[metricsCount] = "Found in database. Mapped to true"
+      elsif metrics[metricsCount] == 0
+        metricsComments[metricsCount] = "Found in database. Mapped to false"
+      else        
+        metricsComments[metricsCount] = "There was an error evaluating prequal"
       end
-      
+
 
       if @evalProp.at_xpath("//response//results//result//lastSoldDate") == nil
 
@@ -321,7 +319,7 @@ class ValuesController < ApplicationController
         metricsCount += 1
         metricsNames[metricsCount] = "Average baths in community"
         metrics[metricsCount] = "Not available"
-        metricsPass[metricsCount] = metrics[metricsCount-1]=="Not avialable" ? false : true
+        metricsPass[metricsCount] = metrics[metricsCount-1]=="Not available" ? false : true
         metricsComments[metricsCount]= "NA"
         metricsUsage[metricsCount] = "Typicality"
       end
