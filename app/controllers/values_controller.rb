@@ -638,7 +638,28 @@ class ValuesController < ApplicationController
       urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
 
       ranges = Array.new
-      ranges = [{city: "Baltimore MD", range: 100000}, {city: "Philadelphia PA", range: 100000}, {city: "Pittsburgh PA", range: 100000}, {city: "Virginia Beach VA", range: 100000}, {city: "Washington DC", range: 100000}, {city: "New York NY", range: 100000}, {city: "Boston MA", range: 100000}, {city: "New York NY", range: 100000}, {city: "Providence RI", range: 100000}, {city: "Albany NY", range: 50000}, {city: "Buffalo NY", range: 50000}, {city: "Los Angeles CA", range: 100000}, {city: "Riverside CA", range: 25000}, {city: "Sacramento CA", range: 34000}, {city: "San Diego CA", range: 75000}, {city: "San Francisco CA", range: 75000}, {city: "San Jose CA", range: 75000}, {city: "Santa Barbara CA", range: 34000}, {city: "Portland OR", range: 22000}, {city: "Seattle WA", range: 61000}]
+      ranges = [
+        {city: "Baltimore MD", range: 10000}, 
+        {city: "Philadelphia PA", range: 10000}, 
+        {city: "Pittsburgh PA", range: 10000}, 
+        {city: "Virginia Beach VA", range: 10000}, 
+        {city: "Washington DC", range: 100000}, 
+        {city: "New York NY", range: 100000}, 
+        {city: "Boston MA", range: 10000}, 
+        {city: "New York NY", range: 100000}, 
+        {city: "Providence RI", range: 10000}, 
+        {city: "Albany NY", range: 5000}, 
+        {city: "Buffalo NY", range: 5000}, 
+        {city: "Los Angeles CA", range: 100000}, 
+        {city: "Riverside CA", range: 25000}, 
+        {city: "Sacramento CA", range: 34000}, 
+        {city: "San Diego CA", range: 75000}, 
+        {city: "San Francisco CA", range: 75000}, 
+        {city: "San Jose CA", range: 75000}, 
+        {city: "Santa Barbara CA", range: 34000}, 
+        {city: "Portland OR", range: 22000}, 
+        {city: "Seattle WA", range: 61000}
+      ]
 
       metricsCount += 1
       metricsNames[metricsCount] = "Distance from MSA"
