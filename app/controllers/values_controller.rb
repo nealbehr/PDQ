@@ -119,7 +119,7 @@ class ValuesController < ApplicationController
 
 
       metrics[metricsCount]= getaPrequal(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
-      metricsPass[metricsCount] = metrics[metricsCount] == 1 ? true : false
+      metricsPass[metricsCount] = metrics[metricsCount] == -1 ? false : true
       if metrics[metricsCount] == -1
         metricsComments[metricsCount] = "Not found in database"
       elsif metrics[metricsCount] == 1 
