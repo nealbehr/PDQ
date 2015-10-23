@@ -3,7 +3,7 @@ Rails.application.routes.draw do
   # CREATE
 
   root :controller => 'addresses', :action => "index"
-
+  get "/steal", :controller => "steal", :action => "steal"
   get "/test", :controller => "addresses", :action => "test"
 
   get "/getvalues", :controller => "values", :action => "getvalues"
