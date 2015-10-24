@@ -11,17 +11,24 @@ class ValuesController < ApplicationController
 
 
     ############################################################
-    #  Coder Notes: always read before commiting and pushing   #
+    #  Coder Notes: always read before committing and pushing  #
     ############################################################
     #<^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^>#
     #<                                                        >#
-    #<        Don't Forget to turn on rurality filters!       >#
+    #<                                                        >#
+    #<    No notes                                            >#
+    #<                                                        >#
     #<                                                        >#
     #<vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv>#
     ############################################################
     #||||||||||||||||||||||||||||||||||||||||||||||||||||||||||#
     ############################################################
     
+    # Next steps:
+    # Run Steal
+    # Replace census api calls with USBoundary data -- use comment out text in bottom of steal controller
+    # Add census blocks / block groups
+    # Implement product specific rules
 
   def getvalues
     puts params[:product]
@@ -240,7 +247,7 @@ class ValuesController < ApplicationController
 
     ############################################################
     #                                                          #
-    #        Current typicality metrics                         #
+    #        Current typicality metrics                        #
     #                                                          #
     ############################################################
 
@@ -952,7 +959,12 @@ class ValuesController < ApplicationController
     #                                                          #
     ############################################################
 
-      if params[:path] == "gather" 
+
+      # If anyone wants to gather all the parameters they need to use the param gather="gather"
+      # /getvalues/calc/172+mill+brook+rd/stamford+ct+06902?product=hb&gather=gather
+      # This is turned off to save time when processing
+
+      if params[:gather] == "gather" 
 
         metricsCount += 1
         metricsNames[metricsCount] = "Below are non-used variables"
@@ -1436,6 +1448,9 @@ class ValuesController < ApplicationController
       @newOutput.save
 
       @sectionTimes.push((Time.now-@startTime-@sectionTimes.inject(:+)).round)
+
+
+
     end
 
 
