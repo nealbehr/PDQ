@@ -24,7 +24,7 @@ class StealController < ApplicationController
     #                                                              #
     ################################################################
 
-    if params[:overwrite] == "on" && params[:safety] == "off"
+    if params[:overwrite] == "on" && params[:safety] == "off" && params[:key] == "protecteddatabase"
       puts "You're a brave man. I hope you know what you're doing. Destroying databases."
       @comment = "Databases destroyed and recreated"
       Neighbor.destroy_all
@@ -45,6 +45,15 @@ class StealController < ApplicationController
       endpoint = 431576
     end
 
+    if params[:testandoverwrite] == "on" && params[:safety] == "off"
+      @comment = "Test completed"
+      Neighbor.destroy_all
+      Censustract.destroy_all
+      puts "Test away!"      
+      endpoint = 431576
+    end
+
+
     for q in 431574..endpoint
       puts q      
       url = "http://www.usboundary.com/Tools/Neighbors/"+q.to_s+"/GetNeighborsHtml?options=%7B%22uaid%22%3A"+q.to_s+"%2C%22neighborAreaTypeID%22%3A28%2C%22neighborTypes%22%3A%7B%22Touches%22%3Atrue%2C%22Contains%22%3Afalse%2C%22Contained%22%3Afalse%2C%22Overlaps%22%3Afalse%7D%2C%22numPerPage%22%3A120%2C%22displayPages%22%3A7%2C%22page%22%3A1%2C%22pageURLPrefix%22%3A%22javascript%3AloadNeighborsTable%22%2C%22highlightedUAID%22%3A-1%7D"
@@ -59,6 +68,8 @@ class StealController < ApplicationController
         
         @startNeighbors += 1
       end
+
+
       url = "http://www.usboundary.com/api/areadata/geom/?id="+q.to_s+"&zoom=4"
       @page = Nokogiri::HTML(open(url))
 
@@ -67,16 +78,30 @@ class StealController < ApplicationController
       for x in 0..@textoutput.size-1
         @textoutput[x] = @textoutput[x].gsub("\"","").gsub(":","")
       end
-      begin
+      if @textoutput == nil
+        puts "we're here!"
+      end
+      if @textoutput[5] == nil
+        puts "we're here as well!"
+      end
+
+      if @textoutput != nil && @textoutput[5] != nil
+      # begin
+        puts @textoutput
         @newCensustract = Censustract.new      
         @newCensustract.home = q.to_f
         @newCensustract.name = @textoutput[5][4..10000].to_f
         @newCensustract.area = (@textoutput[9][5..10000].to_f/2589990.0).to_f
         @newCensustract.pop = @textoutput[13][3..10000].to_f
         @newCensustract.hu = @textoutput[14][2..10000].to_f
+        @newCensustract.state = @textoutput[1][7..10000].to_f
+        @newCensustract.lat = @textoutput[11][8..10000].to_f
+        @newCensustract.lon = @textoutput[12][8..10000].to_f
+        @newCensustract.stringname = @textoutput[6][8..10000].to_s
         @newCensustract.save
         @startCensustracts += 1
-      rescue
+      # rescue
+      # end
       end
     end
   end

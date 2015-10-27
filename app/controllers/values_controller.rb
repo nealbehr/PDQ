@@ -728,19 +728,28 @@ class ValuesController < ApplicationController
         puts e.backtrace.inspect
       end
 
-
-      censustractNeighbors = Neighbor.where(home: censustract.home)
-      censustractDensities = Array.new
-      for x in 0..censustractNeighbors.size-1
-        censustract = Censustract.find_by(home: censustractNeighbors[x].neighbor)
-        censustractDensities[x] = {censustract: censustract.name, tractdensity: censustract.hu / censustract.area}
-      end      
-      metricsCount += 1
-      metricsNames[metricsCount] = "Surrounding Census Tract Density"
-      metrics[metricsCount]= censustractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity].to_f.round(2)
-      metricsPass[metricsCount] = metrics[metricsCount] > 35.0
-      metricsComments[metricsCount]= "> 35 houses/SqMi for tract: "+ censustractDensities.sort_by { |holder| holder[:tractdensity] }[0][:censustract].to_s + " || Total of " + (censustractDensities.uniq.size).to_s + " tested."
-      metricsUsage[metricsCount] = "Rurality"
+      begin
+        censustractNeighbors = Neighbor.where(home: censustract.home)
+        censustractDensities = Array.new
+        for x in 0..censustractNeighbors.size-1
+          censustract = Censustract.find_by(home: censustractNeighbors[x].neighbor)
+          censustractDensities[x] = {censustract: censustract.name, tractdensity: censustract.hu / censustract.area}
+        end      
+        metricsCount += 1
+        metricsNames[metricsCount] = "Surrounding Census Tract Density"
+        metrics[metricsCount]= censustractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity].to_f.round(2)
+        metricsPass[metricsCount] = metrics[metricsCount] > 35.0
+        metricsComments[metricsCount]= "> 35 houses/SqMi for tract: "+ censustractDensities.sort_by { |holder| holder[:tractdensity] }[0][:censustract].to_s + " || Total of " + (censustractDensities.uniq.size).to_s + " tested."
+        metricsUsage[metricsCount] = "Rurality"
+      rescue 
+        metricsNames[metricsCount] = "Surrounding Census Tract Density"
+        metrics[metricsCount]= "Error!"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Error with the Census/Geocoding APIs"
+        metricsUsage[metricsCount] = "Rurality"
+        puts e.message
+        puts e.backtrace.inspect
+      end
 
     ############################################################
     #                                                          #
