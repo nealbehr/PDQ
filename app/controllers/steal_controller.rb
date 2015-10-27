@@ -85,7 +85,7 @@ class StealController < ApplicationController
     if params[:home] == nil
       @censustracts = Censustract.all
     else
-      @censustracts = Censutract.where(home: params[:home])      
+      @censustracts = Censustract.where(home: params[:home])      
     end
   end
 
