@@ -713,13 +713,11 @@ class ValuesController < ApplicationController
         end
         puts "Escaped the loop"
         metricsNames[metricsCount] = "Census Tract Density"
-        puts @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_f/100.0
         censustract = Censustract.find_by(name: @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_f/100.0)
-        
-        metrics[metricsCount]= (censustract.hu / censustract.area).to_f.round(2)
+        metrics[metricsCount]= (censustract.hu.to_f / censustract.area.to_f).to_f.round(2)
         metricsPass[metricsCount] = metrics[metricsCount] >= 500
-        metricsComments[metricsCount]= "> 500 Houses/SqMi for tract: " + @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_s
-        metricsUsage[metricsCount] = "Rurality"
+        metricsComments[metricsCount]= "> 500 Houses/SqMi for tract: " + censustract.name.to_s
+        metricsUsage[metricsCount] = censustract.hu.to_f.to_s + "  ||  " +  censustract.area.to_f.to_s + "  ||  " +  (censustract.hu.to_f / censustract.area.to_f).to_f.round(2).to_s
       rescue
         metricsNames[metricsCount] = "Census Tract Density"
         metrics[metricsCount]= "Error!"
