@@ -71,11 +71,10 @@ class StealController < ApplicationController
         @newCensustract = Censustract.new      
         @newCensustract.home = q.to_f
         @newCensustract.name = @textoutput[5][4..10000].to_f
-        @newCensustract.area = (@textoutput[9][5..10000].to_f/2590000.0).to_f
+        @newCensustract.area = (@textoutput[9][5..10000].to_f/2589990.0).to_f
         @newCensustract.pop = @textoutput[13][3..10000].to_f
         @newCensustract.hu = @textoutput[14][2..10000].to_f
         @newCensustract.save
-        
         @startCensustracts += 1
       rescue
       end
@@ -83,11 +82,19 @@ class StealController < ApplicationController
   end
 
   def showcensustract
-    @censustracts = Censustract.all
+    if params[:home] == nil
+      @censustracts = Censustract.all
+    else
+      @censustracts = Censutract.where(home: params[:home])      
+    end
   end
 
   def showneighbor
-    @neighbors = Neighbor.all
+    if params[:home] == nil
+      @neighbors = Neighbor.all
+    else
+      @neighbors = Neighbor.where(home: params[:home])      
+    end
   end
 end
 

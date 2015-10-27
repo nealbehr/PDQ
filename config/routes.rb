@@ -5,7 +5,7 @@ Rails.application.routes.draw do
   root :controller => 'inspect', :action => "oneoff"
   get "/steal", :controller => "steal", :action => "steal"
   get "/steal/showneighbor", :controller => "steal", :action => "showneighbor"
-get "/steal/showcensustract", :controller => "steal", :action => "showcensustract"
+  get "/steal/showcensustract", :controller => "steal", :action => "showcensustract"
   get "/test", :controller => "addresses", :action => "test"
 
   get "/getvalues", :controller => "values", :action => "getvalues"
