@@ -81,6 +81,14 @@ class StealController < ApplicationController
       end
     end
   end
+
+  def showcensustract
+    @censustracts = Censustract.all
+  end
+
+  def showneighbor
+    @neighbors = Neighbor.all
+  end
 end
 
 

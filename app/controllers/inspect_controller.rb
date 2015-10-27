@@ -45,4 +45,8 @@ require 'net/http'
     render 'decision'
   end
 
+  def oneoff
+    render 'oneoff'
+  end
+  
 end

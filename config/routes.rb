@@ -2,16 +2,16 @@ Rails.application.routes.draw do
   # Routes for the Approved resource:
   # CREATE
 
-  root :controller => 'addresses', :action => "index"
+  root :controller => 'inspect', :action => "oneoff"
   get "/steal", :controller => "steal", :action => "steal"
+  get "/steal/showneighbor", :controller => "steal", :action => "showneighbor"
+get "/steal/showcensustract", :controller => "steal", :action => "showcensustract"
   get "/test", :controller => "addresses", :action => "test"
 
   get "/getvalues", :controller => "values", :action => "getvalues"
   get "/getvalues/:street/:citystatezip", :controller => "values", :action => "getvalues"
   get "/getvalues/:path/:street/:citystatezip", :controller => "values", :action => "getvalues"
-  
-  get "/getonevalue/:street/:citystate/:access", :controller => "onevalue", :action => "getonevalue"
-  
+  post "/postvalues", :controller => "values", :action => "getvalues"  
 
   get '/approveds/new', controller: 'approveds', action: 'new', as: 'new_approved'
   post '/approveds', controller: 'approveds', action: 'create', as: 'approveds'
@@ -47,6 +47,7 @@ Rails.application.routes.draw do
 
   # Routes for the Address resource:
   # CREATE
+  
   get '/addresses/new', controller: 'addresses', action: 'new', as: 'new_address'
   post '/addresses', controller: 'addresses', action: 'create', as: 'addresses'
 
@@ -80,6 +81,8 @@ Rails.application.routes.draw do
   get '/outputs/:start/:end', controller: 'outputs', action: 'datarange'
   get '/outputs/:id', controller: 'outputs', action: 'data'
 
+
+  get '/inspect/oneoff', controller: 'inspect', action: 'oneoff'
   get '/inspect/:id', controller: 'inspect', action: 'inspect'
   get '/inspect/:street/:citystatezip', controller: 'inspect', action: 'inspectaddress'
   get '/inspect/decision/:street/:citystatezip', controller: 'inspect', action: 'decision'

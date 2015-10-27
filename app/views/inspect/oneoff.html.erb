@@ -1,0 +1,22 @@
+<h1>One off address entrance</h1>
+
+<%= form_tag(postvalues_url, method: 'post') do %>
+  <div>
+    <%= label_tag :street %><br />
+    <%= text_area_tag :street %>
+  </div>
+
+  <div>
+    <%= label_tag :citystatezip %><br />
+    <%= text_area_tag :citystatezip %>
+  </div>
+
+  <div>
+    <%= label_tag :notes %><br />
+    <%= text_area_tag :path, defaultvalue = "oneoff" %>
+  </div>
+
+  <div>
+    <%= submit_tag "Evaluate Address" %>
+  </div>
+<% end %>

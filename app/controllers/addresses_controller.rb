@@ -1,7 +1,16 @@
 class AddressesController < ApplicationController
 
   def test
+    ############################################################
+    #                                                          #
+    #  Feel free to delete test, it's just for messing with    #
+    #                                                          #
+    ############################################################
     render 'test'
+  end
+
+  def index
+    @addresses = Address.all
   end
 
 

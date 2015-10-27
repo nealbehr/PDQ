@@ -1,0 +1,28 @@
+<h1>Census tract</h1>
+
+Total Records: <%= @censustracts.size   %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Home</th>
+      <th>Name</th>
+      <th>Area</th>
+      <th>Population</th>
+      <th>HU</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @censustracts[0..100].each do |censustract| %>
+    <tr>
+      <td width = 150><%= censustract.home %></td>
+      <td width = 150><%= censustract.name %></td>
+      <td width = 150><%= censustract.area %></td>
+      <td width = 150><%= censustract.pop %></td>
+      <td width = 150><%= censustract.hu %></td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>
+

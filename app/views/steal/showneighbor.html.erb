@@ -1,0 +1,24 @@
+<h1>Neighbors</h1>
+
+Total Records: <%= @neighbors.size   %>
+<table>
+  <thead>
+    <tr>
+      <th>Home</th>
+      <th>Neighbor</th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+  <% @neighbors[0..100].each do |neighbor| %>
+    <tr>
+      <td width = 150><%= neighbor.home %></td>
+      <td width - 150><%= neighbor.neighbor %></td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>
+

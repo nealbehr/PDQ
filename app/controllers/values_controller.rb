@@ -25,10 +25,10 @@ class ValuesController < ApplicationController
     ############################################################
     
     # Next steps:
-    # Run Steal
-    # Replace census api calls with USBoundary data -- use comment out text in bottom of steal controller
-    # Add census blocks / block groups
-    # Implement product specific rules
+    # Run Steal (needs testing)
+    # Replace census api calls with USBoundary data -- use comment out text in bottom of steal controller (needs testing)
+    # Add census blocks / block groups (needs investigation)
+    # Implement product specific rules (completed, needs to be confirmed with Avita)
 
   def getvalues
     puts params[:product]
@@ -138,29 +138,47 @@ class ValuesController < ApplicationController
     #                                                          #
     ############################################################
       
+
       metricsNames[metricsCount] = "Zestimate"
-      metrics[metricsCount]=@evalProp.at_xpath('//results//result//zestimate//amount').content
-      metricsPass[metricsCount] = metrics[0].to_i < 5000000 && metrics[0].to_i > 300000
-      metricsComments[metricsCount]= "< 5000000 & > 300000"
       metricsUsage[metricsCount] = "Price Range"
+      if params[:product].to_s.upcase == "RA"      
+        metrics[metricsCount]=@evalProp.at_xpath('//results//result//zestimate//amount').content
+        metricsPass[metricsCount] = metrics[0].to_i < 5000000 && metrics[0].to_i > 250000
+        metricsComments[metricsCount]= "< 5000000 & > 250000"
+      else
+        metrics[metricsCount]=@evalProp.at_xpath('//results//result//zestimate//amount').content
+        metricsPass[metricsCount] = metrics[0].to_i < 5000000 && metrics[0].to_i > 300000
+        metricsComments[metricsCount]= "< 5000000 & > 300000"
+      end
 
 
-      
       metricsCount += 1
       metricsNames[metricsCount] = "Pre-approval"
       metricsUsage[metricsCount] = "MSA check"
-
-
-      metrics[metricsCount]= getaPrequal(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
-      metricsPass[metricsCount] = metrics[metricsCount] == -1 ? false : true
-      if metrics[metricsCount] == -1
-        metricsComments[metricsCount] = "Not found in database"
-      elsif metrics[metricsCount] == 1 
-        metricsComments[metricsCount] = "Found in database. Mapped to true"
-      elsif metrics[metricsCount] == 0
-        metricsComments[metricsCount] = "Found in database. Mapped to false"
-      else        
-        metricsComments[metricsCount] = "There was an error evaluating prequal"
+      if params[:product].to_s.upcase == "RA" 
+        metrics[metricsCount]= getaPrequal(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
+        metricsPass[metricsCount] = metrics[metricsCount] == -1 ? false : true
+        if metrics[metricsCount] == -1
+          metricsComments[metricsCount] = "Not found in database"
+        elsif metrics[metricsCount] == 1 
+          metricsComments[metricsCount] = "Found in database. Mapped to Approved"
+        elsif metrics[metricsCount] == 0
+          metricsComments[metricsCount] = "Found in database. Mapped to false/exception"
+        else        
+          metricsComments[metricsCount] = "There was an error evaluating prequal"
+        end
+      else
+        metrics[metricsCount]= getaPrequal(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
+        metricsPass[metricsCount] = metrics[metricsCount] == 1 ? true : false
+        if metrics[metricsCount] == -1
+          metricsComments[metricsCount] = "Not found in database"
+        elsif metrics[metricsCount] == 1 
+          metricsComments[metricsCount] = "Found in database. Mapped to Approved"
+        elsif metrics[metricsCount] == 0
+          metricsComments[metricsCount] = "Found in database. Mapped to false/exception"
+        else        
+          metricsComments[metricsCount] = "There was an error evaluating prequal"
+        end
       end
 
     ############################################################
@@ -185,7 +203,7 @@ class ValuesController < ApplicationController
           metricsCount += 1
           metricsNames[metricsCount] = "Last sold history"
           metrics[metricsCount]= "Not available"
-          metricsPass[metricsCount] = false
+          metricsPass[metricsCount] = true
           metricsComments[metricsCount]= "NA"
           metricsUsage[metricsCount] = "Recent Sale"
         else
@@ -631,8 +649,11 @@ class ValuesController < ApplicationController
       #   puts e.backtrace.inspect
       # end
 
-
-
+    ############################################################
+    #                                                          #
+    #        Deprecated rurality metrics                       #
+    #                                                          #
+    ############################################################
 
       # metricsCount += 1
       # metricsNames[metricsCount] = "Distance to Neighbors"
@@ -659,7 +680,73 @@ class ValuesController < ApplicationController
 
     ############################################################
     #                                                          #
-    #               Rurality                                   #
+    #        Database sourced rurality metrics                 #
+    #    (will replace non-database sourced after a period)    #
+    ############################################################
+
+      metricsCount += 1
+      metricsNames[metricsCount] = "Urban Density"
+      metrics[metricsCount]= getaZCTADensity(@evalProp.at_xpath('//results//address//zipcode').content.to_i).to_f.round(2)
+      metricsPass[metricsCount] = metrics[metricsCount].to_f > 500
+      metricsComments[metricsCount]= "> 500 people/SqMi"
+      metricsUsage[metricsCount] = "Rurality"
+
+      begin
+        #  metricsCount is incremented before potential errors in the rescue catch. Therefore it is not incremented in the rescue or metrics save stage.
+        metricsCount += 1
+
+        loopCounter = 0
+        loop do
+          url = URI.parse("http://geocoding.geo.census.gov/geocoder/geographies/coordinates?x="+@evalProp.at_xpath('//result//address//longitude').content+"&y="+@evalProp.at_xpath('//result//address//latitude').content+"&benchmark=4&vintage=4&format=json")
+          req = Net::HTTP::Get.new(url)
+          res = Net::HTTP.start(url.host, url.port) {|http|
+            http.request(req)
+          }
+          @jsonOutputArea = JSON.parse(res.body)
+          urlsToHit[urlsToHit.size] = url.to_s + " || "+ (@jsonOutputArea["result"]["geographies"]["Census Tracts"] == nil ? "Fail" : @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"])
+
+          puts "Loop Counter: " + loopCounter.to_s
+          puts url if loopCounter>25
+          puts @jsonOutputArea if loopCounter>25
+          break if loopCounter>25 || @jsonOutputArea["result"]["geographies"]["Census Tracts"] != nil
+          loopCounter += 1
+        end
+        puts "Escaped the loop"
+        metricsNames[metricsCount] = "Census Tract Density"
+        puts @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_f/100.0
+        censustract = Censustract.find_by(name: @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_f/100.0)
+        
+        metrics[metricsCount]= (censustract.hu / censustract.area).to_f.round(2)
+        metricsPass[metricsCount] = metrics[metricsCount] >= 500
+        metricsComments[metricsCount]= "> 500 Houses/SqMi for tract: " + @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_s
+        metricsUsage[metricsCount] = "Rurality"
+      rescue
+        metricsNames[metricsCount] = "Census Tract Density"
+        metrics[metricsCount]= "Error!"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Error with the Census/Geocoding APIs"
+        metricsUsage[metricsCount] = "Rurality"
+        puts e.message
+        puts e.backtrace.inspect
+      end
+
+
+      censustractNeighbors = Neighbor.where(home: censustract.home)
+      censustractDensities = Array.new
+      for x in 0..censustractNeighbors.size-1
+        censustract = Censustract.find_by(home: censustractNeighbors[x].neighbor)
+        censustractDensities[x] = {censustract: censustract.name, tractdensity: censustract.hu / censustract.area}
+      end      
+      metricsCount += 1
+      metricsNames[metricsCount] = "Surrounding Census Tract Density"
+      metrics[metricsCount]= censustractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity].to_f.round(2)
+      metricsPass[metricsCount] = metrics[metricsCount] > 35.0
+      metricsComments[metricsCount]= "> 35 houses/SqMi for tract: "+ censustractDensities.sort_by { |holder| holder[:tractdensity] }[0][:censustract].to_s + " || Total of " + (censustractDensities.uniq.size).to_s + " tested."
+      metricsUsage[metricsCount] = "Rurality"
+
+    ############################################################
+    #                                                          #
+    #               Rurality API sourced                       #
     #                                                          #
     ############################################################
 
@@ -997,7 +1084,7 @@ class ValuesController < ApplicationController
         urlsToHit.push(@differencesInPrices.to_s.gsub(",","THESENTINEL"))
         urlsToHit.push(@neighborhoodPrices.to_s.gsub(",","THESENTINEL"))        
         urlsToHit.push(@homePrices.to_s.gsub(",","THESENTINEL"))
-        # urlsToHit.push(censusTractDensities.to_s.gsub(",","THESENTINEL"))
+        urlsToHit.push(censusTractDensities.to_s.gsub(",","THESENTINEL"))
 
 
         metricsCountBeginBlock = metricsCount
