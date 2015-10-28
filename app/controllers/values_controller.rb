@@ -1117,7 +1117,6 @@ class ValuesController < ApplicationController
         urlsToHit.push(@differencesInPrices.to_s.gsub(",","THESENTINEL"))
         urlsToHit.push(@neighborhoodPrices.to_s.gsub(",","THESENTINEL"))        
         urlsToHit.push(@homePrices.to_s.gsub(",","THESENTINEL"))
-        urlsToHit.push(censusTractDensities.to_s.gsub(",","THESENTINEL"))
 
 
         metricsCountBeginBlock = metricsCount
