@@ -23,7 +23,7 @@ class ValuesController < ApplicationController
     ############################################################
     #||||||||||||||||||||||||||||||||||||||||||||||||||||||||||#
     ############################################################
-    
+
     # Next steps:
     # Run Steal (needs testing)
     # Replace census api calls with USBoundary data -- use comment out text in bottom of steal controller (needs testing)
@@ -875,58 +875,87 @@ class ValuesController < ApplicationController
     #                                                          #
     ############################################################
 
-
-      url = URI.parse("http://www.zillow.com/ajax/homedetail/HomeValueChartData.htm?mt=1&zpid="+URI.escape(@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content)+"&format=json")
-      req = Net::HTTP::Get.new("http://www.zillow.com"+url.request_uri)
-      res = Net::HTTP.start(url.host, url.port) {|http|
-        http.request(req)
-      }
-
-      urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
-      jsonOutput = JSON.parse(Nokogiri::HTML(open(url)).css('p')[0].content)
-      urlsToHit[urlsToHit.size] = [jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min
-      @differencesInPrices = Array.new
-      @neighborhoodPrices = Array.new
-      @homePrices = Array.new
-      for time in 0..[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-1
-        @differencesInPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]-jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
-
-        @neighborhoodPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
-
-        @homePrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
-      end
       begin
-        changeInHomePrice = {change: jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"], time: jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"], percent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f, yearly: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f/(jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[0]["points"].last["y"]-jsonOutput[0]["points"][-12]["y"], recentpercent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"][-12]["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f}
-        urlsToHit.push(changeInHomePrice)
-        changeInNeighborhoodPrice = {change: jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"], time: jsonOutput[1]["points"].last["x"] - jsonOutput[1]["points"].first["x"], percent: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f, yearly: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f/(jsonOutput[1]["points"].last["x"] - jsonOutput[1]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[1]["points"].last["y"]-jsonOutput[1]["points"][-12]["y"], recentpercent: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"][-12]["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f}
-        urlsToHit.push(changeInNeighborhoodPrice)
+        url = URI.parse("http://www.zillow.com/ajax/homedetail/HomeValueChartData.htm?mt=1&zpid="+URI.escape(@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content)+"&format=json")
+        req = Net::HTTP::Get.new("http://www.zillow.com"+url.request_uri)
+        res = Net::HTTP.start(url.host, url.port) {|http|
+          http.request(req)
+        }
+
+        urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
+        jsonOutput = JSON.parse(Nokogiri::HTML(open(url)).css('p')[0].content)
+        urlsToHit[urlsToHit.size] = [jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min
+        @differencesInPrices = Array.new
+        @neighborhoodPrices = Array.new
+        @homePrices = Array.new
+        for time in 0..[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-1
+          @differencesInPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]-jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
+
+          @neighborhoodPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
+
+          @homePrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
+        end
+        begin
+          changeInHomePrice = {change: jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"], time: jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"], percent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f, yearly: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f/(jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[0]["points"].last["y"]-jsonOutput[0]["points"][-12]["y"], recentpercent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"][-12]["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f}
+          urlsToHit.push(changeInHomePrice)
+          changeInNeighborhoodPrice = {change: jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"], time: jsonOutput[1]["points"].last["x"] - jsonOutput[1]["points"].first["x"], percent: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f, yearly: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"].first["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f/(jsonOutput[1]["points"].last["x"] - jsonOutput[1]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[1]["points"].last["y"]-jsonOutput[1]["points"][-12]["y"], recentpercent: (jsonOutput[1]["points"].last["y"] - jsonOutput[1]["points"][-12]["y"]).to_f/jsonOutput[1]["points"].last["y"].to_f}
+          urlsToHit.push(changeInNeighborhoodPrice)
+        rescue
+          changeInHomePrice = {change: 0, time: 0, percent: 0, yearly: 0, recentchange: 0, recentpercent: 0}
+          urlsToHit.push(changeInHomePrice)
+          changeInNeighborhoodPrice = {change: 0, time: 0, percent: 0, yearly: 0, recentchange: 0, recentpercent: 0}
+          urlsToHit.push(changeInNeighborhoodPrice)    
+        end
+        metricsCount += 1
+        metricsNames[metricsCount] = "Std. Dev. of price deltas"
+        metrics[metricsCount]= (@differencesInPrices.standard_deviation.to_f/metrics[0].to_f).round(3)
+        metricsPass[metricsCount] = metrics[metricsCount] < 0.25
+        metricsComments[metricsCount]= "< 0.25 || Standard Deviation of price differences from neighborhood as a percentage of overal zestimate"
+        metricsUsage[metricsCount] = "Volatility"
       rescue
-        changeInHomePrice = {change: 0, time: 0, percent: 0, yearly: 0, recentchange: 0, recentpercent: 0}
-        urlsToHit.push(changeInHomePrice)
-        changeInNeighborhoodPrice = {change: 0, time: 0, percent: 0, yearly: 0, recentchange: 0, recentpercent: 0}
-        urlsToHit.push(changeInNeighborhoodPrice)    
+        metricsCount += 1
+        metricsNames[metricsCount] = "Std. Dev. of price deltas"
+        metrics[metricsCount]= "Unavailable"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "There was an error"
+        metricsUsage[metricsCount] = "Volatility"    
       end
-      metricsCount += 1
-      metricsNames[metricsCount] = "Std. Dev. of price deltas"
-      metrics[metricsCount]= (@differencesInPrices.standard_deviation.to_f/metrics[0].to_f).round(3)
-      metricsPass[metricsCount] = metrics[metricsCount] < 0.25
-      metricsComments[metricsCount]= "< 0.25 || Standard Deviation of price differences from neighborhood as a percentage of overal zestimate"
-      metricsUsage[metricsCount] = "Volatility"
 
-      metricsCount += 1
-      metricsNames[metricsCount] = "Range of price deltas"
-      metrics[metricsCount]= (@differencesInPrices.range.to_f/metrics[0].to_f).round(3)
-      metricsPass[metricsCount] = metrics[metricsCount] < 0.80
-      metricsComments[metricsCount]= "< 0.80 || Total range of price difference from neighborhood as a percentage of overal zestimate"
-      metricsUsage[metricsCount] = "Volatility"
+      begin
+        metricsCount += 1
+        metricsNames[metricsCount] = "Range of price deltas"
+        metrics[metricsCount]= (@differencesInPrices.range.to_f/metrics[0].to_f).round(3)
+        metricsPass[metricsCount] = metrics[metricsCount] < 0.80
+        metricsComments[metricsCount]= "< 0.80 || Total range of price difference from neighborhood as a percentage of overal zestimate"
+        metricsUsage[metricsCount] = "Volatility"
+      rescue
+        metricsCount += 1
+        metricsNames[metricsCount] = "Range of price deltas"
+        metrics[metricsCount]= "Unavailable"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "There was an error"
+        metricsUsage[metricsCount] = "Volatility"
+      end
 
-      metricsCount += 1
-      metricsNames[metricsCount] = "Std. Dev. of historical home price"
-      metrics[metricsCount]= (@homePrices.standard_deviation.to_f/metrics[0].to_f).round(3)
-      metricsPass[metricsCount] = metrics[metricsCount] < 0.1
-      metricsComments[metricsCount]= "< 0.1 || Standard Deviation of historical home price as a percentage of overal zestimate"
-      metricsUsage[metricsCount] = "Volatility"
-      
+
+      begin
+        metricsCount += 1
+        metricsNames[metricsCount] = "Std. Dev. of historical home price"
+        metrics[metricsCount]= (@homePrices.standard_deviation.to_f/metrics[0].to_f).round(3)
+        metricsPass[metricsCount] = metrics[metricsCount] < 0.1
+        metricsComments[metricsCount]= "< 0.1 || Standard Deviation of historical home price as a percentage of overal zestimate"
+        metricsUsage[metricsCount] = "Volatility"
+      rescue
+        metricsCount += 1
+        metricsNames[metricsCount] = "Std. Dev. of historical home price"
+        metrics[metricsCount]= "Unavailable"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "There was an error"
+        metricsUsage[metricsCount] = "Volatility"
+      end
+
+
+
       schoolScores = Array.new
       metricsCount += 1
       metricsNames[metricsCount] = "Schools"
