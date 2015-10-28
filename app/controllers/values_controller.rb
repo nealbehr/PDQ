@@ -1084,7 +1084,7 @@ class ValuesController < ApplicationController
       # /getvalues/calc/172+mill+brook+rd/stamford+ct+06902?product=hb&gather=gather
       # This is turned off to save time when processing
 
-      if params[:gather] == "gather" 
+      if params[:path] == "gather" 
 
         metricsCount += 1
         metricsNames[metricsCount] = "Below are non-used variables"
