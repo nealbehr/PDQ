@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20151027224619) do
+ActiveRecord::Schema.define(version: 20151028014711) do
 
   create_table "addresses", force: :cascade do |t|
     t.text "street"
@@ -41,8 +41,8 @@ ActiveRecord::Schema.define(version: 20151027224619) do
   end
 
   create_table "neighbors", force: :cascade do |t|
-    t.float   "home"
-    t.integer "neighbor"
+    t.float "home"
+    t.text  "neighbor"
   end
 
   create_table "outputs", force: :cascade do |t|

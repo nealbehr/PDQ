@@ -729,10 +729,10 @@ class ValuesController < ApplicationController
       end
 
       begin
-        censustractNeighbors = Neighbor.where(home: censustract.home)
+        censustractNeighbors = Neighbor.find_by(home: censustract.home).neighbor.to_s.split("||")
         censustractDensities = Array.new
         for x in 0..censustractNeighbors.size-1
-          censustract = Censustract.find_by(home: censustractNeighbors[x].neighbor)
+          censustract = Censustract.find_by(home: censustractNeighbors[x])
           censustractDensities[x] = {censustract: censustract.name, tractdensity: censustract.hu / censustract.area}
         end      
         metricsCount += 1

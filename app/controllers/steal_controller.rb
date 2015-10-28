@@ -42,7 +42,7 @@ class StealController < ApplicationController
     if params[:test] == "on" && params[:safety] == "off"
       @comment = "Test completed"
       puts "Test away!"      
-      endpoint = 431576
+      endpoint = 431580
     end
 
     if params[:testandoverwrite] == "on" && params[:safety] == "off"
@@ -50,7 +50,7 @@ class StealController < ApplicationController
       Neighbor.destroy_all
       Censustract.destroy_all
       puts "Test away!"      
-      endpoint = 431576
+      endpoint = 431580
     end
 
 
@@ -60,14 +60,15 @@ class StealController < ApplicationController
       @page = Nokogiri::HTML(open(url))
       @table = Array.new
       @table = @page.to_s.split("col_name_")
+      loopreturner = ""
       for x in 1..@table.size-1
-        @newNeighbor = Neighbor.new      
-        @newNeighbor.home = q
-        @newNeighbor.neighbor = @table[x][0..5].to_f
-        @newNeighbor.save
-        
-        @startNeighbors += 1
+        loopreturner = loopreturner.to_s + "||" + @table[x][0..5].to_s
       end
+      @newNeighbor = Neighbor.new      
+      @newNeighbor.home = q
+      @newNeighbor.neighbor = loopreturner[2..100000000]
+      @newNeighbor.save
+      @startNeighbors += 1
 
 
       url = "http://www.usboundary.com/api/areadata/geom/?id="+q.to_s+"&zoom=4"
