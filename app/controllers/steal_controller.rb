@@ -101,19 +101,24 @@ class StealController < ApplicationController
   end
 
   def showcensustract
-    if params[:home] == nil
+    if params[:home] == nil && params[:name] == nil
       @censustracts = Censustract.all
-    else
+    elsif params[:home] != nil
       @censustracts = Censustract.where(home: params[:home])      
+    else
+      @censustracts = Censustract.where(name: params[:name])      
     end
   end
 
   def showneighbor
-    if params[:home] == nil
+    if params[:home] == nil && params[:name] == nil
       @neighbors = Neighbor.all
-    else
+    elsif params[:home] != nil
       @neighbors = Neighbor.where(home: params[:home])      
+    else
+      @neighbors = Neighbor.where(name: params[:name])      
     end
+
   end
 end
 
