@@ -1,7 +1,10 @@
 <h1>Outputs</h1>
 <% if !@public %>
 <b> Property <%= @output.id %>: </b> <%= @output.time %> seconds <br>
+<% else %>
+Property processing time: <%= @output.time %> seconds <br>
 <% end %>
+
 <%= @output.street %> 
 <%= @output.citystatezip %> <br>
 <b> <%= "Failed: " if !@output.reason.to_s.include? "Approved" %><%= @output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %>
