@@ -713,11 +713,11 @@ class ValuesController < ApplicationController
         end
         puts "Escaped the loop"
         metricsNames[metricsCount] = "Census Tract Density"
-        censustract = Censustract.find_by(name: @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_f/100.0)
+        censustract = Censustract.find_by(name: @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_f/100.0, state: @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["STATE"].to_f)
         metrics[metricsCount]= (censustract.hu.to_f / censustract.area.to_f).to_f.round(2)
         metricsPass[metricsCount] = metrics[metricsCount] >= 500
         metricsComments[metricsCount]= "> 500 Houses/SqMi for tract: " + censustract.name.to_s
-        metricsUsage[metricsCount] = censustract.hu.to_f.to_s + "  ||  " +  censustract.area.to_f.to_s + "  ||  " +  (censustract.hu.to_f / censustract.area.to_f).to_f.round(2).to_s
+        metricsUsage[metricsCount] = "Rurality"
       rescue
         metricsNames[metricsCount] = "Census Tract Density"
         metrics[metricsCount]= "Error!"
@@ -876,6 +876,7 @@ class ValuesController < ApplicationController
     ############################################################
 
       begin
+        metricsCount += 1
         url = URI.parse("http://www.zillow.com/ajax/homedetail/HomeValueChartData.htm?mt=1&zpid="+URI.escape(@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content)+"&format=json")
         req = Net::HTTP::Get.new("http://www.zillow.com"+url.request_uri)
         res = Net::HTTP.start(url.host, url.port) {|http|
@@ -906,14 +907,12 @@ class ValuesController < ApplicationController
           changeInNeighborhoodPrice = {change: 0, time: 0, percent: 0, yearly: 0, recentchange: 0, recentpercent: 0}
           urlsToHit.push(changeInNeighborhoodPrice)    
         end
-        metricsCount += 1
         metricsNames[metricsCount] = "Std. Dev. of price deltas"
         metrics[metricsCount]= (@differencesInPrices.standard_deviation.to_f/metrics[0].to_f).round(3)
         metricsPass[metricsCount] = metrics[metricsCount] < 0.25
         metricsComments[metricsCount]= "< 0.25 || Standard Deviation of price differences from neighborhood as a percentage of overal zestimate"
         metricsUsage[metricsCount] = "Volatility"
       rescue
-        metricsCount += 1
         metricsNames[metricsCount] = "Std. Dev. of price deltas"
         metrics[metricsCount]= "Unavailable"
         metricsPass[metricsCount] = false
@@ -929,7 +928,6 @@ class ValuesController < ApplicationController
         metricsComments[metricsCount]= "< 0.80 || Total range of price difference from neighborhood as a percentage of overal zestimate"
         metricsUsage[metricsCount] = "Volatility"
       rescue
-        metricsCount += 1
         metricsNames[metricsCount] = "Range of price deltas"
         metrics[metricsCount]= "Unavailable"
         metricsPass[metricsCount] = false
@@ -946,7 +944,6 @@ class ValuesController < ApplicationController
         metricsComments[metricsCount]= "< 0.1 || Standard Deviation of historical home price as a percentage of overal zestimate"
         metricsUsage[metricsCount] = "Volatility"
       rescue
-        metricsCount += 1
         metricsNames[metricsCount] = "Std. Dev. of historical home price"
         metrics[metricsCount]= "Unavailable"
         metricsPass[metricsCount] = false

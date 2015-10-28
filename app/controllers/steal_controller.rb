@@ -79,16 +79,9 @@ class StealController < ApplicationController
       for x in 0..@textoutput.size-1
         @textoutput[x] = @textoutput[x].gsub("\"","").gsub(":","")
       end
-      if @textoutput == nil
-        puts "we're here!"
-      end
-      if @textoutput[5] == nil
-        puts "we're here as well!"
-      end
 
       if @textoutput != nil && @textoutput[5] != nil
       # begin
-        puts @textoutput
         @newCensustract = Censustract.new      
         @newCensustract.home = q.to_f
         @newCensustract.name = @textoutput[5][4..10000].to_f
