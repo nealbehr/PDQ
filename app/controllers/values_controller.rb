@@ -764,8 +764,8 @@ class ValuesController < ApplicationController
 
         metricsNames[metricsCount] = "Census Block Density"
         metrics[metricsCount]= (jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["AREALAND"].to_f/2589990.0)).to_f.round(2)
-        metricsPass[metricsCount] = metrics[metricsCount] >= 500
-        metricsComments[metricsCount]= "> 500 Houses/SqMi for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
+        metricsPass[metricsCount] = metrics[metricsCount] >= 750
+        metricsComments[metricsCount]= "> 750 Houses/SqMi for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
         metricsUsage[metricsCount] = "Rurality"
       rescue
         metricsNames[metricsCount] = "Census Block Density"
