@@ -718,7 +718,7 @@ class ValuesController < ApplicationController
         metricsPass[metricsCount] = metrics[metricsCount] >= 500
         metricsComments[metricsCount]= "> 500 Houses/SqMi for tract: " + censustract.name.to_s + " || USB ID: " + censustract.home.to_s
         metricsUsage[metricsCount] = "Rurality"
-      rescue
+      rescue Exception => e
         metricsNames[metricsCount] = "Census Tract Density"
         metrics[metricsCount]= "Error!"
         metricsPass[metricsCount] = false
@@ -741,7 +741,7 @@ class ValuesController < ApplicationController
         metricsPass[metricsCount] = metrics[metricsCount] > 35.0
         metricsComments[metricsCount]= "> 35 houses/SqMi for tract: "+ censustractDensities.sort_by { |holder| holder[:tractdensity] }[0][:censustract].to_s + " || Total of " + (censustractDensities.uniq.size).to_s + " tested."
         metricsUsage[metricsCount] = "Rurality"
-      rescue 
+      rescue Exception => e
         metricsNames[metricsCount] = "Surrounding Census Tract Density"
         metrics[metricsCount]= "Error!"
         metricsPass[metricsCount] = false
@@ -767,7 +767,7 @@ class ValuesController < ApplicationController
         metricsPass[metricsCount] = metrics[metricsCount] >= 750
         metricsComments[metricsCount]= "> 750 Houses/SqMi for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
         metricsUsage[metricsCount] = "Rurality"
-      rescue
+      rescue Exception => e
         metricsNames[metricsCount] = "Census Block Density"
         metrics[metricsCount]= "Error!"
         metricsPass[metricsCount] = false
