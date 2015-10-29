@@ -716,7 +716,7 @@ class ValuesController < ApplicationController
         censustract = Censustract.find_by(geoid: @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["GEOID"].to_s)
         metrics[metricsCount]= (censustract.hu.to_f / censustract.area.to_f).to_f.round(2)
         metricsPass[metricsCount] = metrics[metricsCount] >= 500
-        metricsComments[metricsCount]= "> 500 Houses/SqMi for tract: " + censustract.name.to_s
+        metricsComments[metricsCount]= "> 500 Houses/SqMi for tract: " + censustract.name.to_s + " || USB ID: " + censustract.home.to_s
         metricsUsage[metricsCount] = "Rurality"
       rescue
         metricsNames[metricsCount] = "Census Tract Density"
