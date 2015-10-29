@@ -713,7 +713,7 @@ class ValuesController < ApplicationController
         end
         puts "Escaped the loop"
         metricsNames[metricsCount] = "Census Tract Density"
-        censustract = Censustract.find_by(name: @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_f/100.0, state: @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["STATE"].to_f)
+        censustract = Censustract.find_by(geoid: @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["GEOID"].to_s)
         metrics[metricsCount]= (censustract.hu.to_f / censustract.area.to_f).to_f.round(2)
         metricsPass[metricsCount] = metrics[metricsCount] >= 500
         metricsComments[metricsCount]= "> 500 Houses/SqMi for tract: " + censustract.name.to_s
@@ -743,6 +743,32 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Rurality"
       rescue 
         metricsNames[metricsCount] = "Surrounding Census Tract Density"
+        metrics[metricsCount]= "Error!"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Error with the Census/Geocoding APIs"
+        metricsUsage[metricsCount] = "Rurality"
+        puts e.message
+        puts e.backtrace.inspect
+      end
+
+      begin
+        #  metricsCount is incremented before potential errors in the rescue catch. Therefore it is not incremented in the rescue or metrics save stage.
+        metricsCount += 1
+        url = URI.parse("http://api.census.gov/data/2010/sf1?get=H0030001&for=block:"+@jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["BLOCK"]+"&in=state:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["STATE"]+"+county:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["COUNTY"]+"+tract:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"]+"&key=e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac")
+        req = Net::HTTP::Get.new(url)
+        res = Net::HTTP.start(url.host, url.port) {|http|
+          http.request(req)
+        }
+        jsonOutputHouseholds = JSON.parse(res.body)
+        urlsToHit[urlsToHit.size] = url.to_s
+
+        metricsNames[metricsCount] = "Census Block Density"
+        metrics[metricsCount]= (jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["AREALAND"].to_f/2589990.0)).to_f.round(2)
+        metricsPass[metricsCount] = metrics[metricsCount] >= 500
+        metricsComments[metricsCount]= "> 500 Houses/SqMi for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
+        metricsUsage[metricsCount] = "Rurality"
+      rescue
+        metricsNames[metricsCount] = "Census Block Density"
         metrics[metricsCount]= "Error!"
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "Error with the Census/Geocoding APIs"
@@ -787,17 +813,17 @@ class ValuesController < ApplicationController
       #     loopCounter += 1
       #   end
       #   puts "Escaped the loop"
-      #   url = URI.parse("http://api.census.gov/data/2010/sf1?get=H0030001&for=tract:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"]+"&in=state:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["STATE"]+"+county:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["COUNTY"]+"&key=e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac")
-      #   req = Net::HTTP::Get.new(url)
-      #   res = Net::HTTP.start(url.host, url.port) {|http|
-      #     http.request(req)
-      #   }
-      #   jsonOutputHouseholds = JSON.parse(res.body)
-      #   urlsToHit[urlsToHit.size] = url.to_s
+        # url = URI.parse("http://api.census.gov/data/2010/sf1?get=H0030001&for=tract:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"]+"&in=state:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["STATE"]+"+county:"+@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["COUNTY"]+"&key=e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac")
+        # req = Net::HTTP::Get.new(url)
+        # res = Net::HTTP.start(url.host, url.port) {|http|
+        #   http.request(req)
+        # }
+        # jsonOutputHouseholds = JSON.parse(res.body)
+        # urlsToHit[urlsToHit.size] = url.to_s
 
 
       #   metricsNames[metricsCount] = "Census Tract Density"
-      #   metrics[metricsCount]= (jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["AREALAND"].to_f/2589990.0)).to_f.round(2)
+        # metrics[metricsCount]= (jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["AREALAND"].to_f/2589990.0)).to_f.round(2)
       #   metricsPass[metricsCount] = jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["AREALAND"].to_f/2589990.0)>500
       #   metricsComments[metricsCount]= "> 500 Houses/SqMi for tract: " + @jsonOutputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"].to_s
       #   metricsUsage[metricsCount] = "Rurality"

@@ -24,33 +24,32 @@ class StealController < ApplicationController
     #                                                              #
     ################################################################
 
-    if params[:overwrite] == "on" && params[:safety] == "off" && params[:key] == "protecteddatabase"
-      puts "You're a brave man. I hope you know what you're doing. Destroying databases."
-      @comment = "Databases destroyed and recreated"
-      Neighbor.destroy_all
-      Censustract.destroy_all
-      puts "Thumbs up, let's do this. LEEROY JENKINS!"      
-      endpoint = 505676
-    end
-
     if params[:all] == "on" && params[:safety] == "off"
       puts "Thumbs up, let's do this. LEEROY JENKINS!"
       @comment = "Databases created"
       endpoint = 505676
     end
 
-    if params[:test] == "on" && params[:safety] == "off"
+    if params[:test] == "on"
       @comment = "Test completed"
       puts "Test away!"      
       endpoint = 431580
     end
 
-    if params[:testandoverwrite] == "on" && params[:safety] == "off"
-      @comment = "Test completed"
-      Neighbor.destroy_all
-      Censustract.destroy_all
-      puts "Test away!"      
-      endpoint = 431580
+    if params[:delete] == "on" && params[:safety] == "off" && params[:key] == "protecteddatabase"
+      Neighbor.find_in_batches(:batch_size => 100) do |textos|
+        puts "Neighbor batch complete: " + textos[0].home.to_s
+        textos.each{| texto | 
+          texto.destroy
+        }
+      end
+      Censustract.find_in_batches(:batch_size => 100) do |textos|
+        puts "Censustract batch complete: " + textos[0].home.to_s
+        textos.each{| texto | 
+          texto.destroy
+        }
+      end
+      @comment = "Everything deleted"      
     end
 
 
@@ -89,6 +88,9 @@ class StealController < ApplicationController
         @newCensustract.pop = @textoutput[13][3..10000].to_f
         @newCensustract.hu = @textoutput[14][2..10000].to_f
         @newCensustract.state = @textoutput[1][7..10000].to_f
+        @newCensustract.county = @textoutput[2][8..10000].to_f
+        @newCensustract.tractid = @textoutput[3][7..10000].to_s
+        @newCensustract.geoid = @textoutput[4][5..10000].to_s
         @newCensustract.lat = @textoutput[11][8..10000].to_f
         @newCensustract.lon = @textoutput[12][8..10000].to_f
         @newCensustract.stringname = @textoutput[6][8..10000].to_s

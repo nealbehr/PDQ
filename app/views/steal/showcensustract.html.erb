@@ -11,6 +11,9 @@ Total Records: <%= @censustracts.size   %>
       <th>Population</th>
       <th>HU</th>
       <th>State</th>      
+      <th>County</th>
+      <th>TractID</th>
+      <th>GeoID</th>
       <th>Lat</th>      
       <th>Lon</th>      
       <th>Full Name</th>      
@@ -26,6 +29,9 @@ Total Records: <%= @censustracts.size   %>
       <td width = 150><%= censustract.pop %></td>
       <td width = 150><%= censustract.hu %></td>
       <td width = 150><%= censustract.state %></td>
+      <td width = 150><%= censustract.county %></td>
+      <td width = 150><%= censustract.tractid %></td>
+      <td width = 150><%= censustract.geoid %></td>
       <td width = 150><%= censustract.lat %></td>
       <td width = 150><%= censustract.lon %></td>
       <td width = 300><%= censustract.stringname %></td>
