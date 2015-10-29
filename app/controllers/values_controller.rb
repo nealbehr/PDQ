@@ -362,11 +362,28 @@ class ValuesController < ApplicationController
         metricsNames[metricsCount] = "Comparables Distance"
         metrics[metricsCount] = totalDistance.to_f/totalDistanceCount.to_f - @distance.min
         metricsPass[metricsCount] = metrics[metricsCount] <= 6000
-        metricsComments[metricsCount] = "Average distance (less min distance) must be less than 6000 meters"
+        metricsComments[metricsCount] = "Average distance (less min distance) must be less than 6000 feet"
         metricsUsage[metricsCount] = "Typicality"
         urlsToHit.push(@distance.to_s.gsub(",","THESENTINEL"))
       rescue Exception => e
         metricsNames[metricsCount] = "Comparables Distance"
+        metrics[metricsCount]= "N/A"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "N/A"
+        metricsUsage[metricsCount] = "Typicality"
+        puts e.message
+        puts e.backtrace.inspect
+      end
+
+      begin
+        metricsCount += 1
+        metricsNames[metricsCount] = "Comparables Nearby"
+        metrics[metricsCount] = @distance.count{ |x| x <= 6000}
+        metricsPass[metricsCount] = metrics[metricsCount] >= 7
+        metricsComments[metricsCount] = "At least seven comparable properties within 6000 feet"
+        metricsUsage[metricsCount] = "Typicality"
+      rescue Exception => e
+        metricsNames[metricsCount] = "Comparables Nearby"
         metrics[metricsCount]= "N/A"
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
@@ -730,8 +747,12 @@ class ValuesController < ApplicationController
 
       begin
         censustractNeighbors = Neighbor.find_by(home: censustract.home).neighbor.to_s.split("||")
+        puts censustractNeighbors.to_s
+        puts censustractNeighbors.size
         censustractDensities = Array.new
         for x in 0..censustractNeighbors.size-1
+          puts x
+          puts censustractNeighbors[x]
           censustract = Censustract.find_by(home: censustractNeighbors[x])
           censustractDensities[x] = {censustract: censustract.name, tractdensity: censustract.hu / censustract.area}
         end      
