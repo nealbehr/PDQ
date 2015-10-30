@@ -751,10 +751,10 @@ class ValuesController < ApplicationController
         puts censustractNeighbors.size
         censustractDensities = Array.new
         for x in 0..censustractNeighbors.size-1
-          puts x
           puts censustractNeighbors[x]
           censustract = Censustract.find_by(home: censustractNeighbors[x])
           censustractDensities[x] = {censustract: censustract.name, tractdensity: censustract.hu / censustract.area}
+          puts censustractDensities[x][:tractdensity]
         end      
         metricsCount += 1
         metricsNames[metricsCount] = "Surrounding Census Tract Density"
