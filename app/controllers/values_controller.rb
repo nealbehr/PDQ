@@ -747,14 +747,14 @@ class ValuesController < ApplicationController
 
       begin
         censustractNeighbors = Neighbor.find_by(home: censustract.home).neighbor.to_s.split("||")
-        puts censustractNeighbors.to_s
-        puts censustractNeighbors.size
         censustractDensities = Array.new
         for x in 0..censustractNeighbors.size-1
-          puts censustractNeighbors[x]
           censustract = Censustract.find_by(home: censustractNeighbors[x])
-          censustractDensities[x] = {censustract: censustract.name, tractdensity: censustract.hu / censustract.area}
-          puts censustractDensities[x][:tractdensity]
+          if censustract.area > 0.007 && censustract.pop / 20 < censustract.hu
+            censustractDensities[x] = {censustract: censustract.name, tractdensity: censustract.hu / censustract.area}
+          else
+            censustractDensities[x] = {censustract: censustract.name, tractdensity: 31415}
+          end
         end      
         metricsCount += 1
         metricsNames[metricsCount] = "Surrounding Census Tract Density"
@@ -785,8 +785,8 @@ class ValuesController < ApplicationController
 
         metricsNames[metricsCount] = "Census Block Density"
         metrics[metricsCount]= (jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["AREALAND"].to_f/2589990.0)).to_f.round(2)
-        metricsPass[metricsCount] = metrics[metricsCount] >= 750
-        metricsComments[metricsCount]= "> 750 Houses/SqMi for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
+        metricsPass[metricsCount] = metrics[metricsCount] >= 500
+        metricsComments[metricsCount]= "> 500 Houses/SqMi for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
         metricsUsage[metricsCount] = "Rurality"
       rescue Exception => e
         metricsNames[metricsCount] = "Census Block Density"
@@ -797,6 +797,26 @@ class ValuesController < ApplicationController
         puts e.message
         puts e.backtrace.inspect
       end
+
+
+      begin
+        #  metricsCount is incremented before potential errors in the rescue catch. Therefore it is not incremented in the rescue or metrics save stage.
+        metricsCount += 1
+        metricsNames[metricsCount] = "Census Block Houses"
+        metrics[metricsCount]= jsonOutputHouseholds[1][0].to_f
+        metricsPass[metricsCount] = metrics[metricsCount] >= 15
+        metricsComments[metricsCount]= "> 15 for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
+        metricsUsage[metricsCount] = "Rurality"
+      rescue Exception => e
+        metricsNames[metricsCount] = "Census Block Houses"
+        metrics[metricsCount]= "Error!"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Error with the Census/Geocoding APIs"
+        metricsUsage[metricsCount] = "Rurality"
+        puts e.message
+        puts e.backtrace.inspect
+      end
+
 
     ############################################################
     #                                                          #
