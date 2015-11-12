@@ -665,7 +665,7 @@ class ValuesController < ApplicationController
             -10000.0000000000 * (metricsPass[metricsNames.index("Census Tract Density")] ? 0.0 : 1.0) +  
             0.0 ) /10000.0)
         metrics[metricsCount]= (Math.exp(ruralityScore).to_f / (1.0 + Math.exp(ruralityScore).to_f)).round(5)
-        metricsPass[metricsCount] = metrics[metricsCount] <= 0.26
+        metricsPass[metricsCount] = metrics[metricsCount] <= 0.20
         metricsComments[metricsCount]= "Probability of being rural || " + ruralityScore.round(10).to_s
         metricsUsage[metricsCount] = "Rurality"
       # rescue StandardError => e
@@ -741,8 +741,8 @@ class ValuesController < ApplicationController
         metricsCount += 1
         metricsNames[metricsCount] = "Distance from MSA"
         metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').min { |a, b| a.content.to_i <=> b.content.to_i }.content.to_i
-        city = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
-        range = ranges[ranges.index { |x| x[:city] == city}][:range]
+        city1 = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+        range1 = ranges[ranges.index { |x| x[:city] == city}][:range]
         metricsPass[metricsCount] = metrics[metricsCount] <= range
         metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
         metricsUsage[metricsCount] = "MSA dist"
@@ -752,8 +752,8 @@ class ValuesController < ApplicationController
         metricsCount += 1
         metricsNames[metricsCount] = "Second Distance from MSA"
         metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').sort { |a, b| a.content.to_i <=> b.content.to_i }[1].content.to_i
-        city = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
-        range = ranges[ranges.index { |x| x[:city] == city}][:range]
+        city2 = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+        range2 = ranges[ranges.index { |x| x[:city] == city}][:range]
         metricsPass[metricsCount] = metrics[metricsCount] <= range
         metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
         metricsUsage[metricsCount] = "MSA Dist"
@@ -778,14 +778,23 @@ class ValuesController < ApplicationController
       begin
         metricsCount += 1
         metricsNames[metricsCount] = "Combo Rural"
-        metrics[metricsCount] = 0
-        metricsPass[metricsCount] = !(metrics[metricsNames.index("Rurality Score")] > 0.10 && metrics[metricsNames.index("Rurality Score")] <= 0.25 && metrics[metricsNames.index("Distance from MSA")] > 50000)
-        if metrics[metricsNames.index("Rurality Score")] > 0.10 && metrics[metricsNames.index("Rurality Score")] <= 0.25
-          metricsComments[metricsCount]= "Must be within 50000 meters of range if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
-        else
-          metricsComments[metricsCount]= "Test does not apply | Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
-        end
         metricsUsage[metricsCount] = "Combo Rural"
+        if metrics[metricsNames.index("Rurality Score")] > 0.09 && metrics[metricsNames.index("Rurality Score")] <= 0.20
+          if range1 >= 25000
+            metrics[metricsCount] = metrics[metricsNames.index("Distance from MSA")]
+            metricsPass[metricsCount] = (metrics[metricsCount] < [range1.to_f*0.6666,60000].min)
+            metricsComments[metricsCount]= "Must be within 2/3 of range if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
+          else
+            metrics[metricsCount] = metrics[metricsNames.index("Second Distance from MSA")]
+            metricsPass[metricsCount] = (metrics[metricsCount] < [range2.to_f*0.6666,60000].min)
+            metricsComments[metricsCount]= "Must be within 2/3 of range if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
+          end
+        else
+          metrics[metricsCount] = 0
+          metricsPass[metricsCount] = true
+          metricsComments[metricsCount]= "Test does not apply | Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s        
+        end
+        
       rescue StandardError => e
         metricsNames[metricsCount] = "Combo Rural"
         metrics[metricsCount] = 0
