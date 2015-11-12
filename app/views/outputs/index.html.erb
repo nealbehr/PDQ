@@ -28,7 +28,7 @@
    </tr> 
    <% end %>
 </table>
-<br>
+<br>  
 <br>
 <% end %>
 
@@ -40,16 +40,16 @@
       <td width = 200> Headers, </td>
       <td>
          Street, 
-         <% @outputs.first.names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
+         <% @outputs.find_by(id: @start.to_f).names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
          <%= name.to_s + " pass," %>
          <% end %>
-         <% @outputs.first.names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
+         <% @outputs.find_by(id: @start.to_f).names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
          <%= name.to_s + " numbers," %>
          <% end %>
-         <% for qcount in 0..9 %>
+         <% for qcount in 0..11 %>
          <%= "Reason "+ qcount.to_s + "," %>
          <% end %>
-         <% @outputs.first.names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
+         <% @outputs.find_by(id: @start.to_f).names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
          <%= name.to_s + " comments," %>
          <% end %>
          --THE-END--

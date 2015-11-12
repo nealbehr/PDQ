@@ -12,7 +12,7 @@ class OutputsController < ApplicationController
 
   def datarun
     @outputs = Output.where(runid: params[:rangeID])
-    @start = 0
+    @start = @outputs.first.id
     @end = 1000000
     @forexport = true
     render 'index'
@@ -21,7 +21,7 @@ class OutputsController < ApplicationController
 
   def datarange
   	@outputs = Output.all
-  	@start = params[:start]
+  	@start = @outputs.first.id
   	@end = params[:end]
     @forexport = true
     render 'index'

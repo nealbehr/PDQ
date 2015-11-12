@@ -95,7 +95,7 @@ Property processing time: <%= @output.time %> seconds <br>
          <% @output.names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>
          <%= name.to_s + " numbers," %>
          <% end %>
-         <% for qcount in 0..9 %>
+         <% for qcount in 0..11 %>
          <%= "Reason "+ qcount.to_s + "," %>
          <% end %>
          <% @output.names.to_s.gsub("[","").gsub("]","").gsub("\"","").split(",").each do |name| %>

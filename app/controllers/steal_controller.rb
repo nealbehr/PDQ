@@ -16,13 +16,13 @@ class StealController < ApplicationController
     @startCensustracts = 0    
     @comment = "Change [overwrite] [test] [all] params for additional functionality. Check coder comments for details."
 
-    ################################################################
-    #                                                              #
-    #   Call this url if brave:     steal?overwrite=on&safety=off  #
-    #   Call this url to start up:  steal?all=on&safety=off        #
-    #   Call this url to test:      steal?test=on&safety=off       #
-    #                                                              #
-    ################################################################
+    ###################################################################################
+    #                                                                                 #
+    #   Call this url if brave:      steal?delete=on&safety=off&key=protecteddatabase #
+    #   Call this url to load data:  steal?all=on&safety=off                          #
+    #   Call this url to test:       steal?test=on                                    #
+    #                                                                                 #
+    ###################################################################################
 
     if params[:all] == "on" && params[:safety] == "off"
       puts "Thumbs up, let's do this. LEEROY JENKINS!"
