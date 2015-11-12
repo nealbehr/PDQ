@@ -65,7 +65,7 @@ class ValuesController < ApplicationController
       urlsToHit = Array.new
       reason = Array.new
       @output = Output.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip))
-      if @output != nil
+      if @output != nil && params[:path] != "gather"
         @sectionTimes.push((Time.now-@startTime-@sectionTimes.inject(:+)).round)
         next
       end
