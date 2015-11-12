@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20151028225141) do
+ActiveRecord::Schema.define(version: 20151112212404) do
 
   create_table "addresses", force: :cascade do |t|
     t.text "street"
@@ -61,6 +61,8 @@ ActiveRecord::Schema.define(version: 20151028225141) do
     t.string "reason",       default: "--- []\n"
     t.string "comments",     default: "--- []\n"
     t.string "usage",        default: "--- []\n"
+    t.string "product"
+    t.text   "date"
   end
 
 end

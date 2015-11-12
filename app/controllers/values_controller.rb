@@ -104,6 +104,8 @@ class ValuesController < ApplicationController
         @newOutput.zpid = @zpid.to_s
         @newOutput.runid = runID
         @newOutput.time = (Time.now-@startTime-@sectionTimes.inject(:+)).round
+        @newOutput.date = Date.today  
+        @newOutput.product = params[:product].to_s.upcase
         @newOutput.save
 
         @sectionTimes.push((Time.now-@startTime-@sectionTimes.inject(:+)).round)
@@ -1824,6 +1826,8 @@ class ValuesController < ApplicationController
       @newOutput.zpid = @zpid.to_s
       @newOutput.runid = runID
       @newOutput.time = (Time.now-@startTime-@sectionTimes.inject(:+)).round
+      @newOutput.date = Date.today  
+      @newOutput.product = params[:product].to_s.upcase
       @newOutput.save
 
       @sectionTimes.push((Time.now-@startTime-@sectionTimes.inject(:+)).round)
