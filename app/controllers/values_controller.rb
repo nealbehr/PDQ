@@ -742,9 +742,9 @@ class ValuesController < ApplicationController
         metricsNames[metricsCount] = "Distance from MSA"
         metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').min { |a, b| a.content.to_i <=> b.content.to_i }.content.to_i
         city1 = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
-        range1 = ranges[ranges.index { |x| x[:city] == city}][:range]
-        metricsPass[metricsCount] = metrics[metricsCount] <= range
-        metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
+        range1 = ranges[ranges.index { |x| x[:city] == city1}][:range]
+        metricsPass[metricsCount] = metrics[metricsCount] <= range1
+        metricsComments[metricsCount]= "Distance in meters must be less than " + range1.to_s + " | Closest MSA: " + city1.to_s
         metricsUsage[metricsCount] = "MSA dist"
         # distancePercentUtilized = metrics[metricsCount].to_f / range.to_f
 
@@ -753,9 +753,9 @@ class ValuesController < ApplicationController
         metricsNames[metricsCount] = "Second Distance from MSA"
         metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').sort { |a, b| a.content.to_i <=> b.content.to_i }[1].content.to_i
         city2 = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
-        range2 = ranges[ranges.index { |x| x[:city] == city}][:range]
-        metricsPass[metricsCount] = metrics[metricsCount] <= range
-        metricsComments[metricsCount]= "Distance in meters must be less than " + range.to_s + " | Closest MSA: " + city.to_s
+        range2 = ranges[ranges.index { |x| x[:city] == city2}][:range]
+        metricsPass[metricsCount] = metrics[metricsCount] <= range2
+        metricsComments[metricsCount]= "Distance in meters must be less than " + range2.to_s + " | Closest MSA: " + city2.to_s
         metricsUsage[metricsCount] = "MSA Dist"
 
         # distancePercentUtilized = [distancePercentUtilized, metrics[metricsCount].to_f / range.to_f].min
@@ -799,7 +799,7 @@ class ValuesController < ApplicationController
         metricsNames[metricsCount] = "Combo Rural"
         metrics[metricsCount] = 0
         metricsPass[metricsCount] =  false
-        metricsComments[metricsCount]= "Distance in meters must be less than 50,000 if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
+        metricsComments[metricsCount]= "Distance in meters must be less than 50000 if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
         metricsUsage[metricsCount] = "Combo Rural"
       end
 
