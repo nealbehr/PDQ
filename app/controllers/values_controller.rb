@@ -668,7 +668,7 @@ class ValuesController < ApplicationController
           (-15.41353150512030 * metrics[metricsNames.index("Urban Density")].to_f+
             -10.1395242746364 * metrics[metricsNames.index("Census Tract Density")].to_f+
             -4.15071740631704 * metrics[metricsNames.index("Census Block Density")].to_f+
-            -16.9412115229678 * metrics[metricsNames.index("Census Block Houses")].to_f+
+            -16.9412115229678 * ([metrics[metricsNames.index("Census Block Houses")], 80].min).to_f+
             -6982.74818338132 * (metricsPass[metricsNames.index("Surrounding Census Tract Density")] ? 0.0 : 1.0) +
             -10000.0000000000 * (metricsPass[metricsNames.index("Census Tract Density")] ? 0.0 : 1.0) +  
             0.0 ) /10000.0)
@@ -787,7 +787,7 @@ class ValuesController < ApplicationController
         metricsCount += 1
         metricsNames[metricsCount] = "Combo Rural"
         metricsUsage[metricsCount] = "Combo Rural"
-        if metrics[metricsNames.index("Rurality Score")] > 0.09 && metrics[metricsNames.index("Rurality Score")] <= 0.20
+        if metrics[metricsNames.index("Rurality Score")] > 0.08 && metrics[metricsNames.index("Rurality Score")] <= 0.20
           if range1 >= 25000
             metrics[metricsCount] = metrics[metricsNames.index("Distance from MSA")]
             metricsPass[metricsCount] = (metrics[metricsCount] < [range1.to_f*0.6666,60000].min)
