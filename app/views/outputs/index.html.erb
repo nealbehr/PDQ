@@ -27,7 +27,7 @@
       <td width = 100> <%= output.date %> </td>
       <td width = 100> <a href = /inspect/<%= output.id %>> Inspect </a> </td>
       <td width = 100> <a href = <%= "http://www.zillow.com/homedetails/"+output.zpid.to_s+"_zpid/" %>> Zillow </a> 
-      <td width = 150> <a href = /outputs/run/<%= URI.escape(output.runid) %>> <%= output.runid %> </a> </td>
+      <td width = 150> <a href = /outputs/run/<%= URI.escape(output.runid) %>> <%= output.runid[0..15] %> </a> </td>
       <td> <a href = /outputs/destroy/<%= output.id %>> Release </a> </td> 
    </tr> 
    <% end %>
