@@ -84,7 +84,7 @@ class ValuesController < ApplicationController
 
       if @evalProp.at_xpath('//zpid') == nil || @evalProp.at_xpath('//results//result//zestimate//amount') == nil
 
-        metricsNames[metricsCount] = "ZILLOW API FAIL"
+        metricsNames[metricsCount] = "API FAIL"
         metrics[metricsCount]= "PROPERTY NOT FOUND"
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "PROPERTY NOT FOUND"
@@ -136,8 +136,8 @@ class ValuesController < ApplicationController
 
 
       loopCounter = 0
-      leaveloop = false
       loop do
+        leaveloop = false
         begin
           url = URI.parse("http://geocoding.geo.census.gov/geocoder/geographies/coordinates?x="+@evalProp.at_xpath('//result//address//longitude').content+"&y="+@evalProp.at_xpath('//result//address//latitude').content+"&benchmark=4&vintage=4&format=json")
           req = Net::HTTP::Get.new(url)
@@ -172,7 +172,7 @@ class ValuesController < ApplicationController
     ############################################################
       
 
-      metricsNames[metricsCount] = "Zestimate"
+      metricsNames[metricsCount] = "Estimated Value"
       metricsUsage[metricsCount] = "Price Range"
       if params[:product].to_s.upcase == "RA"      
         metrics[metricsCount]=@evalProp.at_xpath('//results//result//zestimate//amount').content
@@ -225,7 +225,7 @@ class ValuesController < ApplicationController
         @comparables = @compOutput.xpath("//response//properties//comparables//comp")
         
         metricsCount += 1
-        metricsNames[metricsCount] = "Zillow Comps Count"
+        metricsNames[metricsCount] = "Comps Count"
         metrics[metricsCount]= @comparables.size.to_i
         metricsPass[metricsCount] = @comparables.size.to_i >= 7
         metricsComments[metricsCount]= "At least seven comparable properties found"
@@ -242,13 +242,13 @@ class ValuesController < ApplicationController
               end
             end
           end
-          metricsNames[metricsCount] = "Zillow Comps Recency"
+          metricsNames[metricsCount] = "Comps Recency"
           metrics[metricsCount] = count
           metricsPass[metricsCount] = metrics[metricsCount] >= 2
           metricsComments[metricsCount] = "At least three comparable properties sold within 180 days"
           metricsUsage[metricsCount] = "Liquidity"
         rescue StandardError => e
-          metricsNames[metricsCount] = "Zillow Comps Recency"
+          metricsNames[metricsCount] = "Comps Recency"
           metrics[metricsCount]= "N/A"
           metricsPass[metricsCount] = false
           metricsComments[metricsCount]= "N/A"
@@ -262,21 +262,21 @@ class ValuesController < ApplicationController
           total += @comparables[x].attribute('score').value.to_f
         end
         metricsCount += 1
-        metricsNames[metricsCount] = "Zillow Comps Score"
+        metricsNames[metricsCount] = "Comps Score"
         metrics[metricsCount]= (total/@comparables.size.to_f).round(2)
         metricsPass[metricsCount] = total/@comparables.size.to_f > 6.0
         metricsComments[metricsCount]= " > 6.0"
         metricsUsage[metricsCount] = "Liquidity"
       else
         metricsCount += 1
-        metricsNames[metricsCount] = "Zillow Comps Score"
+        metricsNames[metricsCount] = "Comps Score"
         metrics[metricsCount]= "Comps not found"
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "NA"
         metricsUsage[metricsCount] = "Liquidity"
 
         metricsCount += 1
-        metricsNames[metricsCount] = "Zillow Comps Recency"
+        metricsNames[metricsCount] = "Comps Recency"
         metrics[metricsCount]= "N/A"
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
@@ -285,7 +285,7 @@ class ValuesController < ApplicationController
         puts e.backtrace.inspect
 
         metricsCount += 1
-        metricsNames[metricsCount] = "Zillow Comps count"
+        metricsNames[metricsCount] = "Comps count"
         metrics[metricsCount]= "Comps not found"
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "NA"
@@ -301,10 +301,10 @@ class ValuesController < ApplicationController
       puts "Start Typicality"
 
       metricsCount += 1
-      metricsNames[metricsCount] = "Comparables count"
-      metrics[metricsCount]= metrics[metricsNames.index("Zillow Comps Count")]
-      metricsPass[metricsCount] = metricsPass[metricsNames.index("Zillow Comps Count")]
-      metricsComments[metricsCount]= "At least seven comparable properties found"
+      metricsNames[metricsCount] = "Properties count"
+      metrics[metricsCount]= metrics[metricsNames.index("Comps Count")]
+      metricsPass[metricsCount] = metricsPass[metricsNames.index("Comps Count")]
+      metricsComments[metricsCount]= "At least seven properties found for analysis"
       metricsUsage[metricsCount] = "Typicality"
 
 
@@ -386,13 +386,13 @@ class ValuesController < ApplicationController
 
       begin
         metricsCount += 1
-        metricsNames[metricsCount] = "Zestimate Typicality"
+        metricsNames[metricsCount] = "Estimate Typicality"
         metrics[metricsCount] = (((@compOutput.at_xpath('//properties//principal//zestimate//amount').content.to_f / (total.to_f / count.to_f)) -1).to_f * 100.0).round(2)
         metricsPass[metricsCount] = metrics[metricsCount] <= 40 && metrics[metricsCount] >= -40
-        metricsComments[metricsCount]= "Zestimate must be within 40% || Prop: " + @compOutput.at_xpath('//properties//principal//zestimate//amount').content.to_f.to_s + " || Ave: " + (total.to_f / count.to_f).to_s
+        metricsComments[metricsCount]= "Estimate must be within 40% || Prop: " + @compOutput.at_xpath('//properties//principal//zestimate//amount').content.to_f.to_s + " || Ave: " + (total.to_f / count.to_f).to_s
         metricsUsage[metricsCount] = "Typicality"
       rescue StandardError => e
-        metricsNames[metricsCount] = "Zestimate Typicality"
+        metricsNames[metricsCount] = "Estimate Typicality"
         metrics[metricsCount]= "N/A"
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
@@ -449,14 +449,14 @@ class ValuesController < ApplicationController
           totalDistance += d
           totalDistanceCount += 1
         end
-        metricsNames[metricsCount] = "Comparables Distance"
+        metricsNames[metricsCount] = "Properties Distance"
         metrics[metricsCount] = (totalDistance.to_f/totalDistanceCount.to_f - @distance.min).round(2)
         metricsPass[metricsCount] = metrics[metricsCount] <= 6000
         metricsComments[metricsCount] = "Average distance (less min distance) must be less than 6000 feet"
         metricsUsage[metricsCount] = "Typicality"
         urlsToHit.push(@distance.to_s.gsub(",","THESENTINEL"))
       rescue StandardError => e
-        metricsNames[metricsCount] = "Comparables Distance"
+        metricsNames[metricsCount] = "Properties Distance"
         metrics[metricsCount]= "N/A"
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
@@ -467,13 +467,13 @@ class ValuesController < ApplicationController
 
       begin
         metricsCount += 1
-        metricsNames[metricsCount] = "Comparables Nearby"
+        metricsNames[metricsCount] = "Properties Nearby"
         metrics[metricsCount] = @distance.count{ |x| x <= 6000}
         metricsPass[metricsCount] = metrics[metricsCount] >= 7
         metricsComments[metricsCount] = "At least seven comparable properties within 6000 feet"
         metricsUsage[metricsCount] = "Typicality"
       rescue StandardError => e
-        metricsNames[metricsCount] = "Comparables Nearby"
+        metricsNames[metricsCount] = "Properties Nearby"
         metrics[metricsCount]= "N/A"
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
@@ -852,7 +852,7 @@ class ValuesController < ApplicationController
         metricsNames[metricsCount] = "Std. Dev. of price deltas"
         metrics[metricsCount]= (@differencesInPrices.standard_deviation.to_f/metrics[0].to_f).round(3)
         metricsPass[metricsCount] = metrics[metricsCount] < 0.25
-        metricsComments[metricsCount]= "< 0.25 || Standard Deviation of price differences from neighborhood as a percentage of overal zestimate"
+        metricsComments[metricsCount]= "< 0.25 || Standard Deviation of price differences from neighborhood as a percentage of overal estimate"
         metricsUsage[metricsCount] = "Volatility"
       rescue
         metricsNames[metricsCount] = "Std. Dev. of price deltas"
@@ -867,7 +867,7 @@ class ValuesController < ApplicationController
         metricsNames[metricsCount] = "Range of price deltas"
         metrics[metricsCount]= (@differencesInPrices.range.to_f/metrics[0].to_f).round(3)
         metricsPass[metricsCount] = metrics[metricsCount] < 0.80
-        metricsComments[metricsCount]= "< 0.80 || Total range of price difference from neighborhood as a percentage of overal zestimate"
+        metricsComments[metricsCount]= "< 0.80 || Total range of price difference from neighborhood as a percentage of overal estimate"
         metricsUsage[metricsCount] = "Volatility"
       rescue
         metricsNames[metricsCount] = "Range of price deltas"
@@ -883,7 +883,7 @@ class ValuesController < ApplicationController
         metricsNames[metricsCount] = "Std. Dev. of historical home price"
         metrics[metricsCount]= (@homePrices.standard_deviation.to_f/metrics[0].to_f).round(3)
         metricsPass[metricsCount] = metrics[metricsCount] < 0.1
-        metricsComments[metricsCount]= "< 0.1 || Standard Deviation of historical home price as a percentage of overal zestimate"
+        metricsComments[metricsCount]= "< 0.1 || Standard Deviation of historical home price as a percentage of overal estimate"
         metricsUsage[metricsCount] = "Volatility"
       rescue
         metricsNames[metricsCount] = "Std. Dev. of historical home price"
@@ -1752,20 +1752,20 @@ class ValuesController < ApplicationController
       end
 
       #We calculate a number of tpyicality fail counts, then use that
-      typicalFailCount = metricsPass[metricsNames.index("Comparables count")..metricsNames.index("Comparables Nearby")].count(false)
-      if  typicalFailCount >= 2 || (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality")] > 60.0 || metrics[metricsNames.index("Zestimate Typicality")] > 60.0))
+      typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("Properties Nearby")].count(false)
+      if  typicalFailCount >= 2 || (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality")] > 60.0 || metrics[metricsNames.index("Estimate Typicality")] > 60.0))
         reason[2]="Atypical property"
       else
         reason[2]=nil
       end
       
-      if metricsPass[metricsNames.index("Zillow Comps Count")..metricsNames.index("Zillow Comps Score")].count(false) >= 2
+      if metricsPass[metricsNames.index("Comps Count")..metricsNames.index("Comps Score")].count(false) >= 2
         reason[3]="Illiquid market"
       else
         reason[3]=nil
       end
 
-      if metricsPass[metricsNames.index("Zestimate")] == false
+      if metricsPass[metricsNames.index("Estimated Value")] == false
         reason[4]="out of $ range"
       else
         reason[4]=nil
