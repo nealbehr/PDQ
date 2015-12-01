@@ -36,14 +36,15 @@ class ValuesController < ApplicationController
     tracker = Mixpanel::Tracker.new(PROJECT_TOKEN)
 
     # Track an event on behalf of user "User1"
-    tracker.track(1, 'getvalues')
+    tracker.track('TestUser1', 'getvalues')
 
     # Send an update to User1's profile
-    # tracker.people.set('TestUser2', {
-    #   'street' => params[:street],
-    #   'citystatezip' => params[:citystatezip],
-    #   'event' => 'getvalues'
-    #   })
+    tracker.people.set('TestUser2', {
+      'street' => params[:street],
+      'citystatezip' => params[:citystatezip],
+      'product' => params[:product],
+      'event' => 'prequal'
+      })
 
     puts "Shit is tracked"
 
