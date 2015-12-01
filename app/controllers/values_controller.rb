@@ -39,7 +39,7 @@ class ValuesController < ApplicationController
     tracker.track('TestUser1', 'getvalues')
 
     # Send an update to User1's profile
-    tracker.people.set('TestUser2', {
+    tracker.track('TestUser2', {
       'street' => params[:street],
       'citystatezip' => params[:citystatezip],
       'product' => params[:product],
