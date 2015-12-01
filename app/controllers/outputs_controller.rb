@@ -21,7 +21,7 @@ class OutputsController < ApplicationController
 
   def datarange
   	@outputs = Output.all
-  	@start = @outputs.first.id
+  	@start = params[:start]
   	@end = params[:end]
     @forexport = true
     render 'index'

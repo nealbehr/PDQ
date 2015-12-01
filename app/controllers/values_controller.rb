@@ -8,7 +8,7 @@ class ValuesController < ApplicationController
   require 'openssl'
   require 'date'
   require 'time'
-
+  require 'mixpanel-ruby'
 
     ############################################################
     #  Coder Notes: always read before committing and pushing  #
@@ -26,8 +26,27 @@ class ValuesController < ApplicationController
 
     # Next steps:
     # Implement product specific rules (completed, needs to be confirmed with Avita)
+    PROJECT_TOKEN = '6d8fc694585f4014626a6708a807ae0a'
 
   def getvalues
+    
+
+    puts "Let's track this shit"
+
+    tracker = Mixpanel::Tracker.new(PROJECT_TOKEN)
+
+    # Track an event on behalf of user "User1"
+    tracker.track(1, 'getvalues')
+
+    # Send an update to User1's profile
+    # tracker.people.set('TestUser2', {
+    #   'street' => params[:street],
+    #   'citystatezip' => params[:citystatezip],
+    #   'event' => 'getvalues'
+    #   })
+
+    puts "Shit is tracked"
+
     puts params[:product]
     if params[:street] == nil || params[:citystatezip]== nil
       @addresses = Address.all
@@ -55,6 +74,8 @@ class ValuesController < ApplicationController
     #   Setup, ping database or gather zillow data             #
     #                                                          #
     ############################################################
+
+
 
       metrics = Array.new
       metricsNames = Array.new

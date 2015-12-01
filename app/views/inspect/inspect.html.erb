@@ -7,6 +7,7 @@ Property processing time: <%= @output.time %> seconds <br>
 
 <%= @output.street %> 
 <%= @output.citystatezip %> <br>
+Product: <%= @output.product %> Date: <%= @output.date %> <br>
 <b> <%= "Failed: " if !@output.reason.to_s.include? "Approved" %><%= @output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","") %>
 </b>
 <br>
