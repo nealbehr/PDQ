@@ -78,8 +78,10 @@ Rails.application.routes.draw do
   # READ
   get '/outputs', controller: 'outputs', action: 'index'
   get '/outputs/run/:rangeID', controller: 'outputs', action: 'datarun'
+  get '/outputs/decision/:id', controller: 'outputs', action: 'datadecision'
   get '/outputs/:start/:end', controller: 'outputs', action: 'datarange'
   get '/outputs/:id', controller: 'outputs', action: 'data'
+
 
 
   get '/inspect/oneoff', controller: 'inspect', action: 'oneoff'

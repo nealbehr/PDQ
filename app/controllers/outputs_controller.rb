@@ -35,6 +35,14 @@ class OutputsController < ApplicationController
     render 'index'
   end
 
+  def datadecision
+    @outputs = Output.all
+    @start = params[:id]
+    @end = params[:id]
+    @forexport = true
+    render 'datadecision'
+  end
+
   def destroy
   	@outputs = Output.find_by(id: params[:id])
   	@outputs.destroy

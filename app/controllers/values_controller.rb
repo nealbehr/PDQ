@@ -16,24 +16,31 @@ class ValuesController < ApplicationController
     #<^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^>#
     #<                                                        >#
     #<                                                        >#
-    #<    Check TEMP INCL. Typicality metrics                 >#
+    #<                                                        >#
     #<                                                        >#
     #<                                                        >#
     #<vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv>#
     ############################################################
     #||||||||||||||||||||||||||||||||||||||||||||||||||||||||||#
     ############################################################
+    
 
-    # Next steps:
-    # Implement product specific rules (completed, needs to be confirmed with Avita)
-    PROJECT_TOKEN = '6d8fc694585f4014626a6708a807ae0a'
+    MIXPANEL_TOKEN = '6d8fc694585f4014626a6708a807ae0a'
+    BASE_TOKEN = '2ee90a91dd770d654ecf1558276736723b081e322bf596996a784a9f22e6db38'
 
   def getvalues
     
 
-    puts "Let's track this shit"
+    puts "Let's track this..."
 
-    tracker = Mixpanel::Tracker.new(PROJECT_TOKEN)
+    # url = URI.parse('https://api.getbase.com/v2/users/self')
+    # req = Net::HTTP::Get.new(url.to_s)
+    # res = Net::HTTP.start(url.host, url.port) {|http|
+    #   http.request(req)
+    # }
+    # puts res.body
+
+    tracker = Mixpanel::Tracker.new(MIXPANEL_TOKEN)
 
     # Track an event on behalf of user "User1"
     tracker.track('TestUser1', 'getvalues')
@@ -155,7 +162,6 @@ class ValuesController < ApplicationController
 
       @page = Nokogiri::HTML(open("http://www.zillow.com/homes/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content+"_zpid/"))
       urlsToHit.push("http://www.zillow.com/homes/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content+"_zpid/")
-
 
       loopCounter = 0
       loop do
@@ -502,6 +508,142 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Typicality"
         puts e.message
         puts e.backtrace.inspect
+      end
+
+    ############################################################
+    #                                                          #
+    #   Typicality metrics - carousel of homes                 #
+    #                                                          #
+    ############################################################
+
+      url = URI.parse("http://www.zillow.com/homes/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content+"_zpid/")
+      req = Net::HTTP::Get.new(url.to_s)
+      res = Net::HTTP.start(url.host, url.port) {|http|
+        http.request(req)
+      }
+
+      @page = res.body
+
+      @scrappingTable = Array.new
+      @prices = Array.new
+      @bedrooms = Array.new
+      @bathrooms = Array.new
+      @sqft = Array.new    
+
+
+      @scrappingProperties = @page.to_s.split('zsg-photo-card-caption')
+      for x in 0 .. @scrappingProperties.length - 1
+        @scrappingTable[x] = @scrappingProperties[x].to_s.gsub("zsg-photo-card-price","||DELIMITER||").gsub("zsg-photo-card-info","||DELIMITER||").gsub("zsg-photo-card-notification","||DELIMITER||").gsub("zsg-photo-card-address hdp-link noroute","||DELIMITER||").gsub("zsg-photo-card-actions","||DELIMITER||")
+        @scrappingTable[x] = @scrappingTable[x].split("||DELIMITER||")
+        if x >= 1 && @scrappingTable[x][1] != nil
+          begin
+            @prices.push(@scrappingTable[x][1].to_s[2..11].gsub("<","").gsub("s","").gsub("p","").gsub("/","").gsub("$","").gsub(",","").to_i)
+          rescue
+          end
+          begin
+            @bedrooms.push(@scrappingTable[x][2].to_s[2..2].to_i)
+          rescue
+          end
+          begin
+            @bathrooms.push(@scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("ba").to_i-4..@scrappingTable[x][2].to_s.index("ba").to_i].gsub(";","").gsub(" ","").gsub("b","").to_i)      
+          rescue
+          end
+          begin
+            tempVar = @scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("sqft").to_i-6..@scrappingTable[x][2].to_s.index("sqft").to_i].gsub(";","").gsub(" ","").gsub("b","").gsub("k","").gsub("s","").to_f*1000
+            if tempVar > 100000
+              tempVar = tempVar/1000
+            end
+            @sqft.push(tempVar)  
+          rescue
+          end          
+        end 
+      end
+      @totalPrice = 0
+      @totalBedrooms = 0
+      @totalBathrooms = 0
+      @totalSqFt = 0
+      @totalCount = 0
+      pricesString = ""
+      bathroomsString = ""
+      bedroomsString = ""
+      sqftString = ""
+      for x in 0 .. @scrappingProperties.length - 1
+        if @prices[x] != 0 && @bedrooms[x] != 0 && x >= 0 && @scrappingTable[x][1] != nil && @prices[x] != nil
+          @totalPrice += @prices[x]
+          @totalBathrooms += @bathrooms[x]
+          @totalBedrooms += @bedrooms[x]
+          @totalSqFt += @sqft[x]
+          @totalCount += 1
+          pricesString = pricesString.to_s + " ;; " + @prices[x].to_s
+          bathroomsString = bathroomsString.to_s + " ;; " + @bathrooms[x].to_s
+          bedroomsString = bedroomsString.to_s + " ;; " + @bedrooms[x].to_s
+          sqftString = sqftString.to_s + " ;; " + @sqft[x].to_s                              
+        end
+      end
+
+      metricsCount += 1
+      begin
+        metricsNames[metricsCount] = "Average Price in community"
+        metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//zestimate//amount').content.to_f / (@totalPrice.to_f/@totalCount.to_f)-1)*100).to_f.round(1))     
+        metricsPass[metricsCount] = metrics[metricsCount] < 40 && metrics[metricsCount]  > -40
+        metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//zestimate//amount').content.to_s + "  || Avg: " + (@totalPrice.to_f/@totalCount.to_f).to_s
+        # metricsComments[metricsCount] += @totalPrice.to_s + "  ||  " + @totalCount.to_s + "  ||  " + pricesString.to_s
+        metricsUsage[metricsCount] = "Typicality"
+      rescue
+        metricsNames[metricsCount] = "Average Price in community"
+        metrics[metricsCount]= "N/A"    
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Data Unavailable"
+        metricsUsage[metricsCount] = "Typicality"
+      end
+
+      metricsCount += 1
+      begin
+        metricsNames[metricsCount] = "Average Bathrooms in community"
+        metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (@totalBathrooms.to_f/@totalCount.to_f)-1)*100).to_f.round(1))     
+        metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount]  > -66
+        metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (@totalBathrooms.to_f/@totalCount.to_f).to_s
+        # metricsComments[metricsCount] += @totalBathrooms.to_s + "  ||  " + @totalCount.to_s + "  ||  " + bathroomsString.to_s
+        metricsUsage[metricsCount] = "Typicality"
+      rescue
+        metricsNames[metricsCount] = "Average Bathrooms in community"
+        metrics[metricsCount]= "N/A"    
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Data Unavailable"
+        metricsUsage[metricsCount] = "Typicality"
+      end
+
+
+      metricsCount += 1
+      begin
+        metricsNames[metricsCount] = "Average Bedrooms in community"
+        metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//bedrooms').content.to_f / (@totalBedrooms.to_f/@totalCount.to_f)-1)*100).to_f.round(1))     
+        metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount]  > -66
+        metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//bedrooms').content.to_s + "  || Avg: " + (@totalBedrooms.to_f/@totalCount.to_f).to_s
+        # metricsComments[metricsCount] += @totalBedrooms.to_s + "  ||  " + @totalCount.to_s + "  ||  " + bedroomsString.to_s
+        metricsUsage[metricsCount] = "Typicality"
+      rescue
+        metricsNames[metricsCount] = "Average Bedrooms in community"
+        metrics[metricsCount]= "N/A"    
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Data Unavailable"
+        metricsUsage[metricsCount] = "Typicality"
+      end
+
+      metricsCount += 1
+      begin
+        metricsNames[metricsCount] = "Average SqFt in community"
+        metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//finishedSqFt').content.to_f / (@totalSqFt.to_f/@totalCount.to_f)-1)*100).to_f.round(1))     
+        metricsPass[metricsCount] = metrics[metricsCount] < 40 && metrics[metricsCount]  > -40
+        metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//finishedSqFt').content.to_s + "  || Avg: " + (@totalSqFt.to_f/@totalCount.to_f).to_s
+        # metricsComments[metricsCount] += @totalSqFt.to_s + "  ||  " + @totalCount.to_s + "  ||  " + sqftString.to_s
+        metricsUsage[metricsCount] = "Typicality"
+      rescue
+        metricsNames[metricsCount] = "Average Sqft in community"
+        metrics[metricsCount]= "N/A"    
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Data Unavailable"
+        metricsUsage[metricsCount] = "Typicality"
       end
 
       puts "End Typicality"   
@@ -1580,7 +1722,7 @@ class ValuesController < ApplicationController
     
     ############################################################
     #                                                          #
-    #  DEPRECATED   typicality metrics - 20 closest houses     #
+    #   DEPRECATED   typicality metrics - 20 closest houses    #
     #                                                          #
     ############################################################
 
@@ -1774,8 +1916,8 @@ class ValuesController < ApplicationController
       end
 
       #We calculate a number of tpyicality fail counts, then use that
-      typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("Properties Nearby")].count(false)
-      if  typicalFailCount >= 2 || (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality")] > 60.0 || metrics[metricsNames.index("Estimate Typicality")] > 60.0))
+      typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("Average SqFt in community")].count(false)
+      if  typicalFailCount >= 4 || (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality")] > 60.0 || metrics[metricsNames.index("Estimate Typicality")] > 60.0))
         reason[2]="Atypical property"
       else
         reason[2]=nil

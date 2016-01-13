@@ -1,9 +1,47 @@
-<% url = URI.parse("http://pdq.herokuapp.com/inspect/decision/172+Mill+Brook+Road/San+Bruno+CA+94066.json") %>
-<% req = Net::HTTP::Get.new(url.to_s) %> 
-<% res = Net::HTTP.start(url.host, url.port) {|http| %> 
- <%   http.request(req) } %> 
-<% textOutput = res.body %> 
-<%= jsonOutput = JSON.parse(textOutput) %>
-<br> 
-<%= jsonOutput["complete"] %>
-<%= jsonOutput["status"] %>
+<br>
+<br>
+<% for x in 0..@scrappingTable.length-1 %>
+<% for y in 0..@scrappingTable[x].length-1 %>
+<br>
+|| <%= x %> || <%= y %> ||
+<br>
+<%= @scrappingTable[x][y] %>
+
+<% end %>
+<% end %>
+
+<br>
+<br>
+Now we're cooking with fire
+<br>
+<br>
+
+<table>
+<% for x in 0..@scrappingTable.length-1 %>
+	<tr>
+		<td width = 100>
+			<%= @prices[x] %>
+		</td>
+		<td width = 100>
+			<%= @bedrooms[x] %>
+		</td>
+		<td width = 100>
+			<%= @bathrooms[x] %>
+		</td>
+	</tr>
+<% end %>
+	<tr>
+		<td width = 100>
+			<%= @totalPrice.to_f / @totalCount.to_f %>
+		</td>
+		<td width = 100>
+			<%= @totalBedrooms.to_f / @totalCount.to_f %>
+		</td>
+		<td width = 100>
+			<%= @totalBathrooms.to_f / @totalCount.to_f %>
+		</td>
+	</tr>
+
+
+</table>
+

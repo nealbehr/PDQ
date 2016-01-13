@@ -120,8 +120,13 @@ class StealController < ApplicationController
     else
       @neighbors = Neighbor.where(name: params[:name])      
     end
-
   end
+
+  def scrape
+      @page = Nokogiri::HTML(open("http://www.zillow.com/homes/"+params[:zpid].to_s))
+      puts scrappingtable = @page.css('div#yui_3_18_1_2_1450749722036_586')
+  end
+
 end
 
 
