@@ -63,7 +63,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
   private
   def authorize_admin
     return unless !current_user.admin?
-    redirect_to root_path, alert "Admins Only are allowed to create new users"
+    redirect_to root_path
   end
 
 end
