@@ -16,7 +16,7 @@ puts "Densities Done"
 Address.destroy_all
 
 Address.create!([
-{ street: "26717 SE 37TH ST", citystatezip: "ISSAQUAH, WA 98029"}
+{ street: "26717 SE 37TH ST", citystatezip: "ISSAQUAH, WA 98029"},
 
 
 	])
@@ -38,3 +38,9 @@ if Approved.count < 1000000
 
 end
 puts "Approved Zip Codes Done"
+
+User.create!([
+	{ email: "neal.behrend@1rex.com", password: "123456789", password_confirmation: "123456789", admin: true },
+	{ email: "avita.datt@1rex.com", password: "123456789", password_confirmation: "123456789", admin: false },
+
+	])
