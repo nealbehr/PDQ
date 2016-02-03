@@ -1,6 +1,6 @@
 class InspectController < ApplicationController
 
-require 'net/http'
+  require 'net/http'
   require 'uri'
   require 'nokogiri'
   require 'rubygems'
@@ -46,7 +46,7 @@ require 'net/http'
   end
 
   def oneoff
-    render 'oneoff'
+    render 'oneoff'   
   end
   
 end

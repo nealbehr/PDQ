@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  devise_for :users
   # Routes for the Approved resource:
   # CREATE
 
@@ -30,6 +31,10 @@ Rails.application.routes.draw do
 
   # Routes for the Density resource:
   # CREATE
+  get '/registration/newuser', controller: 'registration', action: 'create'
+  get '/registration/showuser', controller: 'registration', action: 'show'
+  get '/registration/destroy/:id', controller: 'registration', action: 'destroy'
+
   get '/densities/new', controller: 'densities', action: 'new', as: 'new_density'
   post '/densities', controller: 'densities', action: 'create', as: 'densities'
 

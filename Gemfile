@@ -4,6 +4,7 @@ gem 'nokogiri'
 gem 'mixpanel-ruby'
 
 gem 'json'
+gem 'devise'
 
 gem 'easystats'
 

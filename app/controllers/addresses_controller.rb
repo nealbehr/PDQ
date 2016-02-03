@@ -6,6 +6,9 @@ class AddressesController < ApplicationController
     #  Feel free to delete test, it's just for messing with    #
     #                                                          #
     ############################################################
+    puts "This is your IP"
+    puts request.remote_ip  
+    puts "Your IP is above"
 
     url = URI.parse('http://www.zillow.com/homes/20564792_zpid/')
     req = Net::HTTP::Get.new(url.to_s)

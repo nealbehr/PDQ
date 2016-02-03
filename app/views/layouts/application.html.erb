@@ -45,6 +45,13 @@
         <li><%= link_to "Outputs", outputs_url %></li>
         <li><a href="/inspect/oneoff">One Off</a></li>
         <li><a href="/getvalues">Get All Values</a></li>
+        <li>_______________________________________________</li>
+        <% if current_user != nil %>
+        <li> <%= button_to 'Logout from user:' + current_user.email, destroy_user_session_path, method: :delete %> </li> 
+        <% if current_user.admin? == true %>
+        <li><a href="/registration/showuser">Show All Users</a></li>
+        <% end %>
+        <% end %>
       </ul>
     </div><!-- /.navbar-collapse -->
   </nav>

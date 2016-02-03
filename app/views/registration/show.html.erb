@@ -1,0 +1,19 @@
+<h1>Users</h1>
+
+
+<table>
+  <thead>
+    <tr>
+      <th>Email</th>
+    </tr>
+  </thead>
+
+  <tbody>
+  <% @users.each do |user| %>
+    <tr>
+      <td width = 350><%= user.email %></td>
+      <td width = 50><a href = /registration/destroy/<%= user.id%>> Release </a></td>
+    </tr>
+  <% end %>
+  </tbody>
+</table>
