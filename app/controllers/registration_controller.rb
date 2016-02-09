@@ -4,7 +4,10 @@ class RegistrationController < ApplicationController
   end
 
   def create
-    if current_user.admin? == true        
+    if current_user != nil && current_user.admin? == true    
+      puts "We are about to create this user!"
+      puts "New user: " & params[:email]
+      puts "Current User: " & current_user
       @user = User.new
       @user.email = params[:email]
       @user.password = params[:password]
@@ -21,7 +24,7 @@ class RegistrationController < ApplicationController
   end
   
   def show
-    if current_user.admin? == true        
+    if current_user != nil && current_user.admin? == true   
       @users = User.all
       render 'show'
     else
@@ -30,14 +33,15 @@ class RegistrationController < ApplicationController
   end
 
   def destroy
-    if current_user.admin? == true        
+    if current_user != nil && current_user.admin? == true   
       @user = User.find_by(id: params[:id])
       @user.destroy
 
       @users = User.all
       render 'show'
+    else
+      render 'blank'
     end
-    render 'blank'
   end
 
 
