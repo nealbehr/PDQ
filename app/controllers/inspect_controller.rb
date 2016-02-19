@@ -14,6 +14,7 @@ class InspectController < ApplicationController
   	outputs = Output.all
     id = params[:id]
     @output = outputs.find_by(id: id)
+    @public = !current_user.admin?   
     render 'inspect'
   end
 
@@ -21,7 +22,7 @@ class InspectController < ApplicationController
     outputs = Output.all
     street = params[:street]
     citystatezip = params[:citystatezip]
-    @public = true
+    @public = !current_user.admin?    
     @output = outputs.find_by(street: URI.unescape(street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip))
     if @output == nil
       @calcurl = "/getvalues/calc/"+street+"/"+citystatezip

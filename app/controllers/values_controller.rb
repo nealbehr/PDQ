@@ -439,20 +439,28 @@ class ValuesController < ApplicationController
       end
       begin
         metricsCount += 1
-        metricsNames[metricsCount] = "Lot Size Typicality - Comps"
-        metrics[metricsCount] = (((@compOutput.at_xpath('//properties//principal//lotSizeSqFt').content.to_f / (total.to_f / count.to_f)) -1).to_f * 100.0).round(2)
-        metricsPass[metricsCount] = metrics[metricsCount] <= 40 && metrics[metricsCount] >= -40
-        metricsComments[metricsCount] = "Lot Size must be within 40% || Prop: " + @compOutput.at_xpath('//properties//principal//lotSizeSqFt').content.to_f.to_s + " || Ave: " + (total.to_f / count.to_f).to_s
-        metricsUsage[metricsCount] = "Typicality"
-      rescue StandardError => e
         if @evalProp.at_xpath('//useCode').content == "Condominium"
-          metricsNames[metricsCount] = "Lot Size Typicality"
+          metricsNames[metricsCount] = "Lot Size Typicality - Comps"
           metrics[metricsCount]= "N/A"
           metricsPass[metricsCount] = true
           metricsComments[metricsCount]= "Does not apply to condominiums"
           metricsUsage[metricsCount] = "Typicality"
         else
-          metricsNames[metricsCount] = "Lot Size Typicality"
+          metricsNames[metricsCount] = "Lot Size Typicality - Comps"
+          metrics[metricsCount] = (((@compOutput.at_xpath('//properties//principal//lotSizeSqFt').content.to_f / (total.to_f / count.to_f)) -1).to_f * 100.0).round(2)
+          metricsPass[metricsCount] = metrics[metricsCount] <= 40 && metrics[metricsCount] >= -40
+          metricsComments[metricsCount] = "Lot Size must be within 40% || Prop: " + @compOutput.at_xpath('//properties//principal//lotSizeSqFt').content.to_f.to_s + " || Ave: " + (total.to_f / count.to_f).to_s
+          metricsUsage[metricsCount] = "Typicality"
+        end
+      rescue StandardError => e
+        if @evalProp.at_xpath('//useCode').content == "Condominium"
+          metricsNames[metricsCount] = "Lot Size Typicality - Comps"
+          metrics[metricsCount]= "N/A"
+          metricsPass[metricsCount] = true
+          metricsComments[metricsCount]= "Does not apply to condominiums"
+          metricsUsage[metricsCount] = "Typicality"
+        else
+          metricsNames[metricsCount] = "Lot Size Typicality - Comps"
           metrics[metricsCount]= "N/A"
           metricsPass[metricsCount] = false
           metricsComments[metricsCount]= "Unknown Lot Size"
@@ -539,14 +547,19 @@ class ValuesController < ApplicationController
       @sqft = Array.new    
 
 
-      @scrappingProperties = @page.to_s.split('zsg-photo-card-caption')
+      @pageTruncated = @page.to_s.split('zsg-content-section similar-homes-carousel')[0]
+      @scrappingProperties = @pageTruncated.to_s.split('zsg-photo-card-caption')
       for x in 0 .. @scrappingProperties.length - 1
         @scrappingTable[x] = @scrappingProperties[x].to_s.gsub("zsg-photo-card-price","||DELIMITER||").gsub("zsg-photo-card-info","||DELIMITER||").gsub("zsg-photo-card-notification","||DELIMITER||").gsub("zsg-photo-card-address hdp-link noroute","||DELIMITER||").gsub("zsg-photo-card-actions","||DELIMITER||")
         @scrappingTable[x] = @scrappingTable[x].split("||DELIMITER||")
+        # urlsToHit[urlsToHit.size] = "Evaluating: " + x.to_s
+        # urlsToHit[urlsToHit.size] = @scrappingTable[x][1]
+        # urlsToHit[urlsToHit.size] = @scrappingTable[x][2]
         if x >= 1 && @scrappingTable[x][1] != nil
           begin
             @prices.push(@scrappingTable[x][1].to_s[2..11].gsub("<","").gsub("s","").gsub("p","").gsub("/","").gsub("$","").gsub(",","").to_i)
           rescue
+            # urlsToHit[urlsToHit.size] = "Had an error with the pricing scrape!"
           end
           begin
             @bedrooms.push(@scrappingTable[x][2].to_s[2..2].to_i)
@@ -579,7 +592,7 @@ class ValuesController < ApplicationController
       bedroomsString = ""
       sqftString = ""
       for x in 0 .. @scrappingProperties.length - 1
-        if @prices[x] != 0 && @scrappingTable[x][1] != nil && @prices[x] != nil
+        if @prices[x] != 0 && @prices[x] != nil
           @totalPrice += @prices[x]
           if @prices[x] != 0 
             @totalPriceCount += 1
@@ -602,6 +615,21 @@ class ValuesController < ApplicationController
           bedroomsString = bedroomsString.to_s + " ;; " + @bedrooms[x].to_s
           sqftString = sqftString.to_s + " ;; " + @sqft[x].to_s                              
         end
+      end
+
+      metricsCount += 1
+      begin
+        metricsNames[metricsCount] = "Neighbors available"
+        metrics[metricsCount]= [@totalPriceCount, @totalBathroomsCount, @totalBedroomsCount, @totalSqFtCount].min
+        metricsPass[metricsCount] = metrics[metricsCount] >= 2
+        metricsComments[metricsCount]= "Total number of neighbors must be at least 2"
+        metricsUsage[metricsCount] = "Typicality"
+      rescue
+        metricsNames[metricsCount] = "Estimate typicality - neighbors"
+        metrics[metricsCount]= "N/A"    
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Data Unavailable"
+        metricsUsage[metricsCount] = "Typicality"
       end
 
       metricsCount += 1
