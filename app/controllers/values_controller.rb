@@ -219,11 +219,16 @@ class ValuesController < ApplicationController
       metricsUsage[metricsCount] = "MSA check"
       msaOutput = getMSA(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
       metrics[metricsCount]= msaOutput[:status]
-      metricsPass[metricsCount] = metrics[metricsCount] == -1 ? false : true
+      state = @evalProp.at_xpath('//results//address//state').content.to_s
+      if ["CA","WA","OR","VA","MD","MA","NJ","DC",].include?(state)
+        metricsPass[metricsCount] = metrics[metricsCount] == -1 ? false : true
+      else
+        metricsPass[metricsCount] = false
+      end
       if metrics[metricsCount] == -1
         metricsComments[metricsCount] = "Not in MSA: " + msaOutput[:name].to_s
       elsif metrics[metricsCount] == 1 
-        metricsComments[metricsCount] = "In MSA: " + msaOutput[:name].to_s
+        metricsComments[metricsCount] = "In MSA: " + msaOutput[:name].to_s + " || State: " + state.to_s
       elsif metrics[metricsCount] == 0
         metricsComments[metricsCount] = "There was an error evaluating the MSA"
       else        
