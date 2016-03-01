@@ -16,8 +16,14 @@ puts "Densities Done"
 Address.destroy_all
 
 Address.create!([
-{ street: "26717 SE 37TH ST", citystatezip: "ISSAQUAH, WA 98029"},
-
+{ street: "941 Truro Ln", citystatezip: "Crofton, MD 21114"},
+{ street: "13180 Derby Ave", citystatezip: "Chino, CA 91710"},
+{ street: "76 Windchime", citystatezip: "Irvine, CA 92603"},
+{ street: "14964 Preston Drive", citystatezip: "Fontana, CA 92336"},
+{ street: "4661 Arabian Way", citystatezip: "Antioch, CA 94531"},
+{ street: "12803 WITHERSPOON RD", citystatezip: "CHINO, CA 91710"},
+{ street: "1208 Rucker Ave", citystatezip: "Everett, WA 98201"},
+{ street: "15348 Villaba Rd", citystatezip: "Fontana, CA 92337"},
 
 	])
 

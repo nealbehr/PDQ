@@ -1,4 +1,6 @@
 class AddressesController < ApplicationController
+require 'basecrm'
+
 
   def test
     ############################################################
@@ -6,61 +8,12 @@ class AddressesController < ApplicationController
     #  Feel free to delete test, it's just for messing with    #
     #                                                          #
     ############################################################
-    puts "This is your IP"
-    puts request.remote_ip  
-    puts "Your IP is above"
+    @basecrmToken = "9878d89068634f382f7233bb17091c244eab66b373f001b2ce1af00b67fe9b28"
 
-    url = URI.parse('http://www.zillow.com/homes/20564792_zpid/')
-    req = Net::HTTP::Get.new(url.to_s)
-    res = Net::HTTP.start(url.host, url.port) {|http|
-      http.request(req)
-    }
-
-    @page = res.body
-
-    @scrappingTable = Array.new
-    @prices = Array.new
-    @bedrooms = Array.new
-    @bathrooms = Array.new
-    @sqft = Array.new    
+    client = BaseCRM::Client.new(access_token: @basecrmToken)
+    @testLO = client.contacts.where(email: "gregory.hill@banchomeloans.com")
 
 
-    @scrappingProperties = @page.to_s.split('zsg-photo-card-caption')
-    for x in 0 .. @scrappingProperties.length - 1
-      @scrappingTable[x] = @scrappingProperties[x].to_s.gsub("zsg-photo-card-price","||DELIMITER||").gsub("zsg-photo-card-info","||DELIMITER||").gsub("zsg-photo-card-notification","||DELIMITER||").gsub("zsg-photo-card-address hdp-link noroute","||DELIMITER||").gsub("zsg-photo-card-actions","||DELIMITER||")
-      @scrappingTable[x] = @scrappingTable[x].split("||DELIMITER||")
-      if x >= 1 && @scrappingTable[x][1] != nil
-        begin
-          @prices.push(@scrappingTable[x][1].to_s[2..11].gsub("<","").gsub("s","").gsub("p","").gsub("/","").gsub("$","").gsub(",","").to_i)
-        rescue
-        end
-        begin
-          @bedrooms.push(@scrappingTable[x][2].to_s[2..2].to_i)
-        rescue
-        end
-        ?|
-        begin
-          @bathrooms.push(@scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("ba").to_i-4..@scrappingTable[x][2].to_s.index("ba").to_i].gsub(";","").gsub(" ","").gsub("b","").to_i)      
-        rescue
-        end
-        begin
-          @bathrooms.push(@scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("ba").to_i-4..@scrappingTable[x][2].to_s.index("ba").to_i].gsub(";","").gsub(" ","").gsub("b","").to_i)      
-        rescue
-        end
-      end 
-    end
-    @totalPrice = 0
-    @totalBedrooms = 0
-    @totalBathrooms = 0
-    @totalCount = 0
-    for x in 0 .. @scrappingProperties.length - 1
-      if @prices[x] != 0 && @bedrooms[x] != 0 && x >= 1 && @scrappingTable[x][1] != nil && @prices[x] != nil
-        @totalPrice += @prices[x]
-        @totalBathrooms += @bathrooms[x]
-        @totalBedrooms += @bedrooms[x]
-        @totalCount += 1
-      end
-    end
 
     render 'test'
   end

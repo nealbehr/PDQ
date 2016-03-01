@@ -24,7 +24,7 @@ class ValuesController < ApplicationController
     #||||||||||||||||||||||||||||||||||||||||||||||||||||||||||#
     ############################################################
     
-
+    ZILLOW_TOKEN = 'X1-ZWz1euzz31vnd7_5b1bv'
     MIXPANEL_TOKEN = '6d8fc694585f4014626a6708a807ae0a'
     BASE_TOKEN = '2ee90a91dd770d654ecf1558276736723b081e322bf596996a784a9f22e6db38'
 
@@ -99,14 +99,14 @@ class ValuesController < ApplicationController
         next
       end
 
-      url = URI.parse('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=X1-ZWz1euzz31vnd7_5b1bv&address='+URI.escape(@addresses[q].street)+'&citystatezip='+URI.escape(@addresses[q].citystatezip))
+      url = URI.parse('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id='+ZILLOW_TOKEN+'&address='+URI.escape(@addresses[q].street)+'&citystatezip='+URI.escape(@addresses[q].citystatezip))
       req = Net::HTTP::Get.new(url.to_s)
       res = Net::HTTP.start(url.host, url.port) {|http|
         http.request(req)
       }
-
       @evalProp = Nokogiri::XML(res.body)
       urlsToHit.push(url.to_s.gsub(",","THESENTINEL"))
+      urlsToHit.push(res.body)
 
       puts @evalProp.at_xpath('//zpid')
       puts @evalProp.at_xpath('//results//result//address')
@@ -142,16 +142,17 @@ class ValuesController < ApplicationController
       end
       @zpid = @evalProp.at_xpath('//zpid').content
 
-      url = URI.parse('http://www.zillow.com/webservice/GetDeepComps.htm?zws-id=X1-ZWz1euzz31vnd7_5b1bv&zpid='+@zpid+'&count=25')
+      url = URI.parse('http://www.zillow.com/webservice/GetDeepComps.htm?zws-id='+ZILLOW_TOKEN+'&zpid='+@zpid+'&count=25')
       req = Net::HTTP::Get.new(url.to_s)
       res = Net::HTTP.start(url.host, url.port) {|http|
         http.request(req)
       }
       @compOutput = Nokogiri::XML(res.body)
       urlsToHit.push(url.to_s)
-
+      urlsToHit.push(res.body)
+      
       if params[:path] == "gather"
-        url = URI.parse('http://www.zillow.com/webservice/GetDemographics.htm?zws-id=X1-ZWz1euzz31vnd7_5b1bv&state='+@evalProp.at_xpath('//result//address').at_xpath('//state').content+'&city='+URI.escape(@evalProp.at_xpath('//result//address').at_xpath('//city').content)+"&zipcode="+@evalProp.at_xpath('//result//address').at_xpath('//zipcode').content)
+        url = URI.parse('http://www.zillow.com/webservice/GetDemographics.htm?zws-id='+ZILLOW_TOKEN+'&state='+@evalProp.at_xpath('//result//address').at_xpath('//state').content+'&city='+URI.escape(@evalProp.at_xpath('//result//address').at_xpath('//city').content)+"&zipcode="+@evalProp.at_xpath('//result//address').at_xpath('//zipcode').content)
         req = Net::HTTP::Get.new(url.to_s)
         res = Net::HTTP.start(url.host, url.port) {|http|
           http.request(req)
@@ -216,31 +217,19 @@ class ValuesController < ApplicationController
       metricsCount += 1
       metricsNames[metricsCount] = "Pre-approval"
       metricsUsage[metricsCount] = "MSA check"
-      if params[:product].to_s.upcase == "RA" 
-        metrics[metricsCount]= getaPrequal(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
-        metricsPass[metricsCount] = metrics[metricsCount] == -1 ? false : true
-        if metrics[metricsCount] == -1
-          metricsComments[metricsCount] = "Not found in database"
-        elsif metrics[metricsCount] == 1 
-          metricsComments[metricsCount] = "Found in database. Mapped to Approved"
-        elsif metrics[metricsCount] == 0
-          metricsComments[metricsCount] = "Found in database. Mapped to false/exception"
-        else        
-          metricsComments[metricsCount] = "There was an error evaluating prequal"
-        end
-      else
-        metrics[metricsCount]= getaPrequal(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
-        metricsPass[metricsCount] = metrics[metricsCount] == 1 ? true : false
-        if metrics[metricsCount] == -1
-          metricsComments[metricsCount] = "Not found in database"
-        elsif metrics[metricsCount] == 1 
-          metricsComments[metricsCount] = "Found in database. Mapped to Approved"
-        elsif metrics[metricsCount] == 0
-          metricsComments[metricsCount] = "Found in database. Mapped to false/exception"
-        else        
-          metricsComments[metricsCount] = "There was an error evaluating prequal"
-        end
+      msaOutput = getMSA(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
+      metrics[metricsCount]= msaOutput[:status]
+      metricsPass[metricsCount] = metrics[metricsCount] == -1 ? false : true
+      if metrics[metricsCount] == -1
+        metricsComments[metricsCount] = "Not in MSA: " + msaOutput[:name].to_s
+      elsif metrics[metricsCount] == 1 
+        metricsComments[metricsCount] = "In MSA: " + msaOutput[:name].to_s
+      elsif metrics[metricsCount] == 0
+        metricsComments[metricsCount] = "There was an error evaluating the MSA"
+      else        
+        metricsComments[metricsCount] = "There was an error evaluating the MSA"
       end
+
 
     ############################################################
     #                                                          #

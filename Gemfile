@@ -2,6 +2,7 @@ source 'http://rubygems.org'
 
 gem 'nokogiri'
 gem 'mixpanel-ruby'
+gem 'basecrm'
 
 gem 'json'
 gem 'devise'
