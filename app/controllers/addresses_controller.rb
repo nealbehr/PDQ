@@ -13,7 +13,7 @@ require 'basecrm'
     client = BaseCRM::Client.new(access_token: @basecrmToken)
     @testLO = client.contacts.where(email: "gregory.hill@banchomeloans.com")
 
-
+     https://hooks.slack.com/services/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 
 
     render 'test'
   end

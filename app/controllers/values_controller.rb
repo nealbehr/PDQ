@@ -149,7 +149,6 @@ class ValuesController < ApplicationController
       }
       @compOutput = Nokogiri::XML(res.body)
       urlsToHit.push(url.to_s)
-      urlsToHit.push(res.body)
       
       if params[:path] == "gather"
         url = URI.parse('http://www.zillow.com/webservice/GetDemographics.htm?zws-id='+ZILLOW_TOKEN+'&state='+@evalProp.at_xpath('//result//address').at_xpath('//state').content+'&city='+URI.escape(@evalProp.at_xpath('//result//address').at_xpath('//city').content)+"&zipcode="+@evalProp.at_xpath('//result//address').at_xpath('//zipcode').content)
@@ -509,6 +508,10 @@ class ValuesController < ApplicationController
         metrics[metricsCount] = @distance.count{ |x| x <= 6000}
         metricsPass[metricsCount] = metrics[metricsCount] >= 7
         metricsComments[metricsCount] = "At least seven comparable properties within 6000 feet"
+        if metricsPass[metricsCount] == false && metricsPass[metricsCount-1] == false
+          metricsPass[metricsCount] = true
+          metricsComments[metricsCount] = "We only count one if both Comps Nearby and Comps Distance fails"
+        end
         metricsUsage[metricsCount] = "Typicality"
       rescue StandardError => e
         metricsNames[metricsCount] = "Properties Nearby"
@@ -658,21 +661,21 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Typicality"
       end
 
-      metricsCount += 1
-      begin
-        metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
-        metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (@totalBathrooms.to_f/@totalBathroomsCount.to_f)-1)*100).to_f.round(1))     
-        metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount]  > -66
-        metricsComments[metricsCount]= "% deviation from community within 66%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (@totalBathrooms.to_f/@totalBathroomsCount.to_f).to_s
-        # metricsComments[metricsCount] += "  ||  " + @totalBathrooms.to_s + "  ||  " + @totalBathroomsCount.to_s + "  ||  " + bathroomsString.to_s
-        metricsUsage[metricsCount] = "Typicality"
-      rescue
-        metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
-        metrics[metricsCount]= "N/A"    
-        metricsPass[metricsCount] = true
-        metricsComments[metricsCount]= "Data Unavailable"
-        metricsUsage[metricsCount] = "Typicality"
-      end
+      # metricsCount += 1
+      # begin
+      #   metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
+      #   metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (@totalBathrooms.to_f/@totalBathroomsCount.to_f)-1)*100).to_f.round(1))     
+      #   metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount]  > -66
+      #   metricsComments[metricsCount]= "% deviation from community within 66%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (@totalBathrooms.to_f/@totalBathroomsCount.to_f).to_s
+      #   # metricsComments[metricsCount] += "  ||  " + @totalBathrooms.to_s + "  ||  " + @totalBathroomsCount.to_s + "  ||  " + bathroomsString.to_s
+      #   metricsUsage[metricsCount] = "Typicality"
+      # rescue
+      #   metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
+      #   metrics[metricsCount]= "N/A"    
+      #   metricsPass[metricsCount] = true
+      #   metricsComments[metricsCount]= "Data Unavailable"
+      #   metricsUsage[metricsCount] = "Typicality"
+      # end
 
       metricsCount += 1
       begin
@@ -881,7 +884,7 @@ class ValuesController < ApplicationController
             -10000.0000000000 * (metricsPass[metricsNames.index("Census Tract Density")] ? 0.0 : 1.0) +  
             0.0 ) /10000.0)
         metrics[metricsCount]= (Math.exp(ruralityScore).to_f / (1.0 + Math.exp(ruralityScore).to_f)).round(5)
-        metricsPass[metricsCount] = metrics[metricsCount] <= 0.20
+        metricsPass[metricsCount] = metrics[metricsCount] <= 0.22
         metricsComments[metricsCount]= "Probability of being rural || Rurality Exponent: " + ruralityScore.round(10).to_s
         metricsUsage[metricsCount] = "Rurality"
       rescue StandardError => e
@@ -995,7 +998,7 @@ class ValuesController < ApplicationController
         metricsCount += 1
         metricsNames[metricsCount] = "Combo Rural"
         metricsUsage[metricsCount] = "Combo Rural"
-        if metrics[metricsNames.index("Rurality Score")] > 0.08 && metrics[metricsNames.index("Rurality Score")] <= 0.20
+        if metrics[metricsNames.index("Rurality Score")] > 0.12 && metrics[metricsNames.index("Rurality Score")] <= 0.22
           if range1 >= 25000
             metrics[metricsCount] = metrics[metricsNames.index("Distance from MSA")]
             metricsPass[metricsCount] = (metrics[metricsCount] < [range1.to_f*0.6666,60000].min)
@@ -1026,7 +1029,6 @@ class ValuesController < ApplicationController
     ############################################################
 
       begin
-        metricsCount += 1
         url = URI.parse("http://www.zillow.com/ajax/homedetail/HomeValueChartData.htm?mt=1&zpid="+URI.escape(@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content)+"&format=json")
         req = Net::HTTP::Get.new("http://www.zillow.com"+url.request_uri)
         res = Net::HTTP.start(url.host, url.port) {|http|
@@ -1035,16 +1037,22 @@ class ValuesController < ApplicationController
 
         urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
         jsonOutput = JSON.parse(Nokogiri::HTML(open(url)).css('p')[0].content)
-        urlsToHit[urlsToHit.size] = [jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min
         @differencesInPrices = Array.new
         @neighborhoodPrices = Array.new
         @homePrices = Array.new
-        for time in 0..[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-1
-          @differencesInPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]-jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
+        begin
+          for time in 0..[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-1
+            @homePrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
 
-          @neighborhoodPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
+            @neighborhoodPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
 
-          @homePrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
+            @differencesInPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]-jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
+          end
+        rescue StandardError => e
+          for time in 0..jsonOutput[0]["points"].size-1
+            @homePrices[jsonOutput[0]["points"].size-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
+          end
+          urlsToHit[urlsToHit.size] = "Issues with neighborhood and deltas"          
         end
         begin
           changeInHomePrice = {change: jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"], time: jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"], percent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f, yearly: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f/(jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[0]["points"].last["y"]-jsonOutput[0]["points"][-12]["y"], recentpercent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"][-12]["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f}
@@ -1057,6 +1065,12 @@ class ValuesController < ApplicationController
           changeInNeighborhoodPrice = {change: 0, time: 0, percent: 0, yearly: 0, recentchange: 0, recentpercent: 0}
           urlsToHit.push(changeInNeighborhoodPrice)    
         end
+      rescue StandardError => e
+        urlsToHit[urlsToHit.size] = "Error in the AJAX output"
+      end
+      
+      metricsCount += 1
+      begin
         metricsNames[metricsCount] = "Std. Dev. of price deltas"
         metrics[metricsCount]= (@differencesInPrices.standard_deviation.to_f/metrics[0].to_f).round(3)
         metricsPass[metricsCount] = metrics[metricsCount] < 0.25
@@ -1070,8 +1084,8 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Volatility"    
       end
 
+      metricsCount += 1
       begin
-        metricsCount += 1
         metricsNames[metricsCount] = "Range of price deltas"
         metrics[metricsCount]= (@differencesInPrices.range.to_f/metrics[0].to_f).round(3)
         metricsPass[metricsCount] = metrics[metricsCount] < 0.80
@@ -1085,9 +1099,8 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Volatility"
       end
 
-
+      metricsCount += 1
       begin
-        metricsCount += 1
         metricsNames[metricsCount] = "Std. Dev. of historical home price"
         metrics[metricsCount]= (@homePrices.standard_deviation.to_f/metrics[0].to_f).round(3)
         metricsPass[metricsCount] = metrics[metricsCount] < 0.1
@@ -1994,7 +2007,7 @@ class ValuesController < ApplicationController
         reason[7]=nil
       end
 
-      if metricsPass[metricsNames.index("Std. Dev. of price deltas")..metricsNames.index("Std. Dev. of historical home price")].count(false)>=2
+      if metricsPass[metricsNames.index("Std. Dev. of price deltas")..metricsNames.index("Range of price deltas")].count(false)>=2
         reason[8]="Prices volatile"
       else
         reason[8]=nil
