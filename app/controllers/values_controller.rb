@@ -512,7 +512,7 @@ class ValuesController < ApplicationController
           metricsPass[metricsCount] = true
           metricsComments[metricsCount] = "We only count one if both Comps Nearby and Comps Distance fails"
         end
-        if metricsPass[metricsNames.index("Properties Count")] == false
+        if metricsPass[metricsNames.index("Properties count")] == false
           metricsPass[metricsCount] = true
           metricsComments[metricsCount] = "We do not double penalize if both Comps Nearby and Properties count fails"
         end
