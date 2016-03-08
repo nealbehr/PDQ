@@ -633,7 +633,7 @@ class ValuesController < ApplicationController
       begin
         metricsNames[metricsCount] = "Estimate typicality - neighbors"
         metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//zestimate//amount').content.to_f / (@totalPrice.to_f/@totalPriceCount.to_f)-1)*100).to_f.round(1))     
-        metricsPass[metricsCount] = metrics[metricsCount] < 40 && metrics[metricsCount]  > -40
+        metricsPass[metricsCount] = metrics[metricsCount] < 33 && metrics[metricsCount]  > -33
         metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//zestimate//amount').content.to_s + "  || Avg: " + (@totalPrice.to_f/@totalPriceCount.to_f).to_s
         # metricsComments[metricsCount] += "  ||  " + @totalPrice.to_s + "  ||  " + @totalPriceCount.to_s + "  ||  " + pricesString.to_s
         metricsUsage[metricsCount] = "Typicality"
@@ -661,27 +661,27 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Typicality"
       end
 
-      # metricsCount += 1
-      # begin
-      #   metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
-      #   metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (@totalBathrooms.to_f/@totalBathroomsCount.to_f)-1)*100).to_f.round(1))     
-      #   metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount]  > -66
-      #   metricsComments[metricsCount]= "% deviation from community within 66%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (@totalBathrooms.to_f/@totalBathroomsCount.to_f).to_s
-      #   # metricsComments[metricsCount] += "  ||  " + @totalBathrooms.to_s + "  ||  " + @totalBathroomsCount.to_s + "  ||  " + bathroomsString.to_s
-      #   metricsUsage[metricsCount] = "Typicality"
-      # rescue
-      #   metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
-      #   metrics[metricsCount]= "N/A"    
-      #   metricsPass[metricsCount] = true
-      #   metricsComments[metricsCount]= "Data Unavailable"
-      #   metricsUsage[metricsCount] = "Typicality"
-      # end
+      metricsCount += 1
+      begin
+        metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
+        metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (@totalBathrooms.to_f/@totalBathroomsCount.to_f)-1)*100).to_f.round(1))     
+        metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount]  > -66
+        metricsComments[metricsCount]= "% deviation from community within 66%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (@totalBathrooms.to_f/@totalBathroomsCount.to_f).to_s
+        # metricsComments[metricsCount] += "  ||  " + @totalBathrooms.to_s + "  ||  " + @totalBathroomsCount.to_s + "  ||  " + bathroomsString.to_s
+        metricsUsage[metricsCount] = "Typicality"
+      rescue
+        metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
+        metrics[metricsCount]= "N/A"    
+        metricsPass[metricsCount] = true
+        metricsComments[metricsCount]= "Data Unavailable"
+        metricsUsage[metricsCount] = "Typicality"
+      end
 
       metricsCount += 1
       begin
         metricsNames[metricsCount] = "SqFt typicality - neighbors"
         metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//finishedSqFt').content.to_f / (@totalSqFt.to_f/@totalSqFtCount.to_f)-1)*100).to_f.round(1))     
-        metricsPass[metricsCount] = metrics[metricsCount] < 40 && metrics[metricsCount]  > -40
+        metricsPass[metricsCount] = metrics[metricsCount] < 33 && metrics[metricsCount]  > -33
         metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//finishedSqFt').content.to_s + "  || Avg: " + (@totalSqFt.to_f/@totalSqFtCount.to_f).to_s
         # metricsComments[metricsCount] += "  ||  " + @totalSqFt.to_s + "  ||  " + @totalSqFtCount.to_s + "  ||  " + sqftString.to_s
         metricsUsage[metricsCount] = "Typicality"
