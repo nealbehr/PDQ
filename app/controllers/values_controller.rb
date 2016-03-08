@@ -508,9 +508,13 @@ class ValuesController < ApplicationController
         metrics[metricsCount] = @distance.count{ |x| x <= 6000}
         metricsPass[metricsCount] = metrics[metricsCount] >= 7
         metricsComments[metricsCount] = "At least seven comparable properties within 6000 feet"
-        if metricsPass[metricsCount] == false && metricsPass[metricsCount-1] == false
+        if (metricsPass[metricsCount] == false && metricsPass[metricsCount-1] == false) 
           metricsPass[metricsCount] = true
           metricsComments[metricsCount] = "We only count one if both Comps Nearby and Comps Distance fails"
+        end
+        if metricsPass[metricsNames.index("Properties Count")] == false
+          metricsPass[metricsCount] = true
+          metricsComments[metricsCount] = "We do not double penalize if both Comps Nearby and Properties count fails"
         end
         metricsUsage[metricsCount] = "Typicality"
       rescue StandardError => e
@@ -634,7 +638,7 @@ class ValuesController < ApplicationController
         metricsNames[metricsCount] = "Estimate typicality - neighbors"
         metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//zestimate//amount').content.to_f / (@totalPrice.to_f/@totalPriceCount.to_f)-1)*100).to_f.round(1))     
         metricsPass[metricsCount] = metrics[metricsCount] < 33 && metrics[metricsCount]  > -33
-        metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//zestimate//amount').content.to_s + "  || Avg: " + (@totalPrice.to_f/@totalPriceCount.to_f).to_s
+        metricsComments[metricsCount]= "% deviation from community within 33%   || Prop: " + @evalProp.at_xpath('//response//result//zestimate//amount').content.to_s + "  || Avg: " + (@totalPrice.to_f/@totalPriceCount.to_f).to_s
         # metricsComments[metricsCount] += "  ||  " + @totalPrice.to_s + "  ||  " + @totalPriceCount.to_s + "  ||  " + pricesString.to_s
         metricsUsage[metricsCount] = "Typicality"
       rescue
@@ -661,28 +665,28 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Typicality"
       end
 
-      metricsCount += 1
-      begin
-        metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
-        metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (@totalBathrooms.to_f/@totalBathroomsCount.to_f)-1)*100).to_f.round(1))     
-        metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount]  > -66
-        metricsComments[metricsCount]= "% deviation from community within 66%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (@totalBathrooms.to_f/@totalBathroomsCount.to_f).to_s
-        # metricsComments[metricsCount] += "  ||  " + @totalBathrooms.to_s + "  ||  " + @totalBathroomsCount.to_s + "  ||  " + bathroomsString.to_s
-        metricsUsage[metricsCount] = "Typicality"
-      rescue
-        metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
-        metrics[metricsCount]= "N/A"    
-        metricsPass[metricsCount] = true
-        metricsComments[metricsCount]= "Data Unavailable"
-        metricsUsage[metricsCount] = "Typicality"
-      end
+      # metricsCount += 1
+      # begin
+      #   metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
+      #   metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (@totalBathrooms.to_f/@totalBathroomsCount.to_f)-1)*100).to_f.round(1))     
+      #   metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount]  > -66
+      #   metricsComments[metricsCount]= "% deviation from community within 66%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (@totalBathrooms.to_f/@totalBathroomsCount.to_f).to_s
+      #   # metricsComments[metricsCount] += "  ||  " + @totalBathrooms.to_s + "  ||  " + @totalBathroomsCount.to_s + "  ||  " + bathroomsString.to_s
+      #   metricsUsage[metricsCount] = "Typicality"
+      # rescue
+      #   metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
+      #   metrics[metricsCount]= "N/A"    
+      #   metricsPass[metricsCount] = true
+      #   metricsComments[metricsCount]= "Data Unavailable"
+      #   metricsUsage[metricsCount] = "Typicality"
+      # end
 
       metricsCount += 1
       begin
         metricsNames[metricsCount] = "SqFt typicality - neighbors"
         metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//finishedSqFt').content.to_f / (@totalSqFt.to_f/@totalSqFtCount.to_f)-1)*100).to_f.round(1))     
         metricsPass[metricsCount] = metrics[metricsCount] < 33 && metrics[metricsCount]  > -33
-        metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//finishedSqFt').content.to_s + "  || Avg: " + (@totalSqFt.to_f/@totalSqFtCount.to_f).to_s
+        metricsComments[metricsCount]= "% deviation from community within 33%   || Prop: " + @evalProp.at_xpath('//response//result//finishedSqFt').content.to_s + "  || Avg: " + (@totalSqFt.to_f/@totalSqFtCount.to_f).to_s
         # metricsComments[metricsCount] += "  ||  " + @totalSqFt.to_s + "  ||  " + @totalSqFtCount.to_s + "  ||  " + sqftString.to_s
         metricsUsage[metricsCount] = "Typicality"
       rescue
@@ -1971,7 +1975,10 @@ class ValuesController < ApplicationController
 
       #We calculate a number of tpyicality fail counts, then use that
       typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("SqFt typicality - neighbors")].count(false)
-      if  typicalFailCount >= 3 || (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0))
+      if  typicalFailCount >= 3 || 
+        (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0)) || 
+        (metricsPass[metricsNames.index("SqFt Typicality - Comps")] == false && metricsPass[metricsNames.index("SqFt typicality - neighbors")] == false) || 
+        (metricsPass[metricsNames.index("Estimate Typicality - Comps")] == false && metricsPass[metricsNames.index("Estimate typicality - neighbors")] == false)
         reason[2]="Atypical property"
       else
         reason[2]=nil
