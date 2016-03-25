@@ -547,15 +547,16 @@ class ValuesController < ApplicationController
       @bathrooms = Array.new
       @sqft = Array.new    
 
-
-      @pageTruncated = @page.to_s.split('zsg-content-section similar-homes-carousel')[0]
+      urlsToHit[urlsToHit.size] = "Debugging"
+      @pageTruncated = @page.to_s.split('zsg-carousel-scroll-wrapper')[0]
+      urlsToHit[urlsToHit.size] = @pageTruncated.to_s
       @scrappingProperties = @pageTruncated.to_s.split('zsg-photo-card-caption')
       for x in 0 .. @scrappingProperties.length - 1
         @scrappingTable[x] = @scrappingProperties[x].to_s.gsub("zsg-photo-card-price","||DELIMITER||").gsub("zsg-photo-card-info","||DELIMITER||").gsub("zsg-photo-card-notification","||DELIMITER||").gsub("zsg-photo-card-address hdp-link noroute","||DELIMITER||").gsub("zsg-photo-card-actions","||DELIMITER||")
         @scrappingTable[x] = @scrappingTable[x].split("||DELIMITER||")
-        # urlsToHit[urlsToHit.size] = "Evaluating: " + x.to_s
-        # urlsToHit[urlsToHit.size] = @scrappingTable[x][1]
-        # urlsToHit[urlsToHit.size] = @scrappingTable[x][2]
+        urlsToHit[urlsToHit.size] = "Evaluating: " + x.to_s
+        urlsToHit[urlsToHit.size] = @scrappingTable[x][1]
+        urlsToHit[urlsToHit.size] = @scrappingTable[x][2]
         if x >= 1 && @scrappingTable[x][1] != nil
           begin
             @prices.push(@scrappingTable[x][1].to_s[2..11].gsub("<","").gsub("s","").gsub("p","").gsub("/","").gsub("$","").gsub(",","").to_i)
@@ -697,6 +698,7 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Typicality"
       end
 
+      urlsToHit[urlsToHit.size] = "Debugging - Done"
       puts "End Typicality"   
 
     ############################################################
