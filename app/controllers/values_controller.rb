@@ -363,7 +363,7 @@ class ValuesController < ApplicationController
         end
       rescue StandardError => e
         metricsNames[metricsCount] = "Bedrooms Typicality"
-        metrics[metricsCount]= "N/A"
+        metrics[metricsCount]= 0
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
         metricsUsage[metricsCount] = "Typicality"
@@ -387,8 +387,8 @@ class ValuesController < ApplicationController
         metricsComments[metricsCount] = "SqFt must be within 40% || Prop: " + @compOutput.at_xpath('//properties//principal//finishedSqFt').content.to_f.to_s + " || Ave: " + (total.to_f / count.to_f).to_s
         metricsUsage[metricsCount] = "Typicality"
       rescue StandardError => e
-        metricsNames[metricsCount] = "SqFt Typicality"
-        metrics[metricsCount]= "N/A"
+        metricsNames[metricsCount] = "SqFt Typicality - Comps"
+        metrics[metricsCount]= 0
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "SqFt not found"
         metricsUsage[metricsCount] = "Typicality"
@@ -413,8 +413,8 @@ class ValuesController < ApplicationController
         metricsComments[metricsCount]= "Estimate must be within 40% || Prop: " + @compOutput.at_xpath('//properties//principal//zestimate//amount').content.to_f.to_s + " || Ave: " + (total.to_f / count.to_f).to_s
         metricsUsage[metricsCount] = "Typicality"
       rescue StandardError => e
-        metricsNames[metricsCount] = "Estimate Typicality"
-        metrics[metricsCount]= "N/A"
+        metricsNames[metricsCount] = "Estimate Typicality - Comps"
+        metrics[metricsCount]= 0
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
         metricsUsage[metricsCount] = "Typicality"
@@ -434,7 +434,7 @@ class ValuesController < ApplicationController
         metricsCount += 1
         if @evalProp.at_xpath('//useCode').content == "Condominium"
           metricsNames[metricsCount] = "Lot Size Typicality - Comps"
-          metrics[metricsCount]= "N/A"
+          metrics[metricsCount]= 0
           metricsPass[metricsCount] = true
           metricsComments[metricsCount]= "Does not apply to condominiums"
           metricsUsage[metricsCount] = "Typicality"
@@ -448,13 +448,13 @@ class ValuesController < ApplicationController
       rescue StandardError => e
         if @evalProp.at_xpath('//useCode').content == "Condominium"
           metricsNames[metricsCount] = "Lot Size Typicality - Comps"
-          metrics[metricsCount]= "N/A"
+          metrics[metricsCount]= 0
           metricsPass[metricsCount] = true
           metricsComments[metricsCount]= "Does not apply to condominiums"
           metricsUsage[metricsCount] = "Typicality"
         else
           metricsNames[metricsCount] = "Lot Size Typicality - Comps"
-          metrics[metricsCount]= "N/A"
+          metrics[metricsCount]= 0
           metricsPass[metricsCount] = false
           metricsComments[metricsCount]= "Unknown Lot Size"
           metricsUsage[metricsCount] = "Typicality"
@@ -493,8 +493,8 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Typicality"
         urlsToHit.push(@distance.to_s.gsub(",","THESENTINEL"))
       rescue StandardError => e
-        metricsNames[metricsCount] = "Properties Distance"
-        metrics[metricsCount]= "N/A"
+        metricsNames[metricsCount] = "Comps Distance"
+        metrics[metricsCount]= 0
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
         metricsUsage[metricsCount] = "Typicality"
@@ -518,8 +518,8 @@ class ValuesController < ApplicationController
         end
         metricsUsage[metricsCount] = "Typicality"
       rescue StandardError => e
-        metricsNames[metricsCount] = "Properties Nearby"
-        metrics[metricsCount]= "N/A"
+        metricsNames[metricsCount] = "Comps Nearby"
+        metrics[metricsCount]= 0
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
         metricsUsage[metricsCount] = "Typicality"
@@ -627,7 +627,7 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Typicality"
       rescue
         metricsNames[metricsCount] = "Estimate typicality - neighbors"
-        metrics[metricsCount]= "N/A"    
+        metrics[metricsCount]= 0    
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "Data Unavailable"
         metricsUsage[metricsCount] = "Typicality"
@@ -643,7 +643,7 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Typicality"
       rescue
         metricsNames[metricsCount] = "Estimate typicality - neighbors"
-        metrics[metricsCount]= "N/A"    
+        metrics[metricsCount]= 0    
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "Data Unavailable"
         metricsUsage[metricsCount] = "Typicality"
@@ -659,7 +659,7 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Typicality"
       rescue
         metricsNames[metricsCount] = "Bedrooms typicality - neighbors"
-        metrics[metricsCount]= "N/A"    
+        metrics[metricsCount]= 0 
         metricsPass[metricsCount] = true
         metricsComments[metricsCount]= "Data Unavailable"
         metricsUsage[metricsCount] = "Typicality"
@@ -691,7 +691,7 @@ class ValuesController < ApplicationController
         metricsUsage[metricsCount] = "Typicality"
       rescue
         metricsNames[metricsCount] = "SqFt typicality - neighbors"
-        metrics[metricsCount]= "N/A"    
+        metrics[metricsCount]= 0   
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "Data Unavailable"
         metricsUsage[metricsCount] = "Typicality"
