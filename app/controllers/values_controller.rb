@@ -1987,7 +1987,7 @@ class ValuesController < ApplicationController
       #   reason[2]=nil
       # end
 
-      typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("SqFt typicality - comps")].count(false)
+      typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("Comps Nearby")].count(false)
       if  typicalFailCount >= 2 || 
         (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0))
         reason[2]="Atypical property"
