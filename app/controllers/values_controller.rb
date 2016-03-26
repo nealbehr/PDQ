@@ -533,6 +533,7 @@ class ValuesController < ApplicationController
     #                                                          #
     ############################################################
 
+
       url = URI.parse("http://www.zillow.com/homes/"+@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content+"_zpid/")
       req = Net::HTTP::Get.new(url.to_s)
       res = Net::HTTP.start(url.host, url.port) {|http|
@@ -549,14 +550,14 @@ class ValuesController < ApplicationController
 
       urlsToHit[urlsToHit.size] = "Debugging"
       @pageTruncated = @page.to_s.split('zsg-carousel-scroll-wrapper')[0]
-      urlsToHit[urlsToHit.size] = @pageTruncated.to_s
+      # urlsToHit[urlsToHit.size] = @pageTruncated.to_s
       @scrappingProperties = @pageTruncated.to_s.split('zsg-photo-card-caption')
       for x in 0 .. @scrappingProperties.length - 1
         @scrappingTable[x] = @scrappingProperties[x].to_s.gsub("zsg-photo-card-price","||DELIMITER||").gsub("zsg-photo-card-info","||DELIMITER||").gsub("zsg-photo-card-notification","||DELIMITER||").gsub("zsg-photo-card-address hdp-link noroute","||DELIMITER||").gsub("zsg-photo-card-actions","||DELIMITER||")
         @scrappingTable[x] = @scrappingTable[x].split("||DELIMITER||")
         urlsToHit[urlsToHit.size] = "Evaluating: " + x.to_s
-        urlsToHit[urlsToHit.size] = @scrappingTable[x][1]
-        urlsToHit[urlsToHit.size] = @scrappingTable[x][2]
+        urlsToHit[urlsToHit.size] = @scrappingTable[x][1].to_s.gsub(",",";")
+        urlsToHit[urlsToHit.size] = @scrappingTable[x][2].to_s.gsub(",",";")
         if x >= 1 && @scrappingTable[x][1] != nil
           begin
             @prices.push(@scrappingTable[x][1].to_s[2..11].gsub("<","").gsub("s","").gsub("p","").gsub("/","").gsub("$","").gsub(",","").to_i)
@@ -1976,16 +1977,25 @@ class ValuesController < ApplicationController
       end
 
       #We calculate a number of tpyicality fail counts, then use that
-      typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("SqFt typicality - neighbors")].count(false)
-      if  typicalFailCount >= 3 || 
-        (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0)) || 
-        (metricsPass[metricsNames.index("SqFt Typicality - Comps")] == false && metricsPass[metricsNames.index("SqFt typicality - neighbors")] == false) || 
-        (metricsPass[metricsNames.index("Estimate Typicality - Comps")] == false && metricsPass[metricsNames.index("Estimate typicality - neighbors")] == false)
+      # typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("SqFt typicality - neighbors")].count(false)
+      # if  typicalFailCount >= 3 || 
+      #   (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0)) || 
+      #   (metricsPass[metricsNames.index("SqFt Typicality - Comps")] == false && metricsPass[metricsNames.index("SqFt typicality - neighbors")] == false) || 
+      #   (metricsPass[metricsNames.index("Estimate Typicality - Comps")] == false && metricsPass[metricsNames.index("Estimate typicality - neighbors")] == false)
+      #   reason[2]="Atypical property"
+      # else
+      #   reason[2]=nil
+      # end
+
+      typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("SqFt typicality - comps")].count(false)
+      if  typicalFailCount >= 2 || 
+        (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0))
         reason[2]="Atypical property"
       else
         reason[2]=nil
       end
-      
+
+
       if metricsPass[metricsNames.index("Comps Count")..metricsNames.index("Comps Score")].count(false) >= 2
         reason[3]="Illiquid market"
       else
