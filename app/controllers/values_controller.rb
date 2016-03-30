@@ -1997,7 +1997,7 @@ class ValuesController < ApplicationController
       if metrics[metricsNames.index("Neighbors available")] >= 4
         typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("SqFt typicality - neighbors")].count(false)
         if  typicalFailCount >= 3 || 
-          (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0)) || 
+          (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 65.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 65.0)) || 
           (metricsPass[metricsNames.index("SqFt Typicality - Comps")] == false && metricsPass[metricsNames.index("SqFt typicality - neighbors")] == false) || 
           (metricsPass[metricsNames.index("Estimate Typicality - Comps")] == false && metricsPass[metricsNames.index("Estimate typicality - neighbors")] == false)
           reason[2]="Atypical property"
