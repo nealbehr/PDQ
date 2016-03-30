@@ -234,7 +234,6 @@ class ValuesController < ApplicationController
         metricsComments[metricsCount] = "There was an error evaluating the MSA"
       end
 
-
     ############################################################
     #                                                          #
     #   Liquidity metrics                                      #
@@ -550,14 +549,13 @@ class ValuesController < ApplicationController
 
       urlsToHit[urlsToHit.size] = "Debugging"
       @pageTruncated = @page.to_s.split('zsg-carousel-scroll-wrapper')[0]
-      # urlsToHit[urlsToHit.size] = @pageTruncated.to_s
       @scrappingProperties = @pageTruncated.to_s.split('zsg-photo-card-caption')
       for x in 0 .. @scrappingProperties.length - 1
         @scrappingTable[x] = @scrappingProperties[x].to_s.gsub("zsg-photo-card-price","||DELIMITER||").gsub("zsg-photo-card-info","||DELIMITER||").gsub("zsg-photo-card-notification","||DELIMITER||").gsub("zsg-photo-card-address hdp-link noroute","||DELIMITER||").gsub("zsg-photo-card-actions","||DELIMITER||")
         @scrappingTable[x] = @scrappingTable[x].split("||DELIMITER||")
-        urlsToHit[urlsToHit.size] = "Evaluating: " + x.to_s
-        urlsToHit[urlsToHit.size] = @scrappingTable[x][1].to_s.gsub(",",";")
-        urlsToHit[urlsToHit.size] = @scrappingTable[x][2].to_s.gsub(",",";")
+        # urlsToHit[urlsToHit.size] = "Evaluating: " + x.to_s
+        # urlsToHit[urlsToHit.size] = @scrappingTable[x][1].to_s.gsub(",",";")
+        # urlsToHit[urlsToHit.size] = @scrappingTable[x][2].to_s.gsub(",",";")
         if x >= 1 && @scrappingTable[x][1] != nil
           begin
             @prices.push(@scrappingTable[x][1].to_s[2..11].gsub("<","").gsub("s","").gsub("p","").gsub("/","").gsub("$","").gsub(",","").to_i)
@@ -628,7 +626,7 @@ class ValuesController < ApplicationController
         metricsComments[metricsCount]= "Total number of neighbors must be at least 2"
         metricsUsage[metricsCount] = "Typicality"
       rescue
-        metricsNames[metricsCount] = "Estimate typicality - neighbors"
+        metricsNames[metricsCount] = "Neighbors available"
         metrics[metricsCount]= 0    
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "Data Unavailable"
@@ -879,6 +877,16 @@ class ValuesController < ApplicationController
         puts e.backtrace.inspect
       end
 
+      if ["CA","WA","OR"].include?(state)
+        ruralityCutoff = 0.22
+        ruralityLocalCutoff = 0.12
+        coast = "West"
+      else
+        ruralityCutoff = 0.30
+        ruralityLocalCutoff = 0.16
+        coast = "East"
+      end
+
       begin
         metricsCount += 1
         metricsNames[metricsCount] = "Rurality Score"
@@ -891,7 +899,7 @@ class ValuesController < ApplicationController
             -10000.0000000000 * (metricsPass[metricsNames.index("Census Tract Density")] ? 0.0 : 1.0) +  
             0.0 ) /10000.0)
         metrics[metricsCount]= (Math.exp(ruralityScore).to_f / (1.0 + Math.exp(ruralityScore).to_f)).round(5)
-        metricsPass[metricsCount] = metrics[metricsCount] <= 0.22
+        metricsPass[metricsCount] = metrics[metricsCount] <= ruralityCutoff
         metricsComments[metricsCount]= "Probability of being rural || Rurality Exponent: " + ruralityScore.round(10).to_s
         metricsUsage[metricsCount] = "Rurality"
       rescue StandardError => e
@@ -914,9 +922,9 @@ class ValuesController < ApplicationController
       begin
         usState = @evalProp.at_xpath('//results//address//state').content.to_s
         if usState == "CA"
-          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886|34.4258,-119.7142|36.607,-121.892|38.448,-122.704&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886|34.4258,-119.7142|36.607,-121.892|38.448,-122.704|33.540,-117.150|35.288,-120.666&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
           cities = Array.new
-          cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA,Santa Barbara CA,Monterey CA,Santa Rosa CA".split(",")
+          cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA,Santa Barbara CA,Monterey CA,Santa Rosa CA,Temecula CA,San Luis Obispo CA".split(",")
         end
         if usState == "OR" || usState == "WA"
          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
@@ -957,7 +965,9 @@ class ValuesController < ApplicationController
         {city: "San Jose CA", range: 75000}, 
         {city: "Santa Barbara CA", range: 34000}, 
         {city: "Monterey CA", range: 8500},
-        {city: "Santa Rosa CA", range: 8000},        
+        {city: "Santa Rosa CA", range: 8000},
+        {city: "Temecula CA", range: 15000},
+        {city: "San Luis Obispo CA", range: 7000},                        
         {city: "Portland OR", range: 22000}, 
         {city: "Seattle WA", range: 61000},
       ]
@@ -981,7 +991,7 @@ class ValuesController < ApplicationController
         city2 = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
         range2 = ranges[ranges.index { |x| x[:city] == city2}][:range]
         metricsPass[metricsCount] = metrics[metricsCount] <= range2
-        metricsComments[metricsCount]= "Distance in meters must be less than " + range2.to_s + " | Closest MSA: " + city2.to_s
+        metricsComments[metricsCount]= "Distance in meters must be less than " + range2.to_s + " | Second Closest MSA: " + city2.to_s
         metricsUsage[metricsCount] = "MSA Dist"
 
         # distancePercentUtilized = [distancePercentUtilized, metrics[metricsCount].to_f / range.to_f].min
@@ -1004,8 +1014,7 @@ class ValuesController < ApplicationController
       begin
         metricsCount += 1
         metricsNames[metricsCount] = "Combo Rural"
-        metricsUsage[metricsCount] = "Combo Rural"
-        if metrics[metricsNames.index("Rurality Score")] > 0.12 && metrics[metricsNames.index("Rurality Score")] <= 0.22
+        if metrics[metricsNames.index("Rurality Score")] > ruralityLocalCutoff && metrics[metricsNames.index("Rurality Score")] <= ruralityCutoff
           if range1 >= 25000
             metrics[metricsCount] = metrics[metricsNames.index("Distance from MSA")]
             metricsPass[metricsCount] = (metrics[metricsCount] < [range1.to_f*0.6666,60000].min)
@@ -1020,7 +1029,6 @@ class ValuesController < ApplicationController
           metricsPass[metricsCount] = true
           metricsComments[metricsCount]= "Test does not apply | Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s        
         end
-        
       rescue StandardError => e
         metricsNames[metricsCount] = "Combo Rural"
         metrics[metricsCount] = 0
@@ -1110,8 +1118,8 @@ class ValuesController < ApplicationController
       begin
         metricsNames[metricsCount] = "Std. Dev. of historical home price"
         metrics[metricsCount]= (@homePrices.standard_deviation.to_f/metrics[0].to_f).round(3)
-        metricsPass[metricsCount] = metrics[metricsCount] < 0.1
-        metricsComments[metricsCount]= "< 0.1 || Standard Deviation of historical home price as a percentage of overal estimate"
+        metricsPass[metricsCount] = metrics[metricsCount] >= 0.08
+        metricsComments[metricsCount]= ">= 0.08 || Standard Deviation of historical home price as a percentage of overal estimate"
         metricsUsage[metricsCount] = "Volatility"
       rescue
         metricsNames[metricsCount] = "Std. Dev. of historical home price"
@@ -1969,30 +1977,41 @@ class ValuesController < ApplicationController
       else
         reason[0]=nil
       end
-      
-      if metricsPass[metricsNames.index("Rurality Score")] == false
-        reason[1]="Too rural"
-      else
-        reason[1]=nil
+
+      if coast == "East"
+        if metricsPass[metricsNames.index("Rurality Score")] == false || metricsPass[metricsNames.index("Std. Dev. of historical home price")] == false
+          reason[1]="Too rural"
+        else
+          reason[1]=nil
+        end
+      elsif coast == "West"
+        if metricsPass[metricsNames.index("Rurality Score")] == false
+          reason[1]="Too rural"
+        else
+          reason[1]=nil
+        end
       end
 
       #We calculate a number of tpyicality fail counts, then use that
-      # typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("SqFt typicality - neighbors")].count(false)
-      # if  typicalFailCount >= 3 || 
-      #   (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0)) || 
-      #   (metricsPass[metricsNames.index("SqFt Typicality - Comps")] == false && metricsPass[metricsNames.index("SqFt typicality - neighbors")] == false) || 
-      #   (metricsPass[metricsNames.index("Estimate Typicality - Comps")] == false && metricsPass[metricsNames.index("Estimate typicality - neighbors")] == false)
-      #   reason[2]="Atypical property"
-      # else
-      #   reason[2]=nil
-      # end
 
-      typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("Comps Nearby")].count(false)
-      if  typicalFailCount >= 2 || 
-        (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0))
-        reason[2]="Atypical property"
+      if metrics[metricsNames.index("Neighbors available")] >= 4
+        typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("SqFt typicality - neighbors")].count(false)
+        if  typicalFailCount >= 3 || 
+          (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0)) || 
+          (metricsPass[metricsNames.index("SqFt Typicality - Comps")] == false && metricsPass[metricsNames.index("SqFt typicality - neighbors")] == false) || 
+          (metricsPass[metricsNames.index("Estimate Typicality - Comps")] == false && metricsPass[metricsNames.index("Estimate typicality - neighbors")] == false)
+          reason[2]="Atypical property"
+        else
+          reason[2]=nil
+        end
       else
-        reason[2]=nil
+        typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("Comps Nearby")].count(false)
+        if  typicalFailCount >= 2 || 
+          (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0))
+          reason[2]="Atypical property"
+        else
+          reason[2]=nil
+        end
       end
 
 
