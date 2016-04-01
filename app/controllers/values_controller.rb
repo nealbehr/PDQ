@@ -969,8 +969,7 @@ class ValuesController < ApplicationController
         {city: "Temecula CA", range: 15000},
         {city: "San Luis Obispo CA", range: 7000},                        
         {city: "Portland OR", range: 22000}, 
-        {city: "Seattle WA", range: 61000},
-      ]
+        {city: "Seattle WA", range: 61000},]
 
 
         # distancePercentUtilized = 0
@@ -994,6 +993,15 @@ class ValuesController < ApplicationController
         metricsComments[metricsCount]= "Distance in meters must be less than " + range2.to_s + " | Second Closest MSA: " + city2.to_s
         metricsUsage[metricsCount] = "MSA Dist"
 
+        metricsCount += 1
+        metricsNames[metricsCount] = "Third Distance from MSA"
+        metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').sort { |a, b| a.content.to_i <=> b.content.to_i }[2].content.to_i
+        city3 = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+        range3 = ranges[ranges.index { |x| x[:city] == city3}][:range]
+        metricsPass[metricsCount] = metrics[metricsCount] <= range3
+        metricsComments[metricsCount]= "Distance in meters must be less than " + range3.to_s + " | Second Closest MSA: " + city3.to_s
+        metricsUsage[metricsCount] = "MSA Dist"
+
         # distancePercentUtilized = [distancePercentUtilized, metrics[metricsCount].to_f / range.to_f].min
 
       rescue StandardError => e
@@ -1010,6 +1018,12 @@ class ValuesController < ApplicationController
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "Distance check failed"
         metricsUsage[metricsCount] = "MSA Dist"
+        metricsCount += 1
+        metricsNames[metricsCount] = "Third Distance from MSA"
+        metrics[metricsCount]= "NA"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Distance check failed"
+        metricsUsage[metricsCount] = "MSA Dist"
       end
       begin
         metricsCount += 1
@@ -1019,9 +1033,13 @@ class ValuesController < ApplicationController
             metrics[metricsCount] = metrics[metricsNames.index("Distance from MSA")]
             metricsPass[metricsCount] = (metrics[metricsCount] < [range1.to_f*0.6666,60000].min)
             metricsComments[metricsCount]= "Must be within 2/3 of range if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
-          else
+          elsif range2 >= 25000
             metrics[metricsCount] = metrics[metricsNames.index("Second Distance from MSA")]
             metricsPass[metricsCount] = (metrics[metricsCount] < [range2.to_f*0.6666,60000].min)
+            metricsComments[metricsCount]= "Must be within 2/3 of range if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
+          else
+            metrics[metricsCount] = metrics[metricsNames.index("Third Distance from MSA")]
+            metricsPass[metricsCount] = (metrics[metricsCount] < [range3.to_f*0.6666,60000].min)
             metricsComments[metricsCount]= "Must be within 2/3 of range if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
           end
         else
