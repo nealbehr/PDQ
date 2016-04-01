@@ -999,7 +999,7 @@ class ValuesController < ApplicationController
         city3 = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
         range3 = ranges[ranges.index { |x| x[:city] == city3}][:range]
         metricsPass[metricsCount] = metrics[metricsCount] <= range3
-        metricsComments[metricsCount]= "Distance in meters must be less than " + range3.to_s + " | Second Closest MSA: " + city3.to_s
+        metricsComments[metricsCount]= "Distance in meters must be less than " + range3.to_s + " | Third Closest MSA: " + city3.to_s
         metricsUsage[metricsCount] = "MSA Dist"
 
         # distancePercentUtilized = [distancePercentUtilized, metrics[metricsCount].to_f / range.to_f].min
@@ -2075,7 +2075,7 @@ class ValuesController < ApplicationController
         reason[9]=nil
       end
 
-      if (metricsPass[metricsNames.index("Distance from MSA")] || metricsPass[metricsNames.index("Second Distance from MSA")]) == false
+      if (metricsPass[metricsNames.index("Distance from MSA")] || metricsPass[metricsNames.index("Second Distance from MSA")] || metricsPass[metricsNames.index("Third Distance from MSA")]) == false
         reason[10]="MSA Distance"
       else
         reason[10]=nil
