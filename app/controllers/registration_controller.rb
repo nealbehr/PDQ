@@ -6,8 +6,8 @@ class RegistrationController < ApplicationController
   def create
     if current_user != nil && current_user.admin? == true    
       puts "We are about to create this user!"
-      puts "New user: " & params[:email]
-      puts "Current User: " & current_user
+      puts "New user: " + params[:email].to_s
+      puts "Current User: " + current_user.to_s
       @user = User.new
       @user.email = params[:email]
       @user.password = params[:password]
