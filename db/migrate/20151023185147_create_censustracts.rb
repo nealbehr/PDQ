@@ -1,6 +1,6 @@
 class CreateCensustracts < ActiveRecord::Migration
 	def change
-		change_table :censustracts do |t|
+		create_table :censustracts do |t|
 			t.float :home
 			t.float :name
 			t.float :area
