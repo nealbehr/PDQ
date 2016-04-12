@@ -38,7 +38,7 @@ class InspectController < ApplicationController
     puts "In the decision controller"
     @waiting = true
     loopcount = 0
-    while @waiting == true && loopcount <= 1000
+    while @waiting == true && loopcount <= 100
       outputs = Output.all
       street = params[:street]
       citystatezip = params[:citystatezip]
@@ -46,7 +46,7 @@ class InspectController < ApplicationController
       @output = outputs.find_by(street: URI.unescape(street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip))
       if @output == nil
         @waiting = true
-        puts @output
+        sleep 1
       end
       loopcount += 1
       puts loopcount
