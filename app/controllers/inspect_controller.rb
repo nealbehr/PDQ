@@ -38,23 +38,19 @@ class InspectController < ApplicationController
     puts "In the decision controller"
     @waiting = true
     loopcount = 0
-    spawns = []
-    spawns << Spawnling.new do
-      while @waiting == true && loopcount <= 100
-        outputs = Output.all
-        street = params[:street]
-        citystatezip = params[:citystatezip]
-        @waiting = false
-        @output = outputs.find_by(street: URI.unescape(street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip))
-        if @output == nil
-          @waiting = true
-          sleep 1
-        end
-        loopcount += 1
-        puts loopcount
+    while @waiting == true && loopcount <= 10
+      outputs = Output.all
+      street = params[:street]
+      citystatezip = params[:citystatezip]
+      @waiting = false
+      @output = outputs.find_by(street: URI.unescape(street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip))
+      if @output == nil
+        @waiting = true
+        sleep 1
       end
+      loopcount += 1
+      puts loopcount
     end
-    Spawnling.wait(spawns)
     render 'decision'
   end
 
