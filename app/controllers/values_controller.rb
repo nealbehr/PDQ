@@ -927,9 +927,9 @@ class ValuesController < ApplicationController
           cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA,Santa Barbara CA,Monterey CA,Santa Rosa CA,Temecula CA,San Luis Obispo CA".split(",")
         end
         if usState == "OR" || usState == "WA"
-         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331|44.9421,-123.0254|44.0582,-123,0672|44.0600,-121.3024|44.2716,-121.0672|42.3411,-122.873|&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
-         cities = "Portland OR,Seattle WA".split(",")
+         cities = "Portland OR,Seattle WA,Salem OR,Eugene OR,Bend OR,Redmond OR,Medford OR".split(",")
        end
        if usState == "NY" || usState == "MA" || usState == "RI" || usState == "CT" || usState == "VT" || usState == "NH" || usState == "ME"
          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=42.37,-71.03|40.77,-73.98|41.73,-71.43|42.75,-73.8|42.93,-78.73&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
@@ -969,7 +969,12 @@ class ValuesController < ApplicationController
         {city: "Temecula CA", range: 15000},
         {city: "San Luis Obispo CA", range: 7000},                        
         {city: "Portland OR", range: 22000}, 
-        {city: "Seattle WA", range: 61000},]
+        {city: "Seattle WA", range: 61000},
+        {city: "Salem", range: 7000},
+        {city: "Eugene", range: 9000},
+        {city: "Bend", range: 5000},                        
+        {city: "Redmond", range: 3000}, 
+        {city: "Medford", range: 5000}]
 
 
         # distancePercentUtilized = 0

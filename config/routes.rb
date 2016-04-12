@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   devise_for :users
+
   # Routes for the Approved resource:
   # CREATE
 
@@ -94,6 +95,13 @@ Rails.application.routes.draw do
   get '/inspect/:street/:citystatezip', controller: 'inspect', action: 'inspectaddress'
   get '/inspect/decision/:street/:citystatezip', controller: 'inspect', action: 'decision'
 
+  #------------------------------
+
+  # Routes for the Research resource:
+  # READ
+  get '/research/rurality_info/:id', controller: 'research', action: 'ruralitydata'
+  get '/research/mls/:size', controller: 'research', action: 'mlsdatatest'
+  get '/research/mlsbyloc', controller: 'research', action: 'mlsDataByGeo' # IN TESTING
 
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".
