@@ -9,6 +9,7 @@ class ValuesController < ApplicationController
   require 'date'
   require 'time'
   require 'mixpanel-ruby'
+  require 'spawnling'
 
     ############################################################
     #  Coder Notes: always read before committing and pushing  #
@@ -30,32 +31,13 @@ class ValuesController < ApplicationController
 
   def getvalues
     
+    Spawnling.new do
+      puts "I feel sleepy..."
+      sleep 11
+      puts "Time to wake up!"
+    end
 
-    puts "Let's track this..."
 
-    # url = URI.parse('https://api.getbase.com/v2/users/self')
-    # req = Net::HTTP::Get.new(url.to_s)
-    # res = Net::HTTP.start(url.host, url.port) {|http|
-    #   http.request(req)
-    # }
-    # puts res.body
-
-    tracker = Mixpanel::Tracker.new(MIXPANEL_TOKEN)
-
-    # Track an event on behalf of user "User1"
-    tracker.track('TestUser1', 'getvalues')
-
-    # Send an update to User1's profile
-    tracker.track('TestUser2', 'getvalues', {
-      'street' => params[:street],
-      'citystatezip' => params[:citystatezip],
-      'product' => params[:product],
-      'event' => 'prequal'
-      })
-
-    puts "Shit is tracked"
-
-    puts params[:product]
     if params[:street] == nil || params[:citystatezip]== nil
       @addresses = Address.all
       runID = "Run: " + @addresses.size.to_s + ": "+ Date::today.to_s
