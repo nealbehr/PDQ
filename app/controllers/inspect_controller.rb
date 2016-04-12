@@ -38,7 +38,8 @@ class InspectController < ApplicationController
     puts "In the decision controller"
     @waiting = true
     loopcount = 0
-    Spawnling.new do
+    spawns = []
+    spawns << Spawnling.new do
       while @waiting == true && loopcount <= 100
         outputs = Output.all
         street = params[:street]
@@ -53,6 +54,7 @@ class InspectController < ApplicationController
         puts loopcount
       end
     end
+    Spawnling.wait(spawns)
     render 'decision'
   end
 
