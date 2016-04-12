@@ -919,7 +919,7 @@ class ValuesController < ApplicationController
     ############################################################
 
       metricsCountBeginBlock = metricsCount
-      begin
+      # begin
         usState = @evalProp.at_xpath('//results//address//state').content.to_s
         if usState == "CA"
           url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886|34.4258,-119.7142|36.607,-121.892|38.448,-122.704|33.540,-117.150|35.288,-120.666&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
@@ -927,7 +927,7 @@ class ValuesController < ApplicationController
           cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA,Santa Barbara CA,Monterey CA,Santa Rosa CA,Temecula CA,San Luis Obispo CA".split(",")
         end
         if usState == "OR" || usState == "WA"
-         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331|44.9421,-123.0254|44.0582,-123,0672|44.0600,-121.3024|44.2716,-121.0672|42.3411,-122.873|&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331|44.9421,-123.0254|44.0582,-123.0672|44.0600,-121.3024|44.2716,-121.0672|42.3411,-122.873&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
          cities = "Portland OR,Seattle WA,Salem OR,Eugene OR,Bend OR,Redmond OR,Medford OR".split(",")
        end
@@ -970,11 +970,11 @@ class ValuesController < ApplicationController
         {city: "San Luis Obispo CA", range: 7000},                        
         {city: "Portland OR", range: 22000}, 
         {city: "Seattle WA", range: 61000},
-        {city: "Salem", range: 7000},
-        {city: "Eugene", range: 9000},
-        {city: "Bend", range: 5000},                        
-        {city: "Redmond", range: 3000}, 
-        {city: "Medford", range: 5000}]
+        {city: "Salem OR", range: 9000},
+        {city: "Eugene OR", range: 12000},
+        {city: "Bend OR", range: 5000},                        
+        {city: "Redmond OR", range: 3000}, 
+        {city: "Medford OR", range: 5000}]
 
 
         # distancePercentUtilized = 0
@@ -1009,27 +1009,27 @@ class ValuesController < ApplicationController
 
         # distancePercentUtilized = [distancePercentUtilized, metrics[metricsCount].to_f / range.to_f].min
 
-      rescue StandardError => e
-        metricsCount = metricsCountBeginBlock
-        metricsCount += 1
-        metricsNames[metricsCount] = "Distance from MSA"
-        metrics[metricsCount]= "NA"
-        metricsPass[metricsCount] = false
-        metricsComments[metricsCount]= "Distance check failed"
-        metricsUsage[metricsCount] = "MSA Dist"
-        metricsCount += 1
-        metricsNames[metricsCount] = "Second Distance from MSA"
-        metrics[metricsCount]= "NA"
-        metricsPass[metricsCount] = false
-        metricsComments[metricsCount]= "Distance check failed"
-        metricsUsage[metricsCount] = "MSA Dist"
-        metricsCount += 1
-        metricsNames[metricsCount] = "Third Distance from MSA"
-        metrics[metricsCount]= "NA"
-        metricsPass[metricsCount] = false
-        metricsComments[metricsCount]= "Distance check failed"
-        metricsUsage[metricsCount] = "MSA Dist"
-      end
+      # rescue StandardError => e
+      #   metricsCount = metricsCountBeginBlock
+      #   metricsCount += 1
+      #   metricsNames[metricsCount] = "Distance from MSA"
+      #   metrics[metricsCount]= "NA"
+      #   metricsPass[metricsCount] = false
+      #   metricsComments[metricsCount]= "Distance check failed"
+      #   metricsUsage[metricsCount] = "MSA Dist"
+      #   metricsCount += 1
+      #   metricsNames[metricsCount] = "Second Distance from MSA"
+      #   metrics[metricsCount]= "NA"
+      #   metricsPass[metricsCount] = false
+      #   metricsComments[metricsCount]= "Distance check failed"
+      #   metricsUsage[metricsCount] = "MSA Dist"
+      #   metricsCount += 1
+      #   metricsNames[metricsCount] = "Third Distance from MSA"
+      #   metrics[metricsCount]= "NA"
+      #   metricsPass[metricsCount] = false
+      #   metricsComments[metricsCount]= "Distance check failed"
+      #   metricsUsage[metricsCount] = "MSA Dist"
+      # end
       begin
         metricsCount += 1
         metricsNames[metricsCount] = "Combo Rural"
