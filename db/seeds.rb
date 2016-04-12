@@ -120,9 +120,7 @@ Address.create!([
 puts "Addresses Done"
 
 User.create!([
-	{ email: "neal.behrend@1rex.com", password: "123456789", password_confirmation: "123456789", admin: true },
-	{ email: "avita.datt@1rex.com", password: "123456789", password_confirmation: "123456789", admin: false },
-
+	{ email: "brad.lookabaugh@1rex.com", password: "123456789", password_confirmation: "123456789", admin: true },
 	])
 puts "Users Done"
 
