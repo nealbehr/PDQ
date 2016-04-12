@@ -927,7 +927,7 @@ class ValuesController < ApplicationController
           cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA,Santa Barbara CA,Monterey CA,Santa Rosa CA,Temecula CA,San Luis Obispo CA".split(",")
         end
         if usState == "OR" || usState == "WA"
-         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331|44.9421,-123.0254|44.0582,-123,0672|44.0600,-121.3024|44.2716,-121.0672|42.3411,-122.873|&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331|44.9421,-123.0254|44.0582,-123.0672|44.0600,-121.3024|44.2716,-121.0672|42.3411,-122.873&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
          cities = "Portland OR,Seattle WA,Salem OR,Eugene OR,Bend OR,Redmond OR,Medford OR".split(",")
        end
@@ -970,11 +970,11 @@ class ValuesController < ApplicationController
         {city: "San Luis Obispo CA", range: 7000},                        
         {city: "Portland OR", range: 22000}, 
         {city: "Seattle WA", range: 61000},
-        {city: "Salem", range: 7000},
-        {city: "Eugene", range: 9000},
-        {city: "Bend", range: 5000},                        
-        {city: "Redmond", range: 3000}, 
-        {city: "Medford", range: 5000}]
+        {city: "Salem OR", range: 9000},
+        {city: "Eugene OR", range: 12000},
+        {city: "Bend OR", range: 5000},                        
+        {city: "Redmond OR", range: 3000}, 
+        {city: "Medford OR", range: 5000}]
 
 
         # distancePercentUtilized = 0

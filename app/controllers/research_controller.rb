@@ -22,23 +22,24 @@ class ResearchController < ApplicationController
   
   def ruralitydata
   	alldata = Output.find_by(id: params[:id])
-  	@Output = getRuralityData(alldata, @@rurality_names)
-    @forexport = true
-  	#render 'ruralitydata'
+    if alldata != nil
+      @Output = getRuralityData(alldata, @@rurality_names)
+    else
+      @Output = {name: "Does not exist"}.to_json
+    end
+    #render 'ruralitydata'
     render :json => @Output
   end
 
   def mlsdatatest
     puts "In mlsdatatest"
     @MLS_data = getMlsProperties(@@MLS_TOKEN, params[:size])
-    @forexport = true
     render :json => @MLS_data
   end
 
   def mlsDataByGeo
     puts "In geo mls"
     @MLS_loc_data = test_httparty(@@MLS_TOKEN)
-    @forexport = true
     render :json => @MLS_loc_data
   end
 end
