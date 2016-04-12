@@ -919,7 +919,7 @@ class ValuesController < ApplicationController
     ############################################################
 
       metricsCountBeginBlock = metricsCount
-      # begin
+      begin
         usState = @evalProp.at_xpath('//results//address//state').content.to_s
         if usState == "CA"
           url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886|34.4258,-119.7142|36.607,-121.892|38.448,-122.704|33.540,-117.150|35.288,-120.666&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
@@ -1009,27 +1009,27 @@ class ValuesController < ApplicationController
 
         # distancePercentUtilized = [distancePercentUtilized, metrics[metricsCount].to_f / range.to_f].min
 
-      # rescue StandardError => e
-      #   metricsCount = metricsCountBeginBlock
-      #   metricsCount += 1
-      #   metricsNames[metricsCount] = "Distance from MSA"
-      #   metrics[metricsCount]= "NA"
-      #   metricsPass[metricsCount] = false
-      #   metricsComments[metricsCount]= "Distance check failed"
-      #   metricsUsage[metricsCount] = "MSA Dist"
-      #   metricsCount += 1
-      #   metricsNames[metricsCount] = "Second Distance from MSA"
-      #   metrics[metricsCount]= "NA"
-      #   metricsPass[metricsCount] = false
-      #   metricsComments[metricsCount]= "Distance check failed"
-      #   metricsUsage[metricsCount] = "MSA Dist"
-      #   metricsCount += 1
-      #   metricsNames[metricsCount] = "Third Distance from MSA"
-      #   metrics[metricsCount]= "NA"
-      #   metricsPass[metricsCount] = false
-      #   metricsComments[metricsCount]= "Distance check failed"
-      #   metricsUsage[metricsCount] = "MSA Dist"
-      # end
+      rescue StandardError => e
+        metricsCount = metricsCountBeginBlock
+        metricsCount += 1
+        metricsNames[metricsCount] = "Distance from MSA"
+        metrics[metricsCount]= "NA"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Distance check failed"
+        metricsUsage[metricsCount] = "MSA Dist"
+        metricsCount += 1
+        metricsNames[metricsCount] = "Second Distance from MSA"
+        metrics[metricsCount]= "NA"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Distance check failed"
+        metricsUsage[metricsCount] = "MSA Dist"
+        metricsCount += 1
+        metricsNames[metricsCount] = "Third Distance from MSA"
+        metrics[metricsCount]= "NA"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Distance check failed"
+        metricsUsage[metricsCount] = "MSA Dist"
+      end
       begin
         metricsCount += 1
         metricsNames[metricsCount] = "Combo Rural"
