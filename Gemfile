@@ -5,7 +5,7 @@ gem 'mixpanel-ruby'
 gem 'basecrm'
 
 gem 'json'
-gem 'devise'
+gem 'devise', '3.5.8'
 
 gem 'easystats'
 gem 'httparty'
