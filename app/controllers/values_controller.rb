@@ -547,17 +547,27 @@ class ValuesController < ApplicationController
             rescue
             end
             begin
-              @bathrooms.push(@scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("ba").to_i-4..@scrappingTable[x][2].to_s.index("ba").to_i].gsub(";","").gsub(" ","").gsub("b","").to_i)      
+              end_ind = @scrappingTable[x][2].to_s.index("ba").to_i # 2016/4/27
+              start_ind = end_ind - 4 
+              @bathrooms.push(@scrappingTable[x][2][start_ind..end_ind].gsub(";","").gsub(" ","").gsub("b","").gsub(">","").to_i)
+
+              # @bathrooms.push(@scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("ba").to_i-4..@scrappingTable[x][2].to_s.index("ba").to_i].gsub(";","").gsub(" ","").gsub("b","").to_i)      
             rescue
             end
             begin
-              tempVar = @scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("sqft").to_i-6..@scrappingTable[x][2].to_s.index("sqft").to_i].gsub(";","").gsub(" ","").gsub("b","").gsub("k","").gsub("s","").to_f*1000
+              end_ind = @scrappingTable[x][2].to_s.index("sqft").to_i # 2016/4/27
+              start_ind = end_ind - 6
+              tempVar = @scrappingTable[x][2].to_s[start_ind..end_ind].gsub(";","").gsub(" ","").gsub("b","").gsub("k","").gsub("s","").gsub(",","").to_f*1000
+
+
+              # tempVar = @scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("sqft").to_i-6..@scrappingTable[x][2].to_s.index("sqft").to_i].gsub(";","").gsub(" ","").gsub("b","").gsub("k","").gsub("s","").to_f*1000
               if tempVar > 100000
                 tempVar = tempVar/1000
               end
               @sqft.push(tempVar)  
             rescue
-            end          
+            end
+            
           end 
         end
         @totalPrice = 0
