@@ -31,7 +31,7 @@ class ValuesController < ApplicationController
 
   def getvalues
     
-    Spawnling.new do
+    # Spawnling.new do
 
 
 
@@ -567,7 +567,7 @@ class ValuesController < ApplicationController
               @sqft.push(tempVar)  
             rescue
             end
-            
+
           end 
         end
         @totalPrice = 0
@@ -2103,7 +2103,7 @@ class ValuesController < ApplicationController
 
       end
 
-    end
+
     @allOutput = Output.all
 
     if params[:path] == nil
