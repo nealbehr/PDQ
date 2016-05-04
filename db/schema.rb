@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160321211202) do
+ActiveRecord::Schema.define(version: 20160504010348) do
 
   create_table "addresses", force: :cascade do |t|
     t.text "street"
@@ -53,6 +53,7 @@ ActiveRecord::Schema.define(version: 20160321211202) do
     t.string "usage",        default: "--- []\n"
     t.string "product"
     t.text   "date"
+    t.string "data_source",  default: "--- []\n"
   end
 
   create_table "users", force: :cascade do |t|
