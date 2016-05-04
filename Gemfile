@@ -7,7 +7,7 @@ gem 'basecrm'
 gem 'json'
 
 
-gem 'devise', '~>3.5.8'
+gem 'devise', '3.5.8'
 
 gem 'easystats'
 
