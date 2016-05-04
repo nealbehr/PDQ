@@ -25,6 +25,7 @@ class ValuesController < ApplicationController
   ############################################################
 
   def getvalues
+
     # Call the original version of get values
     @addresses = GetValuesArchive.getValues(params)
 

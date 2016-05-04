@@ -35,14 +35,21 @@ class InspectController < ApplicationController
   end
 
   def decision
-    outputs = Output.all
-    street = params[:street]
-    citystatezip = params[:citystatezip]
-    @waiting = false
-    @output = outputs.find_by(street: URI.unescape(street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip))
-    if @output == nil
-      @waiting = true
-    end
+    puts "In the decision controller"
+    @waiting = true
+    # loopcount = 0
+    # while @waiting == true && loopcount <= 10
+      outputs = Output.all
+      street = params[:street]
+      citystatezip = params[:citystatezip]
+      @waiting = false
+      @output = outputs.find_by(street: URI.unescape(street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip))
+      if @output == nil
+        @waiting = true
+      end
+    #   loopcount += 1
+    #   puts loopcount
+    # end
     render 'decision'
   end
 
