@@ -9,7 +9,6 @@ class ValuesController < ApplicationController
   require 'date'
   require 'time'
   require 'mixpanel-ruby'
-  require 'spawnling'
 
   ############################################################
   #  Coder Notes: always read before committing and pushing  #
