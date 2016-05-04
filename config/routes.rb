@@ -99,9 +99,13 @@ Rails.application.routes.draw do
 
   # Routes for the Research resource:
   # READ
-  get '/research/rurality_info/:id', controller: 'research', action: 'ruralitydata'
-  get '/research/mls/:size', controller: 'research', action: 'mlsdatatest'
-  get '/research/mlsbyloc', controller: 'research', action: 'mlsDataByGeo' # IN TESTING
+  get '/research/rurality_info/:id', controller: 'research', action: 'ruralityData'
+  get '/research/mls/newlistings/:date(/:size)', controller: 'research', action: 'mlsNewListings'
+  get '/research/mls/daysonmarket/:dayCount(/:size)', controller: 'research', action: 'mlsDaysOnMarket'
+
+  # IN TESTING
+  get '/research/mlsbyloc', controller: 'research', action: 'mlsDataByGeo'
+  get '/research/getoutput(/:id)(/street/:street)(/csz/:citystatezip)', controller: 'research', action: 'getOutputValues'
 
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".

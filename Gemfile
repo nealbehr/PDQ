@@ -5,10 +5,15 @@ gem 'mixpanel-ruby'
 gem 'basecrm'
 
 gem 'json'
-gem 'devise'
+gem 'devise', '~>3.5.8'
 
 gem 'easystats'
-gem 'httparty'
+
+# Gems added by Brad
+gem 'httparty' # for POST JSON requests
+gem 'certified' # for CA certificates accessing SSLs
+#gem 'csv' # to read/write csv files
+#gem 'statsample'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.2.1'
