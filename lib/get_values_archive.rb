@@ -1,13 +1,30 @@
-class ApplicationController < ActionController::Base
-  # Prevent CSRF attacks by raising an exception.
-  # For APIs, you may want to use :null_session instead.
-  protect_from_forgery with: :exception
-  before_filter :authenticate_user!, except: [:decision, :getvalues, :datadecision, :ruralityData, :mlsNewListings, :mlsDaysOnMarket, :getOutputValues]
+########################################################################
+# This module holds the original get values call, used in the values controller
+# Date: 2016/04/21
+# Author: Brad
+########################################################################
+module GetValuesArchive
+  module_function
+
+  ZILLOW_TOKEN = 'X1-ZWz1euzz31vnd7_5b1bv'
+  MIXPANEL_TOKEN = '6d8fc694585f4014626a6708a807ae0a'
+  BASE_TOKEN = '2ee90a91dd770d654ecf1558276736723b081e322bf596996a784a9f22e6db38'
 
 
-  def getValuesFunction(street, citystatezip, product)
-    
+  def getValues(params)
+    puts "Let's track this..."
+
+    # url = URI.parse('https://api.getbase.com/v2/users/self')
+    # req = Net::HTTP::Get.new(url.to_s)
+    # res = Net::HTTP.start(url.host, url.port) {|http|
+    #   http.request(req)
+    # }
+    # puts res.body
+
     tracker = Mixpanel::Tracker.new(MIXPANEL_TOKEN)
+
+    # Track an event on behalf of user "User1"
+    tracker.track('TestUser1', 'getvalues')
 
     # Send an update to User1's profile
     tracker.track('TestUser2', 'getvalues', {
@@ -17,6 +34,9 @@ class ApplicationController < ActionController::Base
       'event' => 'prequal'
       })
 
+    puts "Shit is tracked"
+
+    puts params[:product]
     if params[:street] == nil || params[:citystatezip]== nil
       @addresses = Address.all
       runID = "Run: " + @addresses.size.to_s + ": "+ Date::today.to_s
@@ -43,9 +63,6 @@ class ApplicationController < ActionController::Base
     #   Setup, ping database or gather zillow data             #
     #                                                          #
     ############################################################
-
-
-
       metrics = Array.new
       metricsNames = Array.new
       metricsPass = Array.new
@@ -60,14 +77,14 @@ class ApplicationController < ActionController::Base
         next
       end
 
-      url = URI.parse('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=X1-ZWz1euzz31vnd7_5b1bv&address='+URI.escape(@addresses[q].street)+'&citystatezip='+URI.escape(@addresses[q].citystatezip))
+      url = URI.parse('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id='+ZILLOW_TOKEN+'&address='+URI.escape(@addresses[q].street)+'&citystatezip='+URI.escape(@addresses[q].citystatezip))
       req = Net::HTTP::Get.new(url.to_s)
       res = Net::HTTP.start(url.host, url.port) {|http|
         http.request(req)
       }
-
       @evalProp = Nokogiri::XML(res.body)
       urlsToHit.push(url.to_s.gsub(",","THESENTINEL"))
+      urlsToHit.push(res.body)
 
       puts @evalProp.at_xpath('//zpid')
       puts @evalProp.at_xpath('//results//result//address')
@@ -103,16 +120,16 @@ class ApplicationController < ActionController::Base
       end
       @zpid = @evalProp.at_xpath('//zpid').content
 
-      url = URI.parse('http://www.zillow.com/webservice/GetDeepComps.htm?zws-id=X1-ZWz1euzz31vnd7_5b1bv&zpid='+@zpid+'&count=25')
+      url = URI.parse('http://www.zillow.com/webservice/GetDeepComps.htm?zws-id='+ZILLOW_TOKEN+'&zpid='+@zpid+'&count=25')
       req = Net::HTTP::Get.new(url.to_s)
       res = Net::HTTP.start(url.host, url.port) {|http|
         http.request(req)
       }
       @compOutput = Nokogiri::XML(res.body)
       urlsToHit.push(url.to_s)
-
+      
       if params[:path] == "gather"
-        url = URI.parse('http://www.zillow.com/webservice/GetDemographics.htm?zws-id=X1-ZWz1euzz31vnd7_5b1bv&state='+@evalProp.at_xpath('//result//address').at_xpath('//state').content+'&city='+URI.escape(@evalProp.at_xpath('//result//address').at_xpath('//city').content)+"&zipcode="+@evalProp.at_xpath('//result//address').at_xpath('//zipcode').content)
+        url = URI.parse('http://www.zillow.com/webservice/GetDemographics.htm?zws-id='+ZILLOW_TOKEN+'&state='+@evalProp.at_xpath('//result//address').at_xpath('//state').content+'&city='+URI.escape(@evalProp.at_xpath('//result//address').at_xpath('//city').content)+"&zipcode="+@evalProp.at_xpath('//result//address').at_xpath('//zipcode').content)
         req = Net::HTTP::Get.new(url.to_s)
         res = Net::HTTP.start(url.host, url.port) {|http|
           http.request(req)
@@ -177,30 +194,22 @@ class ApplicationController < ActionController::Base
       metricsCount += 1
       metricsNames[metricsCount] = "Pre-approval"
       metricsUsage[metricsCount] = "MSA check"
-      if params[:product].to_s.upcase == "RA" 
-        metrics[metricsCount]= getaPrequal(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
+      msaOutput = UrbanAreaData.getMSA(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
+      metrics[metricsCount]= msaOutput[:status]
+      state = @evalProp.at_xpath('//results//address//state').content.to_s
+      if ["CA","WA","OR","VA","MD","MA","NJ","DC",].include?(state)
         metricsPass[metricsCount] = metrics[metricsCount] == -1 ? false : true
-        if metrics[metricsCount] == -1
-          metricsComments[metricsCount] = "Not found in database"
-        elsif metrics[metricsCount] == 1 
-          metricsComments[metricsCount] = "Found in database. Mapped to Approved"
-        elsif metrics[metricsCount] == 0
-          metricsComments[metricsCount] = "Found in database. Mapped to false/exception"
-        else        
-          metricsComments[metricsCount] = "There was an error evaluating prequal"
-        end
       else
-        metrics[metricsCount]= getaPrequal(@evalProp.at_xpath('//results//address//zipcode').content.to_i)
-        metricsPass[metricsCount] = metrics[metricsCount] == 1 ? true : false
-        if metrics[metricsCount] == -1
-          metricsComments[metricsCount] = "Not found in database"
-        elsif metrics[metricsCount] == 1 
-          metricsComments[metricsCount] = "Found in database. Mapped to Approved"
-        elsif metrics[metricsCount] == 0
-          metricsComments[metricsCount] = "Found in database. Mapped to false/exception"
-        else        
-          metricsComments[metricsCount] = "There was an error evaluating prequal"
-        end
+        metricsPass[metricsCount] = false
+      end
+      if metrics[metricsCount] == -1
+        metricsComments[metricsCount] = "Not in MSA: " + msaOutput[:name].to_s
+      elsif metrics[metricsCount] == 1 
+        metricsComments[metricsCount] = "In MSA: " + msaOutput[:name].to_s + " || State: " + state.to_s
+      elsif metrics[metricsCount] == 0
+        metricsComments[metricsCount] = "There was an error evaluating the MSA"
+      else        
+        metricsComments[metricsCount] = "There was an error evaluating the MSA"
       end
 
     ############################################################
@@ -288,6 +297,7 @@ class ApplicationController < ActionController::Base
     ############################################################
 
       puts "Start Typicality"
+      start_time = Time.now
 
       metricsCount += 1
       metricsNames[metricsCount] = "Properties count"
@@ -331,7 +341,7 @@ class ApplicationController < ActionController::Base
         end
       rescue StandardError => e
         metricsNames[metricsCount] = "Bedrooms Typicality"
-        metrics[metricsCount]= "N/A"
+        metrics[metricsCount]= 0
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
         metricsUsage[metricsCount] = "Typicality"
@@ -355,8 +365,8 @@ class ApplicationController < ActionController::Base
         metricsComments[metricsCount] = "SqFt must be within 40% || Prop: " + @compOutput.at_xpath('//properties//principal//finishedSqFt').content.to_f.to_s + " || Ave: " + (total.to_f / count.to_f).to_s
         metricsUsage[metricsCount] = "Typicality"
       rescue StandardError => e
-        metricsNames[metricsCount] = "SqFt Typicality"
-        metrics[metricsCount]= "N/A"
+        metricsNames[metricsCount] = "SqFt Typicality - Comps"
+        metrics[metricsCount]= 0
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "SqFt not found"
         metricsUsage[metricsCount] = "Typicality"
@@ -381,8 +391,8 @@ class ApplicationController < ActionController::Base
         metricsComments[metricsCount]= "Estimate must be within 40% || Prop: " + @compOutput.at_xpath('//properties//principal//zestimate//amount').content.to_f.to_s + " || Ave: " + (total.to_f / count.to_f).to_s
         metricsUsage[metricsCount] = "Typicality"
       rescue StandardError => e
-        metricsNames[metricsCount] = "Estimate Typicality"
-        metrics[metricsCount]= "N/A"
+        metricsNames[metricsCount] = "Estimate Typicality - Comps"
+        metrics[metricsCount]= 0
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
         metricsUsage[metricsCount] = "Typicality"
@@ -400,21 +410,29 @@ class ApplicationController < ActionController::Base
       end
       begin
         metricsCount += 1
-        metricsNames[metricsCount] = "Lot Size Typicality - Comps"
-        metrics[metricsCount] = (((@compOutput.at_xpath('//properties//principal//lotSizeSqFt').content.to_f / (total.to_f / count.to_f)) -1).to_f * 100.0).round(2)
-        metricsPass[metricsCount] = metrics[metricsCount] <= 40 && metrics[metricsCount] >= -40
-        metricsComments[metricsCount] = "Lot Size must be within 40% || Prop: " + @compOutput.at_xpath('//properties//principal//lotSizeSqFt').content.to_f.to_s + " || Ave: " + (total.to_f / count.to_f).to_s
-        metricsUsage[metricsCount] = "Typicality"
-      rescue StandardError => e
         if @evalProp.at_xpath('//useCode').content == "Condominium"
-          metricsNames[metricsCount] = "Lot Size Typicality"
-          metrics[metricsCount]= "N/A"
+          metricsNames[metricsCount] = "Lot Size Typicality - Comps"
+          metrics[metricsCount]= 0
           metricsPass[metricsCount] = true
           metricsComments[metricsCount]= "Does not apply to condominiums"
           metricsUsage[metricsCount] = "Typicality"
         else
-          metricsNames[metricsCount] = "Lot Size Typicality"
-          metrics[metricsCount]= "N/A"
+          metricsNames[metricsCount] = "Lot Size Typicality - Comps"
+          metrics[metricsCount] = (((@compOutput.at_xpath('//properties//principal//lotSizeSqFt').content.to_f / (total.to_f / count.to_f)) -1).to_f * 100.0).round(2)
+          metricsPass[metricsCount] = metrics[metricsCount] <= 40 && metrics[metricsCount] >= -40
+          metricsComments[metricsCount] = "Lot Size must be within 40% || Prop: " + @compOutput.at_xpath('//properties//principal//lotSizeSqFt').content.to_f.to_s + " || Ave: " + (total.to_f / count.to_f).to_s
+          metricsUsage[metricsCount] = "Typicality"
+        end
+      rescue StandardError => e
+        if @evalProp.at_xpath('//useCode').content == "Condominium"
+          metricsNames[metricsCount] = "Lot Size Typicality - Comps"
+          metrics[metricsCount]= 0
+          metricsPass[metricsCount] = true
+          metricsComments[metricsCount]= "Does not apply to condominiums"
+          metricsUsage[metricsCount] = "Typicality"
+        else
+          metricsNames[metricsCount] = "Lot Size Typicality - Comps"
+          metrics[metricsCount]= 0
           metricsPass[metricsCount] = false
           metricsComments[metricsCount]= "Unknown Lot Size"
           metricsUsage[metricsCount] = "Typicality"
@@ -453,8 +471,8 @@ class ApplicationController < ActionController::Base
         metricsUsage[metricsCount] = "Typicality"
         urlsToHit.push(@distance.to_s.gsub(",","THESENTINEL"))
       rescue StandardError => e
-        metricsNames[metricsCount] = "Properties Distance"
-        metrics[metricsCount]= "N/A"
+        metricsNames[metricsCount] = "Comps Distance"
+        metrics[metricsCount]= 0
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
         metricsUsage[metricsCount] = "Typicality"
@@ -468,10 +486,18 @@ class ApplicationController < ActionController::Base
         metrics[metricsCount] = @distance.count{ |x| x <= 6000}
         metricsPass[metricsCount] = metrics[metricsCount] >= 7
         metricsComments[metricsCount] = "At least seven comparable properties within 6000 feet"
+        if (metricsPass[metricsCount] == false && metricsPass[metricsCount-1] == false) 
+          metricsPass[metricsCount] = true
+          metricsComments[metricsCount] = "We only count one if both Comps Nearby and Comps Distance fails"
+        end
+        if metricsPass[metricsNames.index("Properties count")] == false
+          metricsPass[metricsCount] = true
+          metricsComments[metricsCount] = "We do not double penalize if both Comps Nearby and Properties count fails"
+        end
         metricsUsage[metricsCount] = "Typicality"
       rescue StandardError => e
-        metricsNames[metricsCount] = "Properties Nearby"
-        metrics[metricsCount]= "N/A"
+        metricsNames[metricsCount] = "Comps Nearby"
+        metrics[metricsCount]= 0
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "N/A"
         metricsUsage[metricsCount] = "Typicality"
@@ -499,26 +525,40 @@ class ApplicationController < ActionController::Base
       @bathrooms = Array.new
       @sqft = Array.new    
 
-
-      @scrappingProperties = @page.to_s.split('zsg-photo-card-caption')
+      urlsToHit[urlsToHit.size] = "Debugging"
+      @pageTruncated = @page.to_s.split('zsg-carousel-scroll-wrapper')[0]
+      @scrappingProperties = @pageTruncated.to_s.split('zsg-photo-card-caption')
       for x in 0 .. @scrappingProperties.length - 1
         @scrappingTable[x] = @scrappingProperties[x].to_s.gsub("zsg-photo-card-price","||DELIMITER||").gsub("zsg-photo-card-info","||DELIMITER||").gsub("zsg-photo-card-notification","||DELIMITER||").gsub("zsg-photo-card-address hdp-link noroute","||DELIMITER||").gsub("zsg-photo-card-actions","||DELIMITER||")
         @scrappingTable[x] = @scrappingTable[x].split("||DELIMITER||")
+        # urlsToHit[urlsToHit.size] = "Evaluating: " + x.to_s
+        # urlsToHit[urlsToHit.size] = @scrappingTable[x][1].to_s.gsub(",",";")
+        # urlsToHit[urlsToHit.size] = @scrappingTable[x][2].to_s.gsub(",",";")
         if x >= 1 && @scrappingTable[x][1] != nil
           begin
             @prices.push(@scrappingTable[x][1].to_s[2..11].gsub("<","").gsub("s","").gsub("p","").gsub("/","").gsub("$","").gsub(",","").to_i)
           rescue
+            # urlsToHit[urlsToHit.size] = "Had an error with the pricing scrape!"
           end
           begin
             @bedrooms.push(@scrappingTable[x][2].to_s[2..2].to_i)
           rescue
           end
           begin
-            @bathrooms.push(@scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("ba").to_i-4..@scrappingTable[x][2].to_s.index("ba").to_i].gsub(";","").gsub(" ","").gsub("b","").to_i)      
+            end_ind = @scrappingTable[x][2].to_s.index("ba").to_i # 2016/4/27
+            start_ind = end_ind - 4 
+            @bathrooms.push(@scrappingTable[x][2][start_ind..end_ind].gsub(";","").gsub(" ","").gsub("b","").gsub(">","").to_i)
+
+            # @bathrooms.push(@scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("ba").to_i-4..@scrappingTable[x][2].to_s.index("ba").to_i].gsub(";","").gsub(" ","").gsub("b","").to_i)      
           rescue
           end
           begin
-            tempVar = @scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("sqft").to_i-6..@scrappingTable[x][2].to_s.index("sqft").to_i].gsub(";","").gsub(" ","").gsub("b","").gsub("k","").gsub("s","").to_f*1000
+            end_ind = @scrappingTable[x][2].to_s.index("sqft").to_i # 2016/4/27
+            start_ind = end_ind - 6
+            tempVar = @scrappingTable[x][2].to_s[start_ind..end_ind].gsub(";","").gsub(" ","").gsub("b","").gsub("k","").gsub("s","").gsub(",","").to_f*1000
+
+
+            # tempVar = @scrappingTable[x][2].to_s[@scrappingTable[x][2].to_s.index("sqft").to_i-6..@scrappingTable[x][2].to_s.index("sqft").to_i].gsub(";","").gsub(" ","").gsub("b","").gsub("k","").gsub("s","").to_f*1000
             if tempVar > 100000
               tempVar = tempVar/1000
             end
@@ -540,7 +580,7 @@ class ApplicationController < ActionController::Base
       bedroomsString = ""
       sqftString = ""
       for x in 0 .. @scrappingProperties.length - 1
-        if @prices[x] != 0 && @scrappingTable[x][1] != nil && @prices[x] != nil
+        if @prices[x] != 0 && @prices[x] != nil
           @totalPrice += @prices[x]
           if @prices[x] != 0 
             @totalPriceCount += 1
@@ -567,15 +607,30 @@ class ApplicationController < ActionController::Base
 
       metricsCount += 1
       begin
+        metricsNames[metricsCount] = "Neighbors available"
+        metrics[metricsCount]= [@totalPriceCount, @totalBathroomsCount, @totalBedroomsCount, @totalSqFtCount].min
+        metricsPass[metricsCount] = metrics[metricsCount] >= 2
+        metricsComments[metricsCount]= "Total number of neighbors must be at least 2"
+        metricsUsage[metricsCount] = "Typicality"
+      rescue
+        metricsNames[metricsCount] = "Neighbors available"
+        metrics[metricsCount]= 0    
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Data Unavailable"
+        metricsUsage[metricsCount] = "Typicality"
+      end
+
+      metricsCount += 1
+      begin
         metricsNames[metricsCount] = "Estimate typicality - neighbors"
         metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//zestimate//amount').content.to_f / (@totalPrice.to_f/@totalPriceCount.to_f)-1)*100).to_f.round(1))     
-        metricsPass[metricsCount] = metrics[metricsCount] < 40 && metrics[metricsCount]  > -40
-        metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//zestimate//amount').content.to_s + "  || Avg: " + (@totalPrice.to_f/@totalPriceCount.to_f).to_s
+        metricsPass[metricsCount] = metrics[metricsCount] < 33 && metrics[metricsCount]  > -33
+        metricsComments[metricsCount]= "% deviation from community within 33%   || Prop: " + @evalProp.at_xpath('//response//result//zestimate//amount').content.to_s + "  || Avg: " + (@totalPrice.to_f/@totalPriceCount.to_f).to_s
         # metricsComments[metricsCount] += "  ||  " + @totalPrice.to_s + "  ||  " + @totalPriceCount.to_s + "  ||  " + pricesString.to_s
         metricsUsage[metricsCount] = "Typicality"
       rescue
         metricsNames[metricsCount] = "Estimate typicality - neighbors"
-        metrics[metricsCount]= "N/A"    
+        metrics[metricsCount]= 0    
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "Data Unavailable"
         metricsUsage[metricsCount] = "Typicality"
@@ -591,44 +646,47 @@ class ApplicationController < ActionController::Base
         metricsUsage[metricsCount] = "Typicality"
       rescue
         metricsNames[metricsCount] = "Bedrooms typicality - neighbors"
-        metrics[metricsCount]= "N/A"    
+        metrics[metricsCount]= 0 
         metricsPass[metricsCount] = true
         metricsComments[metricsCount]= "Data Unavailable"
         metricsUsage[metricsCount] = "Typicality"
       end
 
-      metricsCount += 1
-      begin
-        metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
-        metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (@totalBathrooms.to_f/@totalBathroomsCount.to_f)-1)*100).to_f.round(1))     
-        metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount]  > -66
-        metricsComments[metricsCount]= "% deviation from community within 66%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (@totalBathrooms.to_f/@totalBathroomsCount.to_f).to_s
-        # metricsComments[metricsCount] += "  ||  " + @totalBathrooms.to_s + "  ||  " + @totalBathroomsCount.to_s + "  ||  " + bathroomsString.to_s
-        metricsUsage[metricsCount] = "Typicality"
-      rescue
-        metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
-        metrics[metricsCount]= "N/A"    
-        metricsPass[metricsCount] = true
-        metricsComments[metricsCount]= "Data Unavailable"
-        metricsUsage[metricsCount] = "Typicality"
-      end
+      # metricsCount += 1
+      # begin
+      #   metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
+      #   metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//bathrooms').content.to_f / (@totalBathrooms.to_f/@totalBathroomsCount.to_f)-1)*100).to_f.round(1))     
+      #   metricsPass[metricsCount] = metrics[metricsCount] < 66 && metrics[metricsCount]  > -66
+      #   metricsComments[metricsCount]= "% deviation from community within 66%   || Prop: " + @evalProp.at_xpath('//response//result//bathrooms').content.to_s + "  || Avg: " + (@totalBathrooms.to_f/@totalBathroomsCount.to_f).to_s
+      #   # metricsComments[metricsCount] += "  ||  " + @totalBathrooms.to_s + "  ||  " + @totalBathroomsCount.to_s + "  ||  " + bathroomsString.to_s
+      #   metricsUsage[metricsCount] = "Typicality"
+      # rescue
+      #   metricsNames[metricsCount] = "Bathrooms typicality - neighbors"
+      #   metrics[metricsCount]= "N/A"    
+      #   metricsPass[metricsCount] = true
+      #   metricsComments[metricsCount]= "Data Unavailable"
+      #   metricsUsage[metricsCount] = "Typicality"
+      # end
 
       metricsCount += 1
       begin
         metricsNames[metricsCount] = "SqFt typicality - neighbors"
         metrics[metricsCount]= (((@evalProp.at_xpath('//response//result//finishedSqFt').content.to_f / (@totalSqFt.to_f/@totalSqFtCount.to_f)-1)*100).to_f.round(1))     
-        metricsPass[metricsCount] = metrics[metricsCount] < 40 && metrics[metricsCount]  > -40
-        metricsComments[metricsCount]= "% deviation from community within 40%   || Prop: " + @evalProp.at_xpath('//response//result//finishedSqFt').content.to_s + "  || Avg: " + (@totalSqFt.to_f/@totalSqFtCount.to_f).to_s
+        metricsPass[metricsCount] = metrics[metricsCount] < 33 && metrics[metricsCount]  > -33
+        metricsComments[metricsCount]= "% deviation from community within 33%   || Prop: " + @evalProp.at_xpath('//response//result//finishedSqFt').content.to_s + "  || Avg: " + (@totalSqFt.to_f/@totalSqFtCount.to_f).to_s
         # metricsComments[metricsCount] += "  ||  " + @totalSqFt.to_s + "  ||  " + @totalSqFtCount.to_s + "  ||  " + sqftString.to_s
         metricsUsage[metricsCount] = "Typicality"
       rescue
         metricsNames[metricsCount] = "SqFt typicality - neighbors"
-        metrics[metricsCount]= "N/A"    
+        metrics[metricsCount]= 0   
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "Data Unavailable"
         metricsUsage[metricsCount] = "Typicality"
       end
 
+      finish = Time.now - start_time
+      urlsToHit[urlsToHit.size] = "Debugging - Done"
+      urlsToHit[urlsToHit.size] = finish
       puts "End Typicality"   
 
     ############################################################
@@ -713,7 +771,7 @@ class ApplicationController < ActionController::Base
 
       metricsCount += 1
       metricsNames[metricsCount] = "Urban Density"
-      metrics[metricsCount]= getaZCTADensity(@evalProp.at_xpath('//results//address//zipcode').content.to_i).to_f.round(2)
+      metrics[metricsCount]= UrbanAreaData.getaZCTADensity(@evalProp.at_xpath('//results//address//zipcode').content.to_i).to_f.round(2)
       metricsPass[metricsCount] = metrics[metricsCount].to_f > 500
       metricsComments[metricsCount]= "> 500 people/SqMi"
       metricsUsage[metricsCount] = "Rurality"
@@ -808,6 +866,16 @@ class ApplicationController < ActionController::Base
         puts e.backtrace.inspect
       end
 
+      if ["CA","WA","OR"].include?(state)
+        ruralityCutoff = 0.22
+        ruralityLocalCutoff = 0.12
+        coast = "West"
+      else
+        ruralityCutoff = 0.30
+        ruralityLocalCutoff = 0.16
+        coast = "East"
+      end
+
       begin
         metricsCount += 1
         metricsNames[metricsCount] = "Rurality Score"
@@ -820,7 +888,7 @@ class ApplicationController < ActionController::Base
             -10000.0000000000 * (metricsPass[metricsNames.index("Census Tract Density")] ? 0.0 : 1.0) +  
             0.0 ) /10000.0)
         metrics[metricsCount]= (Math.exp(ruralityScore).to_f / (1.0 + Math.exp(ruralityScore).to_f)).round(5)
-        metricsPass[metricsCount] = metrics[metricsCount] <= 0.20
+        metricsPass[metricsCount] = metrics[metricsCount] <= ruralityCutoff
         metricsComments[metricsCount]= "Probability of being rural || Rurality Exponent: " + ruralityScore.round(10).to_s
         metricsUsage[metricsCount] = "Rurality"
       rescue StandardError => e
@@ -843,14 +911,14 @@ class ApplicationController < ActionController::Base
       begin
         usState = @evalProp.at_xpath('//results//address//state').content.to_s
         if usState == "CA"
-          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.556,-121.4689|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886|34.4258,-119.7142|36.607,-121.892|38.448,-122.704&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=34.05,-118.25|33.948,-117.3961|38.587,-121.351|32.7150,-117.1625|37.80,-122.27|37.3382,-121.886|34.4258,-119.7142|36.607,-121.892|38.448,-122.704|33.540,-117.150|35.288,-120.666|34.224,-119.183&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
           cities = Array.new
-          cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA,Santa Barbara CA,Monterey CA,Santa Rosa CA".split(",")
+          cities = "Los Angeles CA,Riverside CA,Sacramento CA,San Diego CA,San Francisco CA,San Jose CA,Santa Barbara CA,Monterey CA,Santa Rosa CA,Temecula CA,San Luis Obispo CA,Ventura CA".split(",")
         end
         if usState == "OR" || usState == "WA"
-         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=45.52,-122.6819|47.6097,-122.3331|44.9421,-123.0254|44.0582,-123.0672|44.0600,-121.3024|44.2716,-121.0672|42.3411,-122.873|48.754,-122.506|47.550,-122.637&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
-         cities = "Portland OR,Seattle WA".split(",")
+         cities = "Portland OR,Seattle WA,Salem OR,Eugene OR,Bend OR,Redmond OR,Medford OR,Bellingham WA,Port Orchard WA".split(",")
        end
        if usState == "NY" || usState == "MA" || usState == "RI" || usState == "CT" || usState == "VT" || usState == "NH" || usState == "ME"
          url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=42.37,-71.03|40.77,-73.98|41.73,-71.43|42.75,-73.8|42.93,-78.73&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
@@ -858,9 +926,9 @@ class ApplicationController < ActionController::Base
          cities = "Boston MA,New York NY,Providence RI,Albany NY,Buffalo NY".split(",")
        end
        if usState == "NJ" || usState == "PA" || usState == "MD" || usState == "VA" || usState == "DE" || usState == "DC"
-         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=39.18,-76.67|39.88,-75.25|40.5,-80.22|36.9,-76.2|38.85,-77.04|40.77,-73.98&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
+         url = URI.parse(URI.encode("https://maps.googleapis.com/maps/api/distancematrix/xml?origins="+@addresses[q].street+" "+@addresses[q].citystatezip+"&destinations=39.18,-76.67|39.88,-75.25|40.5,-80.22|36.9,-76.2|38.85,-77.04|40.77,-73.98|37.541,-77.477&key=AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko"))
          cities = Array.new
-         cities = "Baltimore MD,Philadelphia PA,Pittsburgh PA,Virginia Beach VA,Washington DC,New York NY".split(",")
+         cities = "Baltimore MD,Philadelphia PA,Pittsburgh PA,Virginia Beach VA,Washington DC,New York NY,Richmond VA".split(",")
        end
        googleDistancesOutput = Nokogiri::XML(open(url))
        urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
@@ -873,22 +941,33 @@ class ApplicationController < ActionController::Base
         {city: "Virginia Beach VA", range: 10000}, 
         {city: "Washington DC", range: 100000}, 
         {city: "New York NY", range: 100000}, 
-        {city: "Boston MA", range: 10000}, 
+        {city: "Boston MA", range: 30000}, #extended
         {city: "New York NY", range: 100000}, 
         {city: "Providence RI", range: 10000}, 
         {city: "Albany NY", range: 5000}, 
         {city: "Buffalo NY", range: 5000}, 
         {city: "Los Angeles CA", range: 100000}, 
         {city: "Riverside CA", range: 25000}, 
-        {city: "Sacramento CA", range: 34000}, 
+        {city: "Sacramento CA", range: 34000}, #38.587100, -121.350999 added
         {city: "San Diego CA", range: 75000}, 
         {city: "San Francisco CA", range: 75000}, 
         {city: "San Jose CA", range: 75000}, 
         {city: "Santa Barbara CA", range: 34000}, 
         {city: "Monterey CA", range: 8500},
-        {city: "Santa Rosa CA", range: 8000},        
-        {city: "Portland OR", range: 22000}, 
+        {city: "Santa Rosa CA", range: 8000},
+        {city: "Temecula CA", range: 15000},
+        {city: "San Luis Obispo CA", range: 7000},                        
+        {city: "Portland OR", range: 35000}, #extended
         {city: "Seattle WA", range: 61000},
+        {city: "Salem OR", range: 9000},
+        {city: "Eugene OR", range: 12000},
+        {city: "Bend OR", range: 5000},                        
+        {city: "Redmond OR", range: 3000}, 
+        {city: "Medford OR", range: 5000},
+        {city: "Ventura CA", range: 10000}, #34.224484,-119.1832577 added
+        {city: "Bellingham WA", range: 5000}, #48.7545088,-122.5068085 added
+        {city: "Port Orchard WA", range: 7000}, #47.549996,-122.6368527 added
+        {city: "Richmond VA", range: 20000} #37.541462,-77.4767737 added
       ]
 
 
@@ -910,7 +989,16 @@ class ApplicationController < ActionController::Base
         city2 = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
         range2 = ranges[ranges.index { |x| x[:city] == city2}][:range]
         metricsPass[metricsCount] = metrics[metricsCount] <= range2
-        metricsComments[metricsCount]= "Distance in meters must be less than " + range2.to_s + " | Closest MSA: " + city2.to_s
+        metricsComments[metricsCount]= "Distance in meters must be less than " + range2.to_s + " | Second Closest MSA: " + city2.to_s
+        metricsUsage[metricsCount] = "MSA Dist"
+
+        metricsCount += 1
+        metricsNames[metricsCount] = "Third Distance from MSA"
+        metrics[metricsCount]=googleDistancesOutput.xpath('//element//distance//value').sort { |a, b| a.content.to_i <=> b.content.to_i }[2].content.to_i
+        city3 = cities[googleDistancesOutput.xpath('//element//distance//value').find_index { |qcount| qcount.content.to_i == metrics[metricsCount].to_i } ]
+        range3 = ranges[ranges.index { |x| x[:city] == city3}][:range]
+        metricsPass[metricsCount] = metrics[metricsCount] <= range3
+        metricsComments[metricsCount]= "Distance in meters must be less than " + range3.to_s + " | Third Closest MSA: " + city3.to_s
         metricsUsage[metricsCount] = "MSA Dist"
 
         # distancePercentUtilized = [distancePercentUtilized, metrics[metricsCount].to_f / range.to_f].min
@@ -929,19 +1017,28 @@ class ApplicationController < ActionController::Base
         metricsPass[metricsCount] = false
         metricsComments[metricsCount]= "Distance check failed"
         metricsUsage[metricsCount] = "MSA Dist"
+        metricsCount += 1
+        metricsNames[metricsCount] = "Third Distance from MSA"
+        metrics[metricsCount]= "NA"
+        metricsPass[metricsCount] = false
+        metricsComments[metricsCount]= "Distance check failed"
+        metricsUsage[metricsCount] = "MSA Dist"
       end
       begin
         metricsCount += 1
         metricsNames[metricsCount] = "Combo Rural"
-        metricsUsage[metricsCount] = "Combo Rural"
-        if metrics[metricsNames.index("Rurality Score")] > 0.08 && metrics[metricsNames.index("Rurality Score")] <= 0.20
+        if metrics[metricsNames.index("Rurality Score")] > ruralityLocalCutoff && metrics[metricsNames.index("Rurality Score")] <= ruralityCutoff
           if range1 >= 25000
             metrics[metricsCount] = metrics[metricsNames.index("Distance from MSA")]
             metricsPass[metricsCount] = (metrics[metricsCount] < [range1.to_f*0.6666,60000].min)
             metricsComments[metricsCount]= "Must be within 2/3 of range if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
-          else
+          elsif range2 >= 25000
             metrics[metricsCount] = metrics[metricsNames.index("Second Distance from MSA")]
             metricsPass[metricsCount] = (metrics[metricsCount] < [range2.to_f*0.6666,60000].min)
+            metricsComments[metricsCount]= "Must be within 2/3 of range if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
+          else
+            metrics[metricsCount] = metrics[metricsNames.index("Third Distance from MSA")]
+            metricsPass[metricsCount] = (metrics[metricsCount] < [range3.to_f*0.6666,60000].min)
             metricsComments[metricsCount]= "Must be within 2/3 of range if Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s
           end
         else
@@ -949,7 +1046,6 @@ class ApplicationController < ActionController::Base
           metricsPass[metricsCount] = true
           metricsComments[metricsCount]= "Test does not apply | Rurality Score is: " + metrics[metricsNames.index("Rurality Score")].to_f.round(5).to_s        
         end
-        
       rescue StandardError => e
         metricsNames[metricsCount] = "Combo Rural"
         metrics[metricsCount] = 0
@@ -965,7 +1061,6 @@ class ApplicationController < ActionController::Base
     ############################################################
 
       begin
-        metricsCount += 1
         url = URI.parse("http://www.zillow.com/ajax/homedetail/HomeValueChartData.htm?mt=1&zpid="+URI.escape(@evalProp.at_xpath('//response').at_xpath('//results').at_xpath('//result').at_xpath('//zpid').content)+"&format=json")
         req = Net::HTTP::Get.new("http://www.zillow.com"+url.request_uri)
         res = Net::HTTP.start(url.host, url.port) {|http|
@@ -974,16 +1069,22 @@ class ApplicationController < ActionController::Base
 
         urlsToHit[urlsToHit.size] = url.to_s.gsub(",","THESENTINEL")
         jsonOutput = JSON.parse(Nokogiri::HTML(open(url)).css('p')[0].content)
-        urlsToHit[urlsToHit.size] = [jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min
         @differencesInPrices = Array.new
         @neighborhoodPrices = Array.new
         @homePrices = Array.new
-        for time in 0..[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-1
-          @differencesInPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]-jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
+        begin
+          for time in 0..[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-1
+            @homePrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
 
-          @neighborhoodPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
+            @neighborhoodPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
 
-          @homePrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
+            @differencesInPrices[[jsonOutput[0]["points"].size, jsonOutput[1]["points"].size].min-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]-jsonOutput[1]["points"][jsonOutput[1]["points"].size-1-time]["y"]
+          end
+        rescue StandardError => e
+          for time in 0..jsonOutput[0]["points"].size-1
+            @homePrices[jsonOutput[0]["points"].size-time-1] = jsonOutput[0]["points"][jsonOutput[0]["points"].size-1-time]["y"]
+          end
+          urlsToHit[urlsToHit.size] = "Issues with neighborhood and deltas"          
         end
         begin
           changeInHomePrice = {change: jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"], time: jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"], percent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f, yearly: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"].first["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f/(jsonOutput[0]["points"].last["x"] - jsonOutput[0]["points"].first["x"]).to_f*31556926000, recentchange: jsonOutput[0]["points"].last["y"]-jsonOutput[0]["points"][-12]["y"], recentpercent: (jsonOutput[0]["points"].last["y"] - jsonOutput[0]["points"][-12]["y"]).to_f/jsonOutput[0]["points"].last["y"].to_f}
@@ -996,6 +1097,12 @@ class ApplicationController < ActionController::Base
           changeInNeighborhoodPrice = {change: 0, time: 0, percent: 0, yearly: 0, recentchange: 0, recentpercent: 0}
           urlsToHit.push(changeInNeighborhoodPrice)    
         end
+      rescue StandardError => e
+        urlsToHit[urlsToHit.size] = "Error in the AJAX output"
+      end
+      
+      metricsCount += 1
+      begin
         metricsNames[metricsCount] = "Std. Dev. of price deltas"
         metrics[metricsCount]= (@differencesInPrices.standard_deviation.to_f/metrics[0].to_f).round(3)
         metricsPass[metricsCount] = metrics[metricsCount] < 0.25
@@ -1009,8 +1116,8 @@ class ApplicationController < ActionController::Base
         metricsUsage[metricsCount] = "Volatility"    
       end
 
+      metricsCount += 1
       begin
-        metricsCount += 1
         metricsNames[metricsCount] = "Range of price deltas"
         metrics[metricsCount]= (@differencesInPrices.range.to_f/metrics[0].to_f).round(3)
         metricsPass[metricsCount] = metrics[metricsCount] < 0.80
@@ -1024,13 +1131,12 @@ class ApplicationController < ActionController::Base
         metricsUsage[metricsCount] = "Volatility"
       end
 
-
+      metricsCount += 1
       begin
-        metricsCount += 1
         metricsNames[metricsCount] = "Std. Dev. of historical home price"
         metrics[metricsCount]= (@homePrices.standard_deviation.to_f/metrics[0].to_f).round(3)
-        metricsPass[metricsCount] = metrics[metricsCount] < 0.1
-        metricsComments[metricsCount]= "< 0.1 || Standard Deviation of historical home price as a percentage of overal estimate"
+        metricsPass[metricsCount] = metrics[metricsCount] >= 0.08
+        metricsComments[metricsCount]= ">= 0.08 || Standard Deviation of historical home price as a percentage of overal estimate"
         metricsUsage[metricsCount] = "Volatility"
       rescue
         metricsNames[metricsCount] = "Std. Dev. of historical home price"
@@ -1066,6 +1172,19 @@ class ApplicationController < ActionController::Base
       metricsPass[metricsCount] = metrics[metricsCount] >= 3.5
       metricsComments[metricsCount]= ">= 3.5 || Average school rating across " + schoolScores.length.to_s
       metricsUsage[metricsCount] = "Schools"
+
+
+    ############################################################
+    #                                                          #
+    #   TESTING - EXTRA TYPICALITY                              #
+    #                                                          #
+    ############################################################
+
+    # lat = @evalProp.at_xpath('//results//latitude').content.to_f
+    # lon = @evalProp.at_xpath('//results//longitude').content.to_f
+    # comp_vars = Typicality.getComparablesDataFromMls(lat, lon, day_lookback = 90)
+    # urlsToHit[urlsToHit.size] = comp_vars
+
 
     ############################################################
     #                                                          #
@@ -1564,7 +1683,7 @@ class ApplicationController < ActionController::Base
 
       # metricsCount += 1
       # metricsNames[metricsCount] = "Urban Density"
-      # metrics[metricsCount]= getaZCTADensity(@evalProp.at_xpath('//results//address//zipcode').content.to_i).to_f.round(2)
+      # metrics[metricsCount]= UrbanAreaData.getaZCTADensity(@evalProp.at_xpath('//results//address//zipcode').content.to_i).to_f.round(2)
       # metricsPass[metricsCount] = metrics[metricsCount].to_f > 500
       # metricsComments[metricsCount]= "> 500 people/SqMi"
       # metricsUsage[metricsCount] = "Rurality"
@@ -1888,21 +2007,44 @@ class ApplicationController < ActionController::Base
       else
         reason[0]=nil
       end
-      
-      if metricsPass[metricsNames.index("Rurality Score")] == false
-        reason[1]="Too rural"
-      else
-        reason[1]=nil
+
+      if coast == "East"
+        if metricsPass[metricsNames.index("Rurality Score")] == false || metricsPass[metricsNames.index("Std. Dev. of historical home price")] == false
+          reason[1]="Too rural"
+        else
+          reason[1]=nil
+        end
+      elsif coast == "West"
+        if metricsPass[metricsNames.index("Rurality Score")] == false
+          reason[1]="Too rural"
+        else
+          reason[1]=nil
+        end
       end
 
       #We calculate a number of tpyicality fail counts, then use that
-      typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("SqFt typicality - neighbors")].count(false)
-      if  typicalFailCount >= 3 || (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0))
-        reason[2]="Atypical property"
+
+      if metrics[metricsNames.index("Neighbors available")] >= 4
+        typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("SqFt typicality - neighbors")].count(false)
+        if  typicalFailCount >= 3 || 
+          (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 65.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 65.0)) || 
+          (metricsPass[metricsNames.index("SqFt Typicality - Comps")] == false && metricsPass[metricsNames.index("SqFt typicality - neighbors")] == false) || 
+          (metricsPass[metricsNames.index("Estimate Typicality - Comps")] == false && metricsPass[metricsNames.index("Estimate typicality - neighbors")] == false)
+          reason[2]="Atypical property"
+        else
+          reason[2]=nil
+        end
       else
-        reason[2]=nil
+        typicalFailCount = metricsPass[metricsNames.index("Properties count")..metricsNames.index("Comps Nearby")].count(false)
+        if  typicalFailCount >= 2 || 
+          (typicalFailCount >= 1 && (metrics[metricsNames.index("SqFt Typicality - Comps")] > 60.0 || metrics[metricsNames.index("Estimate Typicality - Comps")] > 60.0))
+          reason[2]="Atypical property"
+        else
+          reason[2]=nil
+        end
       end
-      
+
+
       if metricsPass[metricsNames.index("Comps Count")..metricsNames.index("Comps Score")].count(false) >= 2
         reason[3]="Illiquid market"
       else
@@ -1933,7 +2075,7 @@ class ApplicationController < ActionController::Base
         reason[7]=nil
       end
 
-      if metricsPass[metricsNames.index("Std. Dev. of price deltas")..metricsNames.index("Std. Dev. of historical home price")].count(false)>=2
+      if metricsPass[metricsNames.index("Std. Dev. of price deltas")..metricsNames.index("Range of price deltas")].count(false)>=2
         reason[8]="Prices volatile"
       else
         reason[8]=nil
@@ -1945,7 +2087,7 @@ class ApplicationController < ActionController::Base
         reason[9]=nil
       end
 
-      if (metricsPass[metricsNames.index("Distance from MSA")] || metricsPass[metricsNames.index("Second Distance from MSA")]) == false
+      if (metricsPass[metricsNames.index("Distance from MSA")] || metricsPass[metricsNames.index("Second Distance from MSA")] || metricsPass[metricsNames.index("Third Distance from MSA")]) == false
         reason[10]="MSA Distance"
       else
         reason[10]=nil
@@ -1979,16 +2121,15 @@ class ApplicationController < ActionController::Base
     end
 
 
-    @allOutput = Output.all
+    # @allOutput = Output.all
 
-    if params[:path] == nil
-      return render 'getvalues'
-    end
+    # if params[:path] == nil
+    #   return render 'getvalues'
+    # end
 
-    @calcedurl = "/inspect/"+params[:street]+"/"+params[:citystatezip]
-    return render 'blank'
+    # @calcedurl = "/inspect/"+params[:street]+"/"+params[:citystatezip]
+    # return render 'blank'
+    return @addresses
   end
-
-
 
 end
