@@ -25,13 +25,15 @@ module MlsApi
 #################################
 # Main Data Fetching functions
 #################################
-
+  
+  # Function needed in pdq
   def getIndividualProperty(street, citystatezip)
   end
 
   # This function collects the neighbors/comps data in a defined 
   # geographic region for a given house lat/lon and a lookback period 
   # (default = 180 days)
+  # Function needed in pdq
   def getCompsData(lat, lon, day_lookback)
     # Pull the list of comps from MLS in the geo bounded polygon
     # (Defaults: shape is an octagon, 1km in any direction, return max 50 props)
@@ -70,50 +72,58 @@ module MlsApi
     return comp_data
   end
 
-  # This funtion queries MLS property data based on specified query filters and output size
+  # This funtion queries MLS property data based on specified query filters and output size - can by moved to python
   def getPropertiesByQuery(url)
     # Fetch data
     uri = URI.parse(URI.encode(url.strip))
     response = Net::HTTP.get(uri)
     json_result = JSON.parse(response)
 
+    puts json_result["results"].nil? 
+
     # Check to make sure we have results
-    return {:status => "No results"}.to_json if json_result["results"].nil?
-
-    # Set up storage
-    mls_props = Hash.new
-    listing_results = json_result["results"]
-
-    # Loop over listing results
-    cnt = 1
-    listing_results.each do |r|      
-      # Gather data
-      house_data = getPropertyInfoFromJson(r) # property info  
-      listing_data = getListingInfoFromJson(r) # listing info
-      !r["events"].nil? ? event_data = r["events"] : event_data = nil # events info
-
-      # Call PDQ to determine if property is pre-qualified
-      ##############################################################
-      ###### Placeholder to call get_values (PDQ) on property ######
-      ##############################################################
-
-      # Save results for property
-      mls_props[cnt] = {:propertyInfo => house_data, 
-                        :mlsInfo => listing_data,
-                        :events => event_data}
-      cnt += 1
+    if json_result["results"].nil?
+      return {:status => "No results"}.to_json
+    else
+      # Return results
+      return json_result.to_json
     end
 
-    # Construct total data hash
-    all_data = Hash.new
-    all_data[:totalNumProperties] = json_result["total"]
-    all_data[:results] = mls_props
+    # Set up storage
+    # mls_props = Hash.new
+    # listing_results = json_result["results"]
 
-    return all_data.to_json
+    # # Loop over listing results
+    # cnt = 1
+    # listing_results.each do |r|      
+    #   # Gather data
+    #   house_data = getPropertyInfoFromJson(r) # property info  
+    #   listing_data = getListingInfoFromJson(r) # listing info
+    #   !r["events"].nil? ? event_data = r["events"] : event_data = nil # events info
+
+    #   # Call PDQ to determine if property is pre-qualified
+    #   ##############################################################
+    #   ###### Placeholder to call get_values (PDQ) on property ######
+    #   ##############################################################
+
+    #   # Save results for property
+    #   mls_props[cnt] = {:propertyInfo => house_data, 
+    #                     :mlsInfo => listing_data,
+    #                     :events => event_data}
+    #   cnt += 1
+    # end
+
+    # # Construct total data hash
+    # all_data = Hash.new
+    # all_data[:totalNumProperties] = json_result["total"]
+    # all_data[:results] = mls_props
+
+    # return all_data.to_json
   end
 
   # The function returns properties in a geographic bounded polygon
-  def getPropertiesByGeo(api_token, lat, lon, day_lookback = 180,                        distance = 1000, perimeter_sides = 8, max_count = 25)
+  # Function needed in pdq
+  def getPropertiesByGeo(api_token, lat, lon, day_lookback = 180, distance = 1000, perimeter_sides = 8, max_count = 25)
     base_url = "https://api.mpoapp.com/v1/properties/_search?api_key=#{api_token}"
 
     # Headers
@@ -143,11 +153,20 @@ module MlsApi
     return response.to_json
   end
 
+  def testfn(n)
+    if n == 2
+      return "Done"
+    end
+
+    return "Not 2"
+  end
+
+
 #################################
 # Helper functions
 #################################
 
-  # This function creates the mls json url call based on specified filters and output size
+  # This function creates the mls json url call based on specified filters and output size - can remain in case
   def createMlsUrl(api_token, query_filters, query_size = 500)
     # Construct URL - including filters
     url = "https://api.mpoapp.com/v1/properties/search?q="
@@ -173,7 +192,7 @@ module MlsApi
   end
 
   # This function is used in the getMlsProperties function to pull property 
-  # info from the MLS API
+  # info from the MLS API - can be deleted
   def getPropertyInfoFromJson(r)
     # Get address - street and city-state-zip
     address_split = r["primary"]["address"]["mpoAddress"].split(",")
@@ -204,7 +223,7 @@ module MlsApi
   end
 
   # This function is used in the getMlsProperties function to pull office, agent 
-  # data, and MLS info from the MLS API
+  # data, and MLS info from the MLS API - can be deleted
   def getListingInfoFromJson(r)
     # If office data is present, extract it
     pl_office_data = Array.new(3) # Primary listing office

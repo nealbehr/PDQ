@@ -58,7 +58,7 @@ module ZillowApi
   # Function to collect important property data from zillow xml into a hash
   def getPropertyInfo(zillow_prop_xml)
     key_prop_data = {
-      :propZestimate => prop_data.at_xpath('//results//result//zestimate//amount').content,
+      :propEstimate => prop_data.at_xpath('//results//result//zestimate//amount').content,
       :propState => prop_data.at_xpath('//results//address//state').content.to_s,
       :propUrbanCode => prop_data.at_xpath('//results//address//zipcode').content.to_i,
       :propType => prop_data.at_xpath('//useCode').content,
@@ -70,8 +70,8 @@ module ZillowApi
       :zpid => prop_data.at_xpath('//zpid').content,
       :propSqFt => prop_data.at_xpath('//response//result//finishedSqFt').content.to_f,
       :lotSqFt => prop_data.at_xpath('//response//result//lotSizeSqFt').content.to_f,
-      :zestimateHigh => prop_data.at_xpath('//zestimate//valuationRange//high').content.to_f,
-      :zestimateLow => prop_data.at_xpath('//zestimate//valuationRange//low').content.to_f
+      :estimateHigh => prop_data.at_xpath('//zestimate//valuationRange//high').content.to_f,
+      :estimateLow => prop_data.at_xpath('//zestimate//valuationRange//low').content.to_f
     }
     return key_prop_data
   end

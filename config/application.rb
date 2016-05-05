@@ -20,7 +20,11 @@ module RexAVM
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
     # config.i18n.default_locale = :de
 
+    # Paths added by Brad
     config.autoload_paths += %W(#{config.root}/lib)
-    
+    config.autoload_paths += %W(#{config.root}/lib/apis)
+    config.autoload_paths += %W(#{config.root}/lib/misc)
+    config.autoload_paths += %W(#{config.root}/lib/pdq_files)
+    config.autoload_paths += %W(#{config.root}/lib/research)
   end
 end

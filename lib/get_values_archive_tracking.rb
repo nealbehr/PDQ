@@ -838,74 +838,74 @@ module GetValuesArchiveTracking
         # jsonOutputHouseholds = JSON.parse(res.body)
         # urlsToHit[urlsToHit.size] = url.to_s
 
-        metricsNames[metricsCount] = "Census Block Density"
-        metrics[metricsCount]= (jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["AREALAND"].to_f/2589990.0)).to_f.round(2)
-        metricsPass[metricsCount] = metrics[metricsCount] >= 500
-        metricsComments[metricsCount]= "> 500 Houses/SqMi for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
-        metricsUsage[metricsCount] = "Rurality"
-      rescue StandardError => e
-        metricsNames[metricsCount] = "Census Block Density"
-        metrics[metricsCount]= 0
-        metricsPass[metricsCount] = false
-        metricsComments[metricsCount]= "Error with Census Block Density"
-        metricsUsage[metricsCount] = "Rurality"
-        puts e.message
-        puts e.backtrace.inspect
-      end
+      #   metricsNames[metricsCount] = "Census Block Density"
+      #   metrics[metricsCount]= (jsonOutputHouseholds[1][0].to_f / (@jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["AREALAND"].to_f/2589990.0)).to_f.round(2)
+      #   metricsPass[metricsCount] = metrics[metricsCount] >= 500
+      #   metricsComments[metricsCount]= "> 500 Houses/SqMi for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
+      #   metricsUsage[metricsCount] = "Rurality"
+      # rescue StandardError => e
+      #   metricsNames[metricsCount] = "Census Block Density"
+      #   metrics[metricsCount]= 0
+      #   metricsPass[metricsCount] = false
+      #   metricsComments[metricsCount]= "Error with Census Block Density"
+      #   metricsUsage[metricsCount] = "Rurality"
+      #   puts e.message
+      #   puts e.backtrace.inspect
+      # end
 
 
-      begin
-        #  metricsCount is incremented before potential errors in the rescue catch. Therefore it is not incremented in the rescue or metrics save stage.
-        metricsCount += 1
-        metricsNames[metricsCount] = "Census Block Houses"
-        metrics[metricsCount]= jsonOutputHouseholds[1][0].to_f
-        metricsPass[metricsCount] = metrics[metricsCount] >= 15
-        metricsComments[metricsCount]= "> 15 for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
-        metricsUsage[metricsCount] = "Rurality"
+      # begin
+      #   #  metricsCount is incremented before potential errors in the rescue catch. Therefore it is not incremented in the rescue or metrics save stage.
+      #   metricsCount += 1
+      #   metricsNames[metricsCount] = "Census Block Houses"
+      #   metrics[metricsCount]= jsonOutputHouseholds[1][0].to_f
+      #   metricsPass[metricsCount] = metrics[metricsCount] >= 15
+      #   metricsComments[metricsCount]= "> 15 for block: " + @jsonOutputArea["result"]["geographies"]["2010 Census Blocks"][0]["GEOID"]
+      #   metricsUsage[metricsCount] = "Rurality"
       rescue StandardError => e
-        metricsNames[metricsCount] = "Census Block Houses"
-        metrics[metricsCount]= 0
-        metricsPass[metricsCount] = false
-        metricsComments[metricsCount]= "Error with Census Block Houses"
-        metricsUsage[metricsCount] = "Rurality"
-        puts e.message
-        puts e.backtrace.inspect
+        # metricsNames[metricsCount] = "Census Block Houses"
+        # metrics[metricsCount]= 0
+        # metricsPass[metricsCount] = false
+        # metricsComments[metricsCount]= "Error with Census Block Houses"
+        # metricsUsage[metricsCount] = "Rurality"
+        # puts e.message
+        # puts e.backtrace.inspect
       end
 
       if ["CA","WA","OR"].include?(state)
-        ruralityCutoff = 0.22
-        ruralityLocalCutoff = 0.12
-        coast = "West"
-      else
-        ruralityCutoff = 0.30
-        ruralityLocalCutoff = 0.16
-        coast = "East"
-      end
+      #   ruralityCutoff = 0.22
+      #   ruralityLocalCutoff = 0.12
+      #   coast = "West"
+      # else
+      #   ruralityCutoff = 0.30
+      #   ruralityLocalCutoff = 0.16
+      #   coast = "East"
+      # end
 
       begin
         metricsCount += 1
-        metricsNames[metricsCount] = "Rurality Score"
-        ruralityScore = (1.71820658968186+
-          (-15.41353150512030 * metrics[metricsNames.index("Urban Density")].to_f+
-            -10.1395242746364 * metrics[metricsNames.index("Census Tract Density")].to_f+
-            -4.15071740631704 * metrics[metricsNames.index("Census Block Density")].to_f+
-            -16.9412115229678 * ([metrics[metricsNames.index("Census Block Houses")], 80].min).to_f+
-            -6982.74818338132 * (metricsPass[metricsNames.index("Surrounding Census Tract Density")] ? 0.0 : 1.0) +
-            -10000.0000000000 * (metricsPass[metricsNames.index("Census Tract Density")] ? 0.0 : 1.0) +  
-            0.0 ) /10000.0)
-        metrics[metricsCount]= (Math.exp(ruralityScore).to_f / (1.0 + Math.exp(ruralityScore).to_f)).round(5)
-        metricsPass[metricsCount] = metrics[metricsCount] <= ruralityCutoff
-        metricsComments[metricsCount]= "Probability of being rural || Rurality Exponent: " + ruralityScore.round(10).to_s
-        metricsUsage[metricsCount] = "Rurality"
-      rescue StandardError => e
-        metricsNames[metricsCount] = "Rurality Score"
-        metrics[metricsCount]= 1
-        metricsPass[metricsCount] = false
-        metricsComments[metricsCount]= "Error with calculating the Rurality Score"
-        metricsUsage[metricsCount] = "Rurality"
-        puts e.message
-        puts e.backtrace.inspect
-      end
+        # metricsNames[metricsCount] = "Rurality Score"
+        # ruralityScore = (1.71820658968186+
+        #   (-15.41353150512030 * metrics[metricsNames.index("Urban Density")].to_f+
+        #     -10.1395242746364 * metrics[metricsNames.index("Census Tract Density")].to_f+
+        #     -4.15071740631704 * metrics[metricsNames.index("Census Block Density")].to_f+
+        #     -16.9412115229678 * ([metrics[metricsNames.index("Census Block Houses")], 80].min).to_f+
+        #     -6982.74818338132 * (metricsPass[metricsNames.index("Surrounding Census Tract Density")] ? 0.0 : 1.0) +
+        #     -10000.0000000000 * (metricsPass[metricsNames.index("Census Tract Density")] ? 0.0 : 1.0) +  
+        # #     0.0 ) /10000.0)
+        # metrics[metricsCount]= (Math.exp(ruralityScore).to_f / (1.0 + Math.exp(ruralityScore).to_f)).round(5)
+        # metricsPass[metricsCount] = metrics[metricsCount] <= ruralityCutoff
+        # metricsComments[metricsCount]= "Probability of being rural || Rurality Exponent: " + ruralityScore.round(10).to_s
+        # metricsUsage[metricsCount] = "Rurality"
+      # rescue StandardError => e
+      #   metricsNames[metricsCount] = "Rurality Score"
+      #   metrics[metricsCount]= 1
+      #   metricsPass[metricsCount] = false
+      #   metricsComments[metricsCount]= "Error with calculating the Rurality Score"
+      #   metricsUsage[metricsCount] = "Rurality"
+      #   puts e.message
+      #   puts e.backtrace.inspect
+      # end
 
     ############################################################
     #                                                          #
@@ -2000,11 +2000,11 @@ module GetValuesArchiveTracking
     ############################################################
 
       metricsCount += 1
-      metricsNames[metricsCount] = "--End-Names--"
-      metrics[metricsCount]= "--End-Metrics--"
-      metricsPass[metricsCount] = "--End-Passes--"
-      metricsComments[metricsCount]= "--End-Comments--"
-      metricsUsage[metricsCount] = "--End-Usage--"
+      # metricsNames[metricsCount] = "--End-Names--"
+      # metrics[metricsCount]= "--End-Metrics--"
+      # metricsPass[metricsCount] = "--End-Passes--"
+      # metricsComments[metricsCount]= "--End-Comments--"
+      # metricsUsage[metricsCount] = "--End-Usage--"
 
 
       if metricsPass[metricsNames.index("Last sold history")] == false

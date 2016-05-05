@@ -86,7 +86,7 @@ module PdqValuesAggregator
 
 
     # Ping census website and save url
-    outputArea, census_tract_url = CensusApi.getOutputArea(z_kpd[:lat], z_kpd[:lon])
+    outputArea, census_tract_url = CensusApi.getOutputArea(key_prop_data[:lat], key_prop_data[:lon])
     output_data[:urlsToHit].push(census_tract_url)
 
 
@@ -99,11 +99,11 @@ module PdqValuesAggregator
     
 
     ###### Begin Checks (row in output)
-    InvestGuidelines.propertyValueCheck(output_data, z_kpd, "Zillow")
-    InvestGuidelines.propertyMsaCheck(output_data, z_kpd, "Zillow")
-    InvestGuidelines.propertyRecentSalesCheck(output_data, z_kpd, params[:product], "Zillow")
-    InvestGuidelines.propertyTypeCheck(output_data, z_kpd, "Zillow")
-    InvestGuidelines.propertyBuildYearCheck(output_data, z_kpd, "Zillow") # Must run after recency check
+    InvestGuidelines.propertyValueCheck(output_data, key_prop_data)
+    InvestGuidelines.propertyMsaCheck(output_data, key_prop_data)
+    InvestGuidelines.propertyRecentSalesCheck(output_data, key_prop_data, params)
+    InvestGuidelines.propertyTypeCheck(output_data, key_prop_data)
+    InvestGuidelines.propertyBuildYearCheck(output_data, key_prop_data)
 
 
     # Liquidity (must run before typicality)

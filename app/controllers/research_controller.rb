@@ -22,6 +22,7 @@ class ResearchController < ApplicationController
                   "mls.knownShortSale" => 'false',
                   "construction.yearBuilt" => "{* TO " + (Time.now.year.to_i-1).to_s + "}", # build year condition
                   "primary.mpoPropType" => "(singleFamily OR condominium OR Loft OR Apartment Building)"}
+
   # Pulls data items relevant to rurality
   def ruralityData
   	alldata = Output.find_by(id: params[:id])
@@ -46,11 +47,15 @@ class ResearchController < ApplicationController
       data = Output.find_by(id: params[:id])
     elsif !params[:street].nil? && !params[:citystatezip].nil?
       data = Output.find_by(street: params[:street], citystatezip: params[:citystatezip])
-      puts data
     end
 
     # Parse the data as a json
     jd = JSON.parse(data.to_json)
+
+    # Convert to arrays if necessary (testing vs. production differences)
+    jd["names"] = YAML.load(jd["names"]) unless jd["names"].is_a?(Array)
+    jd["numbers"] = YAML.load(jd["numbers"]) unless jd["numbers"].is_a?(Array)
+    jd["passes"] = YAML.load(jd["passes"]) unless jd["passes"].is_a?(Array)
 
     # YAML required since the arrays are actually stored as strings
     @Output = {:id => jd["id"],
@@ -60,15 +65,21 @@ class ResearchController < ApplicationController
                :zpid => jd["zpid"],
                :date => jd["date"],
                :product => jd["product"],
-               :names => YAML.load(jd["names"]),
-               :numbers => YAML.load(jd["numbers"]),
-               :passes => YAML.load(jd["passes"])
+               :names => jd["names"],
+               :numbers => jd["numbers"],
+               :passes => jd["passes"]
               }.to_json
 
     render :json => @Output
   end
 
-  ### MLS Functions
+
+
+
+
+
+
+  ### MLS Functions - can be transferred to python
   def mlsNewListings
     # Construct filters
     @@MLS_filters["mls.onMarketDate"] = params[:date]
@@ -76,7 +87,7 @@ class ResearchController < ApplicationController
     # Get property based on return size; return all if "all"
     # A value of nil will return 2 results at most
     if params[:size] == "all"
-      url_call = MlsApi.createMlsUrl(@@MLS_TOKEN, @@MLS_filters, query_size = 500)
+      url_call = MlsApi.createMlsUrl(@@MLS_TOKEN, @@MLS_filters, query_size = 5000)
     else
       url_call = MlsApi.createMlsUrl(@@MLS_TOKEN, @@MLS_filters, query_size = params[:size])
     end
@@ -86,7 +97,8 @@ class ResearchController < ApplicationController
     render :json => @MLS_data
   end
 
-  def mlsDaysOnMarket
+  ### MLS Functions - can be transferred to python
+  def mlsDaysOnMarket 
     # Construct filters
     today = Time.now.to_date
     thres_date = today - params[:dayCount].to_i
@@ -95,7 +107,7 @@ class ResearchController < ApplicationController
     # Get property based on return size; return all if "all"
     # A value of nil will return 2 results at most
     if params[:size] == "all"
-      url_call = MlsApi.createMlsUrl(@@MLS_TOKEN, @@MLS_filters, query_size = 500)
+      url_call = MlsApi.createMlsUrl(@@MLS_TOKEN, @@MLS_filters, query_size = 5000)
     else
       url_call = MlsApi.createMlsUrl(@@MLS_TOKEN, @@MLS_filters, query_size = params[:size])
     end

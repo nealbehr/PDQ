@@ -33157,9 +33157,6 @@ module UrbanAreaData
       if worker[:zipcode] == zipCodeToSearch
         return worker[:densityofzip]
       end
-
-
-
     end
 
     return 0
@@ -36715,7 +36712,6 @@ module UrbanAreaData
       { zipcode: 98685, status: 1, name: "Portland-Vancouver-Hillsboro" },
       { zipcode: 98686, status: 1, name: "Portland-Vancouver-Hillsboro" },
       { zipcode: 98862, status: 1, name: "Bellingham" },
-
     ]
 
     dataTable.each do |worker|
@@ -36727,6 +36723,6 @@ module UrbanAreaData
     return worker
   end
 
-
+  def getMSAbyCounty(county)
 
 end
