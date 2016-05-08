@@ -226,7 +226,7 @@ module Rurality
 
       # If there was an error in MSA Distance break out of function
       if closest_cities[0] == "N/A"
-        output[:Census][:metricsNames] << 0
+        output[:Census][:metrics] << 0
         output[:Census][:metricsPass] << false
         output[:Census][:metricsComments] << "Error in MSA distances. Cannot conduct Combo Rural | Rurality Score is: #{r_score}"
         return
@@ -250,12 +250,12 @@ module Rurality
       end
 
       # Store values
-      output[:Census][:metricsNames] << value
+      output[:Census][:metrics] << value
       output[:Census][:metricsPass] << pass
       output[:Census][:metricsComments] << comment
 
     else
-      output[:Census][:metricsNames] << 0
+      output[:Census][:metrics] << 0
       output[:Census][:metricsPass] << true
       output[:Census][:metricsComments] << "Test does not apply | Rurality Score is: #{r_score}"
     end

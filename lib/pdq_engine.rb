@@ -231,46 +231,47 @@ module PdqEngine
     output[:reason][0] = "Sold too recently" if !output[key][:metricsPass][idx]
 
     # Rurality Checks
-    rs_idx = output[key][:metricsNames].index("Rurality Score")
+    rs_idx = output[:Census][:metricsNames].index("Rurality Score")
     vol_idx = output[key][:metricsNames].index("St. Dev. of Historical Home Price")
 
     if output[:region] == "East"
-     reason[1] = "Too rural" if (!output[key][:metricsPass][rs_idx] || !output[key][:metricsPass][vol_idx])    
+     output[:reason][1] = "Too rural" if (!output[:Census][:metricsPass][rs_idx] || !output[key][:metricsPass][vol_idx])    
     end
 
     if output[:region] == "West"
-      reason[1] = "Too rural" if !output[key][:metricsPass][rs_idx]
+      output[:reason][1] = "Too rural" if !output[:Census][:metricsPass][rs_idx]
     end
 
     # Typicality
-    typ_idx = output[key][:metricsUsage].each_index.select { |i| arr[i] == "Typicality" }
-    typ_fail_cnt = output[key][:metricsPass][typ_idx].count(false)
+    typ_idx = output[key][:metricsUsage].each_index.select { |i| output[key][:metricsUsage][i] == "Typicality" }
+    typ_fail_cnt = typ_idx.inject([]) { |tot, a| tot << output[key][:metricsPass][a] }.count(false)
 
     if data_source == "Zillow"
-      neigh_idx = output[key][:metricsNames].index("Neighbors available")
+      neigh_idx = output[key][:metricsNames].index("Neighbors Available")
 
-      if output[key][:metricsPass][neigh_idx] >= 4
-        sqft_idx = output[key][:metricsNames].index("Sqft Typicality - Comps")
-        sqfi_nb_idx = output[key][:metricsNames].index("Sqft Typicality - Neighbors")
+      if output[key][:metrics][neigh_idx] >= 4
+        sqft_idx = output[key][:metricsNames].index("SqFt Typicality - Comps")
+        sqfi_nb_idx = output[key][:metricsNames].index("SqFt Typicality - Neighbors")
         est_idx = output[key][:metricsNames].index("Estimate Typicality - Comps")
         est_nb_idx = output[key][:metricsNames].index("Estimate Typicality - Neighbors")
         
-        reason[2] = "Atypical property" if typ_fail_cnt >= 3
-        reason[2] = "Atypical property" if typ_fail_cnt >= 1 && (output[key][:metrics][sqft_idx] > 65.0 || output[key][:metrics][est_idx] > 65.0)
-        reason[2] = "Atypical property" if !output[key][:metricsPass][sqft_idx] && !output[key][:metricsPass][sqfi_nb_idx]
-        reason[2] = "Atypical property" if !output[key][:metricsPass][est_idx] && !output[key][:metricsPass][est_nb_idx]
+        output[:reason][2] = "Atypical property" if typ_fail_cnt >= 3
+        output[:reason][2] = "Atypical property" if typ_fail_cnt >= 1 && (output[key][:metrics][sqft_idx] > 65.0 || output[key][:metrics][est_idx] > 65.0)
+        output[:reason][2] = "Atypical property" if !output[key][:metricsPass][sqft_idx] && !output[key][:metricsPass][sqfi_nb_idx]
+        output[:reason][2] = "Atypical property" if !output[key][:metricsPass][est_idx] && !output[key][:metricsPass][est_nb_idx]
       else
-        reason[2] = "Atypical property" if typ_fail_cnt >= 2
-        reason[2] = "Atypical property" if typ_fail_cnt >= 1 && (output[key][:metrics][sqft_idx] > 60.0 || output[key][:metrics][est_idx] > 60.0)
+        output[:reason][2] = "Atypical property" if typ_fail_cnt >= 2
+        output[:reason][2] = "Atypical property" if typ_fail_cnt >= 1 && (output[key][:metrics][sqft_idx] > 60.0 || output[key][:metrics][est_idx] > 60.0)
       end
     else
-      reason[2] = "Atypical property" if typ_fail_cnt >= 2
-      reason[2] = "Atypical property" if typ_fail_cnt >= 1 && (output[key][:metrics][sqft_idx] > 60.0 || output[key][:metrics][est_idx] > 60.0)
+      output[:reason][2] = "Atypical property" if typ_fail_cnt >= 2
+      output[:reason][2] = "Atypical property" if typ_fail_cnt >= 1 && (output[key][:metrics][sqft_idx] > 60.0 || output[key][:metrics][est_idx] > 60.0)
     end
 
     # Liquidity (allow one false)
-    liq_idx = output[key][:metricsUsage].each_index.select { |i| arr[i] == "Liquidity" }
-    reason[3] = "Illiquidity" if output[key][:metricsPass][liq_idx].count(false) >= 2
+    liq_idx = output[key][:metricsUsage].each_index.select { |i| output[key][:metricsUsage][i] == "Liquidity" }
+    liq_fail_cnt = liq_idx.inject([]) { |tot, a| tot << output[key][:metricsPass][a] }.count(false)
+    output[:reason][3] = "Illiquidity" if liq_fail_cnt >= 2
 
     # Investment Guidelines
     est_idx = output[key][:metricsNames].index("Estimated Value")
@@ -278,23 +279,24 @@ module PdqEngine
     build_idx = output[key][:metricsNames].index("Build Date")
     msa_idx = output[key][:metricsNames].index("Pre-approval")
 
-    reason[4] = "out of $ range" if output[key][:metricsPass][est_idx]
-    reason[5] = "Not Prop Type" if output[key][:metricsPass][type_idx]
-    reason[6] = "New Construction" if output[key][:metricsPass][build_idx]
-    reason[7] = "Not in MSAs" if output[key][:metricsPass][msa_idx]
+    output[:reason][4] = "Out of $ Range" if !output[key][:metricsPass][est_idx]
+    output[:reason][5] = "Not Prop Type" if !output[key][:metricsPass][type_idx]
+    output[:reason][6] = "New Construction" if !output[key][:metricsPass][build_idx]
+    output[:reason][7] = "Not in MSAs" if !output[key][:metricsPass][msa_idx]
 
     # Volatility (allow one false)
-    vol_idx = output[key][:metricsUsage].each_index.select { |i| arr[i] == "Volatility" }
-    reason[8] = "Price Vol" if output[key][:metricsPass][vol_idx].count(false) >= 2
+    vol_idx = output[key][:metricsUsage].each_index.select { |i| output[key][:metricsUsage][i] == "Volatility" }
+    vol_fail_cnt = vol_idx.inject([]) { |tot, a| tot << output[key][:metricsPass][a] }.count(false)
+    output[:reason][8] = "Price Vol" if vol_fail_cnt >= 2
 
     # Combo Rural (if applicable)
-    cr_idx = output[key][:metricsNames].index("Combo Rural")
-    reason[9] = "Combo Rural" if !output[key][:metricsPass][cr_idx]
+    cr_idx = output[:Census][:metricsNames].index("Combo Rural")
+    output[:reason][9] = "Combo Rural" if !output[:Census][:metricsPass][cr_idx]
 
     # Distance
-    reason[10] = "MSA Distance" if !output[:Google][:metricsPass].any?
+    output[:reason][10] = "MSA Distance" if !output[:Google][:metricsPass].any?
 
     # Approve if not issues
-    reason[11] = "Approved" if reason.compact.size == 0
+    output[:reason][11] = "Approved" if output[:reason].compact.size == 0
   end
 end
