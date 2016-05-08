@@ -169,7 +169,7 @@ module Typicality
       end
 
       # If we are below 1 or above 5, fail and exit
-      if num_bds < 1 && num_bds > 5
+      if num_bds < 1 || num_bds > 5
         output[data_source.to_sym][:metricsPass] << false
         output[data_source.to_sym][:metricsComments] << "Unconventional number of bedrooms"
         return
@@ -252,6 +252,7 @@ module Typicality
 
     # Store Values
     output[:Zillow][:dataSource].push("Zillow", "Zillow", "Zillow", "Zillow")
+    output[:Zillow][:metricsUsage].push("Typicality", "Typicality", "Typicality", "Typicality")
 
     # Neighbors Availability
     output[:Zillow][:metricsNames] << "Neighbors Available" 

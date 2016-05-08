@@ -2008,25 +2008,25 @@ module GetValuesArchiveTracking
       # metricsUsage[metricsCount] = "--End-Usage--"
 
 
-      if metricsPass[metricsNames.index("Last sold history")] == false
-        reason[0]="Sold too recently"
-      else
-        reason[0]=nil
-      end
+      # if metricsPass[metricsNames.index("Last sold history")] == false
+      #   reason[0]="Sold too recently"
+      # else
+      #   reason[0]=nil
+      # end
 
-      if coast == "East"
-        if metricsPass[metricsNames.index("Rurality Score")] == false || metricsPass[metricsNames.index("Std. Dev. of historical home price")] == false
-          reason[1]="Too rural"
-        else
-          reason[1]=nil
-        end
-      elsif coast == "West"
-        if metricsPass[metricsNames.index("Rurality Score")] == false
-          reason[1]="Too rural"
-        else
-          reason[1]=nil
-        end
-      end
+      # if coast == "East"
+      #   if metricsPass[metricsNames.index("Rurality Score")] == false || metricsPass[metricsNames.index("Std. Dev. of historical home price")] == false
+      #     reason[1]="Too rural"
+      #   else
+      #     reason[1]=nil
+      #   end
+      # elsif coast == "West"
+      #   if metricsPass[metricsNames.index("Rurality Score")] == false
+      #     reason[1]="Too rural"
+      #   else
+      #     reason[1]=nil
+      #   end
+      # end
 
       #We calculate a number of tpyicality fail counts, then use that
 
@@ -2051,11 +2051,11 @@ module GetValuesArchiveTracking
       end
 
 
-      if metricsPass[metricsNames.index("Comps Count")..metricsNames.index("Comps Score")].count(false) >= 2
-        reason[3]="Illiquid market"
-      else
-        reason[3]=nil
-      end
+      # if metricsPass[metricsNames.index("Comps Count")..metricsNames.index("Comps Score")].count(false) >= 2
+      #   reason[3]="Illiquid market"
+      # else
+      #   reason[3]=nil
+      # end
 
 
 
@@ -2083,17 +2083,17 @@ module GetValuesArchiveTracking
       #   reason[7]=nil
       # end
 
-      if metricsPass[metricsNames.index("Std. Dev. of price deltas")..metricsNames.index("Range of price deltas")].count(false)>=2
-        reason[8]="Prices volatile"
-      else
-        reason[8]=nil
-      end
+      # if metricsPass[metricsNames.index("Std. Dev. of price deltas")..metricsNames.index("Range of price deltas")].count(false)>=2
+      #   reason[8]="Prices volatile"
+      # else
+      #   reason[8]=nil
+      # end
 
-      if metricsPass[metricsNames.index("Combo Rural")] == false
-        reason[9]="Combo Rural"
-      else
-        reason[9]=nil
-      end
+      # if metricsPass[metricsNames.index("Combo Rural")] == false
+      #   reason[9]="Combo Rural"
+      # else
+      #   reason[9]=nil
+      # end
 
       # if (metricsPass[metricsNames.index("Distance from MSA")] || metricsPass[metricsNames.index("Second Distance from MSA")] || metricsPass[metricsNames.index("Third Distance from MSA")]) == false
       #   reason[10]="MSA Distance"

@@ -11,8 +11,8 @@ module Volatility
   RANGE_PRICE_DELTA_THRES = 0.80
   VOL_PROP_PRICE_THRES = 0.08
   CORR_THRES = 0.5
-  RET_VOL_FREQ = "Quarterly"
-  RET_VOL_THRES = 0.04
+  RET_VOL_FREQ = "Annual"
+  RET_VOL_THRES = 0.10
 
   def propertyVolatility(output, prop_data, data_source)
     # Get price time series depending on data source
@@ -160,7 +160,7 @@ module Volatility
 
     value = rets.standard_deviation.round(2)
     pass = (value >= RET_VOL_THRES)
-    comment = ">= #{RET_VOL_FREQ} | Vol of historical #{RET_VOL_FREQ.downcase} returns"
+    comment = ">= #{RET_VOL_THRES} | Vol of historical #{RET_VOL_FREQ.downcase} returns"
 
     # Current Return
     output[data_source.to_sym][:metrics] << value

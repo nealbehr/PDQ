@@ -24,22 +24,21 @@ class ValuesController < ApplicationController
   #||||||||||||||||||||||||||||||||||||||||||||||||||||||||||#
   ############################################################
 
-  def getvalues
+  # def getvalues
+  #   # Call the original version of get values
+  #   @addresses = GetValuesArchive.getValues(params)
 
-    # Call the original version of get values
-    @addresses = GetValuesArchive.getValues(params)
+  #   @allOutput = Output.all
+  #   if params[:path] == nil
+  #     return render 'getvalues'
+  #   end
 
-    @allOutput = Output.all
-    if params[:path] == nil
-      return render 'getvalues'
-    end
-
-    @calcedurl = "/inspect/"+params[:street]+"/"+params[:citystatezip]
-    return render 'blank'
-  end
+  #   @calcedurl = "/inspect/"+params[:street]+"/"+params[:citystatezip]
+  #   return render 'blank'
+  # end
 
   # under construction
-  def getvalues2
+  def getvalues
     # Track via mixpanel
     MiscFunctions.mixPanelTrack(params[:street], params[:citystatezip], params[:product])
 
@@ -55,6 +54,8 @@ class ValuesController < ApplicationController
 
       # Save new address in a one element array
       @addresses = [a]
+      puts @addresses
+      
       runID = params[:path].to_s.capitalize + ": " + Date.today.to_s
     end
 

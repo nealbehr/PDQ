@@ -89,7 +89,7 @@ module PdqEngine
 
       # Confirm whether property was found, exit function if not found
       # not_found_check with be a boolean
-      not_found_check = zillowNotFoundCheck(output_data, zillow_data[:propRawXml])
+      not_found_check = zillowNotFoundCheck(output_data, zillow_data[:propRawXml], address, params)
       return nil if not_found_check
 
       # Store Zillow key prop data (kpd)
@@ -108,7 +108,6 @@ module PdqEngine
     end
 
     # Ping census website and save url
-    # WHICH LAT/LON TO USE ONCE WE HAVE MORE DATA SOURCES???
     census_geo_info, census_url = CensusApi.getGeoInfo(zillow_kpd[:lat], zillow_kpd[:lon])
 
     # Store urls we hit
@@ -123,6 +122,7 @@ module PdqEngine
       Volatility.propertyVolatility(output_data, zillow_kpd, "Zillow")
     }
 
+    # Typicality and Volatility
     threads << Thread.new(output_data) {
       Liquidity.propertyLiquidity(output_data, zillow_data[:compsKeyValues], "Zillow")
       Typicality.propertyTypicality(output_data, zillow_kpd, zillow_data[:compsKeyValues], census_geo_info, "Zillow")
@@ -148,25 +148,24 @@ module PdqEngine
     # Typicality.zillowNeighborsValues(output_data, zillow_kpd) if ZILLOW_IND # Typicality Neighbors
     # Volatility.propertyVolatility(output_data, zillow_kpd, "Zillow") # Volatility
     
-    output_data[:runTime] = Time.now - start_time
-    puts Time.now - start_time
-    return output_data, census_geo_info
+    #output_data[:runTime] = Time.now - start_time
+    #puts Time.now - start_time
+    #return output_data, census_geo_info
 
-    # Combine metrics from all data sources data sources
-    output_data[:allMetrics] = output.values.collect { |v| v[:metrics] if v.is_a?(Hash) }.compact.flatten << "--End-Metrics--"
-    output_data[:allNames] = output.values.collect { |v| v[:metricsNames] if v.is_a?(Hash) }.compact.flatten << "--End-Names--"
-    output_data[:allPasses] = output.values.collect { |v| v[:metricsPass] if v.is_a?(Hash) }.compact.flatten << "--End-Passes--"
-    output_data[:allComments] = output.values.collect { |v| v[:metricsComments] if v.is_a?(Hash) }.compact.flatten << "--End-Comments--"
-    output_data[:allUsages] = output.values.collect { |v| v[:metricsUsage] if v.is_a?(Hash) }.compact.flatten << "--End-Usage--"
-    output_data[:allDataSources] = output.values.collect { |v| v[:dataSource] if v.is_a?(Hash) }.compact.flatten
+    #return output_data
 
     # Get Decision
     getDecision(output_data, DECISION_DATA_SOURCE)
 
-    # Save output
-    saveOutputRecord(address, output_data)
-  end
+    # Combine metric data from all sources
+    combineMetricOutputs(output_data)
 
+    # Save time
+    output_data[:runTime] = Time.now - start_time
+
+    # Save output
+    saveOutputRecord(address, output_data, params)
+  end
 
 #################################
 # Helper functions
@@ -180,29 +179,42 @@ module PdqEngine
                                      :metricsUsage => [],  
                                      :dataSource => []}
   end
+
+  # Combine metrics from all data sources data sources
+  def combineMetricOutputs(output)
+    output[:allMetrics] = output.values.collect { |v| v[:metrics] if v.is_a?(Hash) }.compact.flatten << "--End-Metrics--"
+    output[:allNames] = output.values.collect { |v| v[:metricsNames] if v.is_a?(Hash) }.compact.flatten << "--End-Names--"
+    output[:allPasses] = output.values.collect { |v| v[:metricsPass] if v.is_a?(Hash) }.compact.flatten << "--End-Passes--"
+    output[:allComments] = output.values.collect { |v| v[:metricsComments] if v.is_a?(Hash) }.compact.flatten << "--End-Comments--"
+    output[:allUsages] = output.values.collect { |v| v[:metricsUsage] if v.is_a?(Hash) }.compact.flatten << "--End-Usage--"
+    output[:allDataSources] = output.values.collect { |v| v[:dataSource] if v.is_a?(Hash) }.compact.flatten
+  end
   
-  def zillowNotFoundCheck(output, zillow_xml_data)
+  # If relying on Zillow - save property not found
+  def zillowNotFoundCheck(output, zillow_xml_data, address, params)
     zpid = zillow_xml_data.at_xpath('//zpid')
     zestimate = zillow_xml_data.at_xpath('//results//result//zestimate//amount')
 
     # Error check - prop not found - exit function
     if (zpid.nil? || zestimate.nil?)
-      output_data[:Zillow][:metricsNames] << "API FAIL"
-      output_data[:Zillow][:metrics] << "PROPERTY NOT FOUND"
-      output_data[:Zillow][:metricsPass] << false
-      output_data[:Zillow][:metricsComments] << "PROPERTY NOT FOUND"
-      output_data[:Zillow][:metricsUsage] << "PROPERTY NOT FOUND"
-      output_data[:reason] << "Not Found"
+      output[:Zillow][:metricsNames] << "API FAIL"
+      output[:Zillow][:metrics] << "PROPERTY NOT FOUND"
+      output[:Zillow][:metricsPass] << false
+      output[:Zillow][:metricsComments] << "PROPERTY NOT FOUND"
+      output[:Zillow][:metricsUsage] << "PROPERTY NOT FOUND"
+      output[:reason] << "Not Found"
 
-      saveOutputRecord(address, output_data)
+      combineMetricOutputs(output)
+      output[:runTime] = 0
+
+      saveOutputRecord(address, output, params)
       return true
     end
-
     return false
   end
 
   # Save the output data for a property
-  def saveOutputRecord(address, output)
+  def saveOutputRecord(address, output, params)
     newOutput = Output.new
     newOutput.street = address.street
     newOutput.citystatezip = address.citystatezip
@@ -218,7 +230,7 @@ module PdqEngine
     newOutput.comments = output[:allComments]
     newOutput.usage = output[:allUsages]
     newOutput.data_source = output[:allDataSources] 
-    newOutput.zpid = data[:zpid]
+    newOutput.zpid = output[:zpid]
     newOutput.save
   end
 
@@ -248,13 +260,13 @@ module PdqEngine
 
     if data_source == "Zillow"
       neigh_idx = output[key][:metricsNames].index("Neighbors Available")
+      sqft_idx = output[key][:metricsNames].index("SqFt Typicality - Comps")
+      est_idx = output[key][:metricsNames].index("Estimate Typicality - Comps")
 
       if output[key][:metrics][neigh_idx] >= 4
-        sqft_idx = output[key][:metricsNames].index("SqFt Typicality - Comps")
         sqfi_nb_idx = output[key][:metricsNames].index("SqFt Typicality - Neighbors")
-        est_idx = output[key][:metricsNames].index("Estimate Typicality - Comps")
         est_nb_idx = output[key][:metricsNames].index("Estimate Typicality - Neighbors")
-        
+
         output[:reason][2] = "Atypical property" if typ_fail_cnt >= 3
         output[:reason][2] = "Atypical property" if typ_fail_cnt >= 1 && (output[key][:metrics][sqft_idx] > 65.0 || output[key][:metrics][est_idx] > 65.0)
         output[:reason][2] = "Atypical property" if !output[key][:metricsPass][sqft_idx] && !output[key][:metricsPass][sqfi_nb_idx]

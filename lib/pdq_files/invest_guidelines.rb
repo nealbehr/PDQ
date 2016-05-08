@@ -143,13 +143,14 @@ module InvestGuidelines
     # If the value is present, perform the checks
     if !prop_data[:lastSoldDate].nil?
       date_value = Date.strptime(prop_data[:lastSoldDate], "%m/%d/%Y")
+      date_str =  date_value.strftime("%Y-%m-%d")
       pass = (date_value < (Date.today - 365))
       comment = "Time from today: #{(Date.today - date_value).to_i} days"
     end
 
     # If the value is not present
     if prop_data[:lastSoldDate].nil?
-      date_value = "Not Available"
+      date_str = "Not Available"
       pass = true
       comment = "NA"
     end
@@ -164,7 +165,7 @@ module InvestGuidelines
     output[data_source.to_sym][:dataSource] << data_source.to_s
     output[data_source.to_sym][:metricsNames] << "Last Sold History"
     output[data_source.to_sym][:metricsUsage] << "Recent Sale"
-    output[data_source.to_sym][:metrics] << date_value
+    output[data_source.to_sym][:metrics] << date_str
     output[data_source.to_sym][:metricsPass] << pass
     output[data_source.to_sym][:metricsComments] << comment
   end
