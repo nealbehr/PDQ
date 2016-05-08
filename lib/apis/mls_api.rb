@@ -153,15 +153,6 @@ module MlsApi
     return response.to_json
   end
 
-  def testfn(n)
-    if n == 2
-      return "Done"
-    end
-
-    return "Not 2"
-  end
-
-
 #################################
 # Helper functions
 #################################

@@ -8,7 +8,8 @@ module ZillowApi
   module_function
 
   # Constants
-  ZILLOW_TOKEN = 'X1-ZWz1euzz31vnd7_5b1bv'
+  #ZILLOW_TOKEN = 'X1-ZWz1euzz31vnd7_5b1bv' # Neals Productions
+  ZILLOW_TOKEN = 'X1-ZWz19qut1tazuz_1fz14' # Brad Testing
 
   # Function to collect all the zillow information for a give property
   # Returns a hash with the rax XML, deep comps data, urls to hit,
@@ -32,7 +33,7 @@ module ZillowApi
     prop_lat = raw_prop_data.at_xpath('//results//latitude').content
     prop_lon = raw_prop_data.at_xpath('//results//longitude').content
 
-    comps_data, comps_values, zillow_comps_url = getDeepComps(zpid, prop_lat, prop_lon)
+    comps_data, comps_values, zillow_comps_url = getDeepComps(zpid.content, prop_lat, prop_lon)
     zillow_info[:compsData] = comps_data
     zillow_info[:compsKeyValues] = comps_values
     urls << zillow_comps_url
@@ -45,9 +46,9 @@ module ZillowApi
     end
 
     # Get property html page
-    prop_zillow_page, prop_url = getPropertyPage(zpid)
-    zillow_info[:propHtml] = neigh_data
-    urls << prop_url
+    # prop_zillow_page, prop_url = getPropertyPage(zpid.content)
+    # zillow_info[:propHtml] = prop_zillow_page
+    # urls << prop_url
 
     # Add urls to hash
     zillow_info[:urls] = urls
@@ -58,20 +59,20 @@ module ZillowApi
   # Function to collect important property data from zillow xml into a hash
   def getPropertyInfo(zillow_prop_xml)
     key_prop_data = {
-      :propEstimate => prop_data.at_xpath('//results//result//zestimate//amount').content,
-      :propState => prop_data.at_xpath('//results//address//state').content.to_s,
-      :propUrbanCode => prop_data.at_xpath('//results//address//zipcode').content.to_i,
-      :propType => prop_data.at_xpath('//useCode').content,
-      :propLastSold => prop_data.at_xpath("//response//results//result//lastSoldDate"),
-      :propBuildYear => prop_data.at_xpath('//yearBuilt').content,
-      :lat => prop_data.at_xpath('//result//address//latitude').content,
-      :lon => prop_data.at_xpath('//result//address//longitude').content,
-      :bd => prop_data.at_xpath('//result//bedrooms').content.to_i,
-      :zpid => prop_data.at_xpath('//zpid').content,
-      :propSqFt => prop_data.at_xpath('//response//result//finishedSqFt').content.to_f,
-      :lotSqFt => prop_data.at_xpath('//response//result//lotSizeSqFt').content.to_f,
-      :estimateHigh => prop_data.at_xpath('//zestimate//valuationRange//high').content.to_f,
-      :estimateLow => prop_data.at_xpath('//zestimate//valuationRange//low').content.to_f
+      :estimate => zillow_prop_xml.at_xpath('//results//result//zestimate//amount').content.to_f,
+      :state => zillow_prop_xml.at_xpath('//results//address//state').content.to_s,
+      :zipCode => zillow_prop_xml.at_xpath('//results//address//zipcode').content.to_s,
+      :propType => zillow_prop_xml.at_xpath('//useCode').content.to_s,
+      :lastSoldDate => zillow_prop_xml.at_xpath("//response//results//result//lastSoldDate").content,
+      :buildYear => zillow_prop_xml.at_xpath('//yearBuilt').content,
+      :lat => zillow_prop_xml.at_xpath('//result//address//latitude').content,
+      :lon => zillow_prop_xml.at_xpath('//result//address//longitude').content,
+      :bd => zillow_prop_xml.at_xpath('//result//bedrooms').content.to_i,
+      :zpid => zillow_prop_xml.at_xpath('//zpid').content,
+      :propSqFt => zillow_prop_xml.at_xpath('//response//result//finishedSqFt').content.to_f,
+      :lotSqFt => zillow_prop_xml.at_xpath('//response//result//lotSizeSqFt').content.to_f,
+      :estimateHigh => zillow_prop_xml.at_xpath('//zestimate//valuationRange//high').content.to_f,
+      :estimateLow => zillow_prop_xml.at_xpath('//zestimate//valuationRange//low').content.to_f
     }
     return key_prop_data
   end
@@ -105,13 +106,14 @@ module ZillowApi
     comps_data = compOutput.xpath("//response//properties//comparables//comp")
 
     # Collect values for typicality
-    comp_values = {:compsCount => comps_data.size,
-                   :compsScore => [],
-                   :compsLastSold => [],
-                   :compsSqFt => [],
-                   :compsZestimate => [],
-                   :compsLotSize => [],
-                   :compsDistance => []
+    # Add bd/bath?
+    comp_values = {:count => comps_data.size,
+                   :scores => [],
+                   :lastSoldDates => [],
+                   :propSqFts => [],
+                   :estimates => [],
+                   :lotSizes => [],
+                   :distances => []
                  }
 
     # Check to make sure we have comps, if not return the empty data
@@ -122,31 +124,31 @@ module ZillowApi
     # Loop over comps and extract necessary information
     comps_data.each do |c|
       # Score
-      comp_values[:compsScore] << c.attribute('score').value.to_f
+      comp_values[:scores] << c.attribute('score').value.to_f
 
       # last sold date
       comp_last_sold = Nokogiri::XML(c.to_s).at_xpath('//lastSoldDate')
       if !comp_last_sold.nil?
-        comp_values[:compsLastSold] << Date.strptime(comp_last_sold.content, "%m/%d/%Y")
+        comp_values[:lastSoldDates] << Date.strptime(comp_last_sold.content, "%m/%d/%Y")
       end
 
       # Sqft
-      comp_sqft = Nokogiri::XML(c.to_s).at_xpath('//finishedSqFt').content.to_f
-      comp_values[:compsSqFt] << comp_sqft.content.to_f if !comp_sqft.nil?
+      comp_sqft = Nokogiri::XML(c.to_s).at_xpath('//finishedSqFt')
+      comp_values[:propSqFts] << comp_sqft.content.to_f if !comp_sqft.nil?
 
       # Zestimate
       comp_zest = Nokogiri::XML(c.to_s).at_xpath('//zestimate//amount')
-      comp_values[:compsZestimate] << comp_zest.content.to_f if !comp_zest.nil?
+      comp_values[:estimates] << comp_zest.content.to_f if !comp_zest.nil?
 
       # Lot Size
       comp_lot_size = Nokogiri::XML(c.to_s).at_xpath('//lotSizeSqFt')
-      comp_values[:compsLotSize] << comp_lot_size.content.to_f if !comp_lot_size.nil?
+      comp_values[:lotSizes] << comp_lot_size.content.to_f if !comp_lot_size.nil?
 
       # Comp Distance
-      comp_lat = Nokogiri::XML(@comparables[x].to_s).at_xpath('//address//latitude')
-      comp_lon = Nokogiri::XML(@comparables[x].to_s).at_xpath('//address//longitude')
+      comp_lat = Nokogiri::XML(c.to_s).at_xpath('//address//latitude').content
+      comp_lon = Nokogiri::XML(c.to_s).at_xpath('//address//longitude').content
       if !comp_lat.nil? && !comp_lon.nil?
-        comp_values[:compsDistance] << GeoFunctions.getDistanceBetween(prop_lat, prop_lon, comp_lat, comp_lon)
+        comp_values[:distances] << GeoFunctions.getDistanceBetween(prop_lat, prop_lon, comp_lat, comp_lon)
       end
     end
 
@@ -160,8 +162,7 @@ module ZillowApi
     state = prop_data.at_xpath('//result//address//state').content
     city = URI.escape(prop_data.at_xpath('//result//address//city').content)
     zip = prop_data.at_xpath('//result//address//zipcode').content
-    base_url = "http://www.zillow.com/webservice/GetDemographics.htm?zws-id=#{ZILLOW_TOKEN}" 
-    base_url += "&state=#{state}&city=#{city}&zipcode=#{zip}"
+    base_url = "http://www.zillow.com/webservice/GetDemographics.htm?zws-id=#{ZILLOW_TOKEN}&state=#{state}&city=#{city}&zipcode=#{zip}"
 
     # Create response
     res = getUrlResponse(base_url)

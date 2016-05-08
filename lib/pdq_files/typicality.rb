@@ -10,7 +10,8 @@ module Typicality
   ZILLOW_TOKEN = "b49bd1d9d1932fc26ea257baf9395d26"
 
   # NEED TO CAPITALIZE THESE
-  BD_THRES = .20
+  BD_PCT_THRES = 0.20
+  BD_CNT_THRES = 1
   SQFT_THRES = 40
   EST_THRES = 40
   LOTSIZE_THRES = 40
@@ -23,232 +24,295 @@ module Typicality
   NEIGHBOR_SQFT_THRES = 33
 
   # Computes the typicality values (for comparables) using Zillow data
-  def zillowTypicality(output, prop_data, comp_data, census_output)
-    # Property count (same as comps data)
-    count_idx = output[:metricsName].index("Properties Count")
-    comps_count_idx = output[:metricsName].index("Comps Count")
-
-    output[:metrics][count_idx] = comp_data[:compsCount].to_i
-    output[:metricsPass][count_idx] = output[:metricsPass][comps_count_idx]
-    output[:metricsComments][count_idx] = output[:metricsComments][comps_count_idx]
+  def propertyTypicality(output, prop_data, comp_data, census_output, data_source)
+    # Property count
+    count_pass = Liquidity.getCompsCount(output, comp_data, data_source, usage = "Typicality")
 
     # Number of bedrooms comparison
-    num_bds = prop_data[:bd]
-    output = zillowBedroomCheck(output, num_bds, census_output)
+    propertyBedroomCheck(output, prop_data[:bd], comp_data, census_output, data_source)
 
-    # Square Footage
-    comps_sqft_values = comp_data[:compsSqFt].compact
-    sqft_idx = output[:metricsName].index("SqFt Typicality - Comps")
+    # Sqft Check
+    propertySqFtCheck(output, prop_data[:propSqFt], comp_data[:propSqFts], data_source)
 
-    if comps_sqft_values.length == 0 # lacking sqft comp data
-      output[:metrics][sqft_idx] = 0
-      output[:metricsPass][sqft_idx] = false
-      output[:metricsComments][sqft_idx] = "SqFt not found"
-    end
-
-    if comps_sqft_values.length > 0
-      sqft_ratio = ((prop_data[:propSqFt]/comp_sqft_values.mean())-1).to_f*100.0
-      output[:metrics][sqft_idx] = sqft_ratio
-      output[:metricsPass][sqft_idx] = sqft_ratio.abs <= SQFT_THRES
-      output[:metricsComments][sqft_idx] = "SqFt must be within #{SQFT_THRES}% || Prop: #{prop_data[:propSqFt]} || Ave: #{comp_sqft_values.mean()}"
-    end
-
-    # Zestimates
-    comps_zest_values = comp_data[:compsZestimate].compact
-    est_idx = output[:metricsName].index("Estimate Typicality - Comps")
-
-    if comps_zest_values.length == 0 # lacking zest comp data
-      output[:metrics][est_idx] = 0
-      output[:metricsPass][est_idx] = false
-      output[:metricsComments][est_idx] = "N/A"
-    end
-
-    if comps_zest_values.length > 0 
-      est_ratio = ((prop_data[:propZestimate]/comps_zest_values.mean())-1).to_f*100.0
-      output[:metrics][est_idx] = est_ratio
-      output[:metricsPass][est_idx] = est_ratio.abs <= EST_THRES
-      output[:metricsComments][est_idx] = "Estimate must be within #{EST_THRES}% || Prop: #{prop_data[:propZestimate]} || Ave: #{comps_zest_values.mean()}"
-    end
+    # Estimates
+    propertyEstimateCheck(output, prop_data[:estimate], comp_data[:estimates], data_source)
 
     # Lot Size
-    output = zillowLotSizeCheck(output, prop_data[:propType], comp_data[:compsLotSize])
+    propertyLotSizeCheck(output, prop_data[:propType], prop_data[:lotSqFt], comp_data[:lotSizes], data_source)
 
-    # Distance and nearby comps
-    comps_distances = comp_data[:compsDistance].compact
-    dist_idx = output[:metricsName].index("Comps Distance")
-    nearby_idx = output[:metricsName].index("Comps Nearby")
-
-    if comps_distances.length == 0 # lacking distance comp data
-      output[:metrics][dist_idx] = 0
-      output[:metricsPass][dist_idx] = false
-      output[:metricsComments][dist_idx] = "N/A"
-
-      output[:metrics][nearby_idx] = 0
-      output[:metricsPass][nearby_idx] = false
-      output[:metricsComments][nearby_idx] = "N/A"
-    end
-
-    if comps_distances.length > 0 
-      avg_dist_less_min = (comps_distances.mean() - comps_distances.min()).round(2)
-      output[:metrics][dist_idx] = avg_dist_less_min
-      output[:metricsPass][dist_idx] = avg_dist_less_min <= DIST_THRES_M
-      output[:metricsComments][dist_idx] = "Average distance (less minimum distance) must be less than #{DIST_THRES_M} meters"
-      #output[:urlsToHit] << comps_distances
-
-      # Nearby Comps
-      nearby_comps = comps_distances.select { |d| d <= DIST_THRES_M }.length
-      output[:metrics][nearby_idx] = nearby_comps
-      output[:metricsPass][nearby_idx] = nearby_comps >= NEARBY_THRES
-      output[:metricsComments][nearby_idx] = "At least seven comparable properties within 6000 feet"
-
-      # Eliminate double failing
-      if (output[:metricsPass][nearby_idx] == false && output[:metricsPass][dist_idx] == false)
-        output[:metricsPass][nearby_idx] = true
-        output[:metricsComments][nearby_idx] = "We only count one if both Comps Nearby and Comps Distance fails"
-      end
-
-      if output[:metricsPass][count_idx] == false
-        output[:metricsPass][nearby_idx] = true
-        output[:metricsComments][nearby_idx] = "We do not double penalize if both Comps Nearby and Properties count fails"
-      end
-    end
-
-    return output
+    # Distance and Nearby Check (Zillow Only right now)
+    nearbyCompCheck(output, comp_data, count_pass, data_source) if data_source == "Zillow"
   end
 
-  # Function to do the lot size comparison for zillow data
-  def zillowLotSizeCheck(output, prop_type, comp_lot_sizes)
-    lotsize_idx = output[:metricsName].index("Lot Size Typicality - Comps")
+  # Function to do the estimates comparison
+  def propertyEstimateCheck(output, prop_estimate, comps_estimates, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsUsage] << "Typicality"
+    output[data_source.to_sym][:metricsNames] << "Estimate Typicality - Comps"
+
+    # Estimates
+    comps_est_values = comps_estimates.compact
+
+    if comps_est_values.length == 0 # lacking zest comp data
+      output[data_source.to_sym][:metrics] << 0
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "No Comp Ests found"
+      return
+    end
+
+    # Compute values and save
+    comp_est_mean = comps_est_values.mean.round(2)
+    comp_est_med = comps_est_values.median.round(2)
+
+    est_ratio = (((prop_estimate/comp_est_mean)-1).to_f*100.0).round(2)
+    pass = (est_ratio.abs <= EST_THRES)
+    comment = "Estimate must be within #{EST_THRES}% | Prop: #{prop_estimate} | Ave: #{comp_est_mean}; Med: #{comp_est_med}"
+
+    output[data_source.to_sym][:metrics] << est_ratio
+    output[data_source.to_sym][:metricsPass] << pass
+    output[data_source.to_sym][:metricsComments] << comment 
+  end
+
+  # Function to do the sqft comparison
+  def propertySqFtCheck(output, prop_sqft, comp_sqft, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsUsage] << "Typicality"
+    output[data_source.to_sym][:metricsNames] << "SqFt Typicality - Comps"
+
+    # Remove nils from Square Footage
+    comps_sqft_values = comp_sqft.compact
+
+    # Error checking - lacking sqft comp data
+    if comps_sqft_values.length == 0
+      output[data_source.to_sym][:metrics] << 0
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "No Comp SqFt found"
+      return
+    end
+
+    # Perform check and store values
+    comp_sqft_mean = comps_sqft_values.mean.round(2)
+    comp_sqft_median = comps_sqft_values.median.round(2)
+
+    sqft_ratio = (((prop_sqft/comp_sqft_mean)-1).to_f*100.0).round(2)
+    pass = (sqft_ratio.abs <= SQFT_THRES)
+    comment = "SqFt must be within #{SQFT_THRES}% | Prop: #{prop_sqft} | Ave: #{comp_sqft_mean}; Med: #{comp_sqft_median}"
+
+    output[data_source.to_sym][:metrics] << sqft_ratio
+    output[data_source.to_sym][:metricsPass] << pass
+    output[data_source.to_sym][:metricsComments] << comment
+  end
+
+  # Function to do the lot size comparison
+  def propertyLotSizeCheck(output, prop_type, prop_lotsize, comp_lot_sizes, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsUsage] << "Typicality"
+    output[data_source.to_sym][:metricsNames] << "Lot Size Typicality - Comps"
+
+    # Remove nils from the lot sizes
     comps_lotsize_values = comp_lot_sizes.compact
 
-    # Check if the property is a condo - lot size condition does not apply
-    if prop_type == "Condominium"
-      output[:metrics][lotsize_idx] = 0
-      output[:metricsPass][lotsize_idx] = true
-      output[:metricsComments][lotsize_idx] = "Does not apply to condominiums"
-      return output
+    # Error checking
+    if (comp_lot_sizes.length == 0 || prop_lotsize.nil?)
+      output[data_source.to_sym][:metrics] << 0
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "Unknown Lot Size"
+      return
     end
 
-    # Other Error checking
-    if (comp_lot_sizes.length == 0 || prop_data[:lotSqFt].nil?)
-      output[:metrics][lotsize_idx] = 0
-      output[:metricsPass][lotsize_idx] = false
-      output[:metricsComments][lotsize_idx] = "Unknown Lot Size"
-      return output
+    # For Zillow - Check if the property is a condo - lot size condition does not apply
+    if data_source.to_s == "Zillow" && prop_type == "Condominium"
+      output[data_source.to_sym][:metrics] << 0
+      output[data_source.to_sym][:metricsPass] << true
+      output[data_source.to_sym][:metricsComments] << "Zillow - Does not apply to condominiums"
+      return
     end
 
-    comps_lotsize_values = comp_data[:compsLotSize].compact
-    lotsize_ratio = ((prop_data[:lotSqFt]/comps_lotsize_values.mean())-1).to_f*100.0
+    # Compute ratio and store
+    comp_lotsize_mean = comps_lotsize_values.mean.round(2)
+    comp_lotsize_med = comps_lotsize_values.median.round(2)
 
-    output[:metrics][lotsize_idx] = lotsize_ratio
-    output[:metricsPass][lotsize_idx] = lotsize_ratio.abs <= LOTSIZE_THRES
-    output[:metricsComments][lotsize_idx] = "Lot Size must be within #{LOTSIZE_THRES}% || Prop: #{prop_data[:lotSqFt]} || Ave: #{comps_lotsize_values.mean()}"
+    lotsize_ratio = (((prop_lotsize/comp_lotsize_mean)-1).to_f*100.0).round(2)
+    pass = (lotsize_ratio.abs <= LOTSIZE_THRES)
+    comment = "Lot Size must be within #{LOTSIZE_THRES}% | Prop: #{prop_lotsize} | Ave: #{comp_lotsize_mean}; Med: #{comp_lotsize_med}"
 
-    return output
+    # Store values
+    output[data_source.to_sym][:metrics] << lotsize_ratio
+    output[data_source.to_sym][:metricsPass] << pass
+    output[data_source.to_sym][:metricsComments] << comment
   end
 
-  # Function to do the bedroom count comparison for zillow data
-  def zillowBedroomCheck(output, num_bds, census_output)
-    bds_idx = output[:metricsName].index("Bedrooms Typicality")
-    output[:metrics][bds_idx] = num_bds
+  # Function to do the bedroom count comparison
+  def propertyBedroomCheck(output, num_bds, comps_data, census_output, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsUsage] << "Typicality"
+    output[data_source.to_sym][:metricsNames] << "Bedrooms Typicality"
 
     # If the value is nil (i.e. missing data)
     if num_bds.nil?
-      output[:metricsPass][bds_idx] = false
-      output[:metricsComments][bds_idx] = "N/A"
-      output[:metrics][bds_idx] = 0
-      return output
+      output[data_source.to_sym][:metrics] << 0
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "N/A"
+      return
     end
 
-    # If bds between 2-4, we are good
-    if num_bds <= 4 && num_bds >= 2
-      output[:metricsPass][bds_idx] = true
-      output[:metricsComments][bds_idx] = "Bedrooms between 2 and 4"
-      return output
+    # Store the number of bedrooms
+    output[data_source.to_sym][:metrics] << num_bds
+
+    # Data source is Zillow
+    if data_source.to_s == "Zillow"
+      # If bds between 2-4, we are good
+      if num_bds <= 4 && num_bds >= 2
+        output[data_source.to_sym][:metricsPass] << true
+        output[data_source.to_sym][:metricsComments] << "Bedrooms between 2 and 4"
+        return
+      end
+
+      # If we are below 1 or above 5, fail and exit
+      if num_bds < 1 && num_bds > 5
+        output[data_source.to_sym][:metricsPass] << false
+        output[data_source.to_sym][:metricsComments] << "Unconventional number of bedrooms"
+        return
+      end
+
+      # If bds equal 5 - check the census info
+      if num_bds == 5 || num_bds == 1
+        per_bd, census_url, outHH = CensusApi.getBedroomInfo(census_output, num_bds)
+
+        pass = (per_bd >= BD_PCT_THRES)
+        comment = "#{num_bds} bedrooms | % of #{num_bds} bedrooms in the #{outHH} house area: #{(per_bd*100).round(2)}% | Must be >= #{BD_PCT_THRES*100}%"
+
+        output[data_source.to_sym][:metricsPass] << pass
+        output[data_source.to_sym][:metricsComments] << comment
+        output[:urlsToHit] << census_url
+        return
+      end
     end
 
-    # If we are below 1 or above 5, fail and exit
-    if num_bds < 1 && > 5
-      output[:metricsPass][bds_idx] = false
-      output[:metricsComments][bds_idx] = "Unconventional number of bedrooms"
-      return output
-    end
+    # Add functionality for MLS/FA - just average of nearby values
+    if !data_source.to_s == "Zillow"
+      comps_avg_bd = comp_data[:compsBd].mean
+      comps_med_bd = comp_data[:compsBd].median
+      pass = (num_bds >= comps_avg_bd - BD_CNT_THRES && num_bds <= comps_avg_bd + BD_CNT_THRES)
+      comment = "Bd beteen +/- #{BD_CNT_THRES} of Comps Avg. | Avg: #{comps_avg_bd}; Med: #{comps_med_bd}"
 
-    # If bds equal 5 - check the census info
-    if num_bds == 5 || num_bds == 1
-      per_bd, census_url, outHH = CensusApi.getBedroomInfo(census_output, num_bds)
-      per_bd >= BD_THRES ? output[:metricsPass][bd_idx] = true : output[:metricsPass][bd_idx] = false
-      output[:metricsComments][bd_idx] = "#{num_bds} bedrooms || Percentage #{num_bds} bedrooms in the #{outHH} house area: #{per_bd.round(2)*100}"
-      output[:urlsToHit].push(census_url)
-      return output
+      output[data_source.to_sym][:metricsPass] << pass
+      output[data_source.to_sym][:metricsComments] << comment
     end
   end
 
-  # Function to compute the neighbors typicality values for zillow
+  # Function to examine distance and determine "nearby" comp count - Mainly for Zillow
+  def nearbyCompCheck(output, comp_data, count_pass, data_source)
+    output[data_source.to_sym][:dataSource].push(data_source.to_s, data_source.to_s)
+    output[data_source.to_sym][:metricsUsage].push("Typicality", "Typicality")
+    output[data_source.to_sym][:metricsNames].push("Comps Distance", "Comps Nearby")
+
+    # Remove nil values from distances array
+    comps_distances = comp_data[:distances].compact
+
+    # Error checking - lacking distance comp data
+    if comps_distances.length == 0 
+      output[data_source.to_sym][:metrics].push(0, 0)
+      output[data_source.to_sym][:metricsPass].push(false, false)
+      output[data_source.to_sym][:metricsComments].push("N/A", "N/A")
+      return
+    end
+
+    # Distances
+    avg_dist_less_min = (comps_distances.mean - comps_distances.min).round(2)
+    dist_pass = (avg_dist_less_min <= DIST_THRES_M)
+    dist_comment = "Average distance (less minimum distance) must be less than #{DIST_THRES_M} meters (#{DIST_THRES_FT} feet)"
+
+    # Nearby Comps
+    nearby_comps = comps_distances.select { |d| d <= DIST_THRES_M }.length
+    nearby_pass = (nearby_comps >= NEARBY_THRES)
+    nearby_comment = "At least seven comparable properties within #{DIST_THRES_M} meters (#{DIST_THRES_FT} feet)"
+
+    # Eliminate double failing
+    if !nearby_pass && !dist_pass
+      nearby_pass = true
+      nearby_comment = "We only count one if both Comps Nearby and Comps Distance fails"
+    end
+
+    if !count_pass
+      nearby_pass = true
+      nearby_comment = "We do not double penalize if both Comps Nearby and Properties count fails"
+    end
+
+    # Store values
+    output[data_source.to_sym][:metrics].push(avg_dist_less_min, nearby_comps)
+    output[data_source.to_sym][:metricsPass].push(dist_pass, nearby_pass) 
+    output[data_source.to_sym][:metricsComments].push(dist_comment, nearby_comment) 
+  end
+
+  # Function to compute the neighbors typicality (Zillow Only)
   def zillowNeighborsValues(output, prop_data)
     # Get the neighbors data from Zillow
     nb_data = ZillowApi.neighborsScrape(output, prop_data[:zpid])
 
+    # Store Values
+    output[:Zillow][:dataSource].push("Zillow", "Zillow", "Zillow", "Zillow")
+
     # Neighbors Availability
-    neigh_cnt_idx = output[:metricsName].index("Neighbors Available")
+    output[:Zillow][:metricsNames] << "Neighbors Available" 
     begin
-      values = [nb_data[:totalPriceCount], nb_data[:totalBathroomsCount], nb_data[:totalBedroomsCount], nb_data[:totalSqFtCount]]
-      output[:metrics][neigh_cnt_idx] = values.min
-      output[:metricsPass][neigh_cnt_idx] = values.min >= NEIGHBOR_CNT_THRES
-      output[:metricsComments][neigh_cnt_idx]= "Total number of neighbors must be at least #{NEIGHBOR_CNT_THRES}"
+      nb_values = [nb_data[:totalPriceCount], nb_data[:totalBathroomsCount], nb_data[:totalBedroomsCount], nb_data[:totalSqFtCount]]
+      cnt_value = nb_values.min
+      cnt_pass = cnt_value >= NEIGHBOR_CNT_THRES
+      cnt_comment = "Total number of neighbors must be at least #{NEIGHBOR_CNT_THRES}"
     rescue
-      output[:metrics][neigh_cnt_idx]= 0    
-      output[:metricsPass][neigh_cnt_idx] = false
-      output[:metricsComments][neigh_cnt_idx]= "Data Unavailable"
+      cnt_value = 0
+      cnt_pass = false
+      cnt_comment = "Data Unavailable"
     end
 
     # Neighbors Estimate Typicality
-    neigh_est_idx = output[:metricsName].index("Estimate Typicality - Neighbors")
+    output[:Zillow][:metricsNames] << "Estimate Typicality - Neighbors" 
     begin
-      neigh_est_avg = nb_data[:totalPrice].to_f/nb_data[:totalPriceCount].to_f
-      est_ratio = ((prop_data[:propZestimate]/neigh_est_avg-1)*100).round(1)
-
-      output[:metrics][neigh_est_idx] = est_ratio
-      output[:metricsPass][neigh_est_idx] = est_ratio <= NEIGHBOR_EST_THRES
-      output[:metricsComments][neigh_est_idx]= "% deviation from community within #{NEIGHBOR_EST_THRES}%   || Prop: #{prop_data[:propZestimate]}  || Avg: #{neigh_est_avg}"
+      neigh_est_avg = (nb_data[:totalPrice].to_f/nb_data[:totalPriceCount].to_f).round(0)
+      est_nb_value = ((prop_data[:estimate]/neigh_est_avg-1)*100).round(1)
+      est_nb_pass = (est_nb_value <= NEIGHBOR_EST_THRES)
+      est_nb_comment = "% deviation from community within #{NEIGHBOR_EST_THRES}% | Prop: #{prop_data[:estimate]} | Avg: #{neigh_est_avg}"
     rescue
-      output[:metrics][neigh_est_idx]= 0    
-      output[:metricsPass][neigh_est_idx] = false
-      output[:metricsComments][neigh_est_idx]= "Data Unavailable"
+      est_nb_value = 0
+      est_nb_pass = false
+      est_nb_comment = "Data Unavailable"
     end
 
     # Neighbors Bedroom Typicality
-    neigh_bd_idx = output[:metricsName].index("Bedrooms Typicality - Neighbors")
+    output[:Zillow][:metricsNames] << "Bedrooms Typicality - Neighbors"
     begin
-      neigh_bd_avg = nb_data[:totalBedrooms].to_f/nb_data[:totalBedroomsCount].to_f
-      bd_ratio = ((prop_data[:bd]/neigh_bd_avg-1)*100).round(1)
-
-      output[:metrics][neigh_cnt_idx] = bd_ratio
-      output[:metricsPass][neigh_bd_idx] = bd_ratio <= NEIGHBOR_BD_THRES
-      output[:metricsComments][neigh_bd_idx]= "% deviation from community within #{NEIGHBOR_BD_THRES}%   || Prop: #{prop_data[:bd]}  || Avg: #{neigh_bd_avg}"
+      neigh_bd_avg = (nb_data[:totalBedrooms].to_f/nb_data[:totalBedroomsCount].to_f).round(2)
+      bd_nb_value = ((prop_data[:bd]/neigh_bd_avg-1)*100).round(1)
+      bd_nb_pass = (bd_nb_value <= NEIGHBOR_BD_THRES)
+      bd_nb_comment = "% deviation from community within #{NEIGHBOR_BD_THRES}% | Prop: #{prop_data[:bd]} | Avg: #{neigh_bd_avg}"
     rescue
-      output[:metrics][neigh_bd_idx]= 0    
-      output[:metricsPass][neigh_bd_idx] = false
-      output[:metricsComments][neigh_bd_idx]= "Data Unavailable"
+      bd_nb_value = 0
+      bd_nb_pass = false
+      bd_nb_comment = "Data Unavailable"
     end
 
     # Neighbors Sqft Typicality
-    neigh_sqft_idx = output[:metricsName].index("SqFt Typicality - Neighbors")
+    output[:Zillow][:metricsNames] << "SqFt Typicality - Neighbors"
     begin
-      neigh_sqft_avg = nb_data[:totalSqFt].to_f/nb_data[:totalSqFtCount].to_f
-      sqft_ratio = ((prop_data[:propSqFt]/neigh_sqft_avg-1)*100).round(1)
-
-      output[:metrics][neigh_sqft_idx] = sqft_ratio
-      output[:metricsPass][neigh_sqft_idx] = sqft_ratio <= NEIGHBOR_SQFT_THRES
-      output[:metricsComments][neigh_sqft_idx]= "% deviation from community within #{NEIGHBOR_SQFT_THRES}%   || Prop: #{prop_data[:propSqFt]}  || Avg: #{neigh_sqft_avg}"
+      neigh_sqft_avg = (nb_data[:totalSqFt].to_f/nb_data[:totalSqFtCount].to_f).round(0)
+      sqft_nb_value = ((prop_data[:propSqFt]/neigh_sqft_avg-1)*100).round(1)
+      sqft_nb_pass = (sqft_nb_value <= NEIGHBOR_SQFT_THRES)
+      sqft_nb_comment = "% deviation from community within #{NEIGHBOR_SQFT_THRES}% | Prop: #{prop_data[:propSqFt]} | Avg: #{neigh_sqft_avg}"
     rescue
-      output[:metrics][neigh_sqft_idx]= 0    
-      output[:metricsPass][neigh_sqft_idx] = false
-      output[:metricsComments][neigh_sqft_idx]= "Data Unavailable"
+      sqft_nb_value = 0
+      sqft_nb_pass = false
+      sqft_nb_comment = "Data Unavailable"
     end
 
-    return output
+    # Store Values
+    output[:Zillow][:metrics].push(cnt_value, est_nb_value, bd_nb_value, sqft_nb_value)
+    output[:Zillow][:metricsPass].push(cnt_pass, est_nb_pass, bd_nb_pass, sqft_nb_pass) 
+    output[:Zillow][:metricsComments].push(cnt_comment, est_nb_comment, bd_nb_comment, sqft_nb_comment) 
   end
+
+
+
 
   # Returns appropriate comparison data given mls comp data
   def mlsTypicality(output, prop_data, comp_data)

@@ -59,7 +59,7 @@ class ValuesController < ApplicationController
     end
 
     # Loop over records and compute PDQ score
-    @addresses.each { |prop| PdqValuesAggregator.computePdqValues(prop, params, runID) }
+    @addresses.each { |prop| PdqEngine.computeDecision(prop, params, runID) }
 
     # Aggregate all output and render
     @allOutput = Output.all

@@ -12,65 +12,95 @@ module Rurality
   SURR_CENSUS_TRACT_THRES = 35.0
   CENSUS_BLK_DENSITY_THRES = 500
   CENSUS_BLK_HH_THRES = 15
+  CR_RANGE_THRES = 25000
+  CR_FRAC = (2.0/3.0)
+  CR_CAP = 60000
   RURALITY_SCORE_THRES = {:East => {:ruralityCutoff => 0.30,
                                     :ruralityLocalCutoff => 0.16},
                           :West => {:ruralityCutoff => 0.22,
-                                    :ruralityLocalCutoff => 0.12}}
+                                    :ruralityLocalCutoff => 0.12}
+                        }
+
+  # Collect the rurality metrics (as of now this is independent of property data source)
+  def propertyRurality(output, address, census_output, closest_cities)
+    state = address.citystatezip.split(" ")[-2]
+    zip = address.citystatezip.split(" ")[-1]
+
+    # Get the census tract in db
+    census_tract = Censustract.find_by(geoid: census_output[:fullGeoId].to_s)
+
+    # Compute rurality checks using census geo info, collect values as inputs to the score
+    score_inputs = Hash.new
+    score_inputs[:ud] = urbanDensityCheck(output, zip)
+    score_inputs[:ctd] = censusTractDensityCheck(output, census_tract)
+    score_inputs[:sctd] = surroundingCensusDensityCheck(output, census_tract)
+    score_inputs[:cbd], score_inputs[:cbh] = censusBlockInfo(output, census_output)
+
+    # Define property locale
+    ['CA','WA','OR'].include? state ? loc = :West : loc = :East
+    output[:region] = loc.to_s # save region for decision
+
+    # Compute rurality score
+    r_score = calcRuralityScore(output, score_inputs, loc)
+
+    # Combo rural. Requires MSA distance to be run first!
+    calcComboRural(output, r_score, loc, closest_cities)
+  end
 
   # Function to get ZCTADensity
-  def urbanDensityCheck(output, prop_data)
-    idx = output[:metricsName].index("Urban Density")
-    density = UrbanAreaData.getaZCTADensity(prop_data[:propUrbanCode]).round(2)
+  def urbanDensityCheck(output, zipcode)
+    output[:Census][:dataSource] << "Census"
+    output[:Census][:metricsUsage] << "Rurality"
+    output[:Census][:metricsNames] << "Urban Density"
+
+    density = UrbanAreaData.getaZCTADensity(zipcode.to_i).round(2)
     pass = (density > DENSITY_THRES)
     comment = "< #{DENSITY_THRES} people/SqMi"
 
     # Current Return
-    output[:metrics][idx] = density
-    output[:metricsPass][idx] = pass
-    output[:metricsComments][idx] = comment
-    return output
-    # return [density, pass, comment]
+    output[:Census][:metrics] << density
+    output[:Census][:metricsPass] << pass
+    output[:Census][:metricsComments] << comment
+    return [density, pass]
   end
 
   # Function to check the census tract density
-  def censusTractDensityCheck(output, census_output)
-    idx = output[:metricsName].index("Census Tract Density")
-
-    # Get the census tract in db
-    census_tract = Censustract.find_by(geoid: census_output["result"]["geographies"]["Census Tracts"][0]["GEOID"].to_s)
+  def censusTractDensityCheck(output, census_tract)
+    output[:Census][:dataSource] << "Census"
+    output[:Census][:metricsUsage] << "Rurality"
+    output[:Census][:metricsNames] << "Census Tract Density"
 
     # If error with census tract search
     if census_tract.nil?
-      output[:metrics][idx] = 0
-      output[:metricsPass][idx] = false
-      output[:metricsComments][idx] = "Error with Census Tract Density"
-      return output
+      output[:Census][:metrics] << 0
+      output[:Census][:metricsPass] << false
+      output[:Census][:metricsComments] << "Error with Census Tract Density"
+      return [0, false]
     end
 
     # Compute density and save
-    density = (censustract.hu.to_f / censustract.area.to_f).round(2)
-    pass = (value > CENSUS_TRACT_THRES)
-    comment = "< #{DENSITY_THRES} Houses/SqMi for tract #{censustract.name} || USB ID: #{censustract.home}"
+    density = (census_tract.hu.to_f / census_tract.area.to_f).round(2)
+    pass = (density > CENSUS_TRACT_THRES)
+    comment = "< #{DENSITY_THRES} Houses/SqMi for tract #{census_tract.name} | USB ID: #{census_tract.home}"
 
-    output[:metrics][idx] = density
-    output[:metricsPass][idx] = pass
-    output[:metricsComments][idx] = comment
-    return output
-    # return [density, pass, comment]
+    output[:Census][:metrics] << density
+    output[:Census][:metricsPass] << pass
+    output[:Census][:metricsComments] << comment
+    return [density, pass]
   end
 
   # Function to check the surrounding (neighbors) census tract densities
-  def surroundingCensusDensityCheck(output, census_output)
-    idx = output[:metricsName].index("Surrounding Census Tract Density")
-    # Get the census tract in db
-    census_tract = Censustract.find_by(geoid: census_output["result"]["geographies"]["Census Tracts"][0]["GEOID"].to_s)
+  def surroundingCensusDensityCheck(output, census_tract)
+    output[:Census][:dataSource] << "Census"
+    output[:Census][:metricsUsage] << "Rurality"
+    output[:Census][:metricsNames] << "Surrounding Census Tract Density"
 
     # If error with census tract search
     if census_tract.nil?
-      output[:metrics][idx] = 0
-      output[:metricsPass][idx] = false
-      output[:metricsComments][idx] = "Error with Surrounding Census Tract Density"
-      return output
+      output[:Census][:metrics] << 0
+      output[:Census][:metricsPass] << false
+      output[:Census][:metricsComments] << "Error with Surrounding Census Tract Density"
+      return [0, false]
     end
 
     # Get the neighbors in db
@@ -78,10 +108,10 @@ module Rurality
 
     # If error with census tract neighbors search
     if censustractNeighbors.nil?
-      output[:metrics][idx] = 0
-      output[:metricsPass][idx] = false
-      output[:metricsComments][idx] = "Error with Surrounding Census Tract Density"
-      return output
+      output[:Census][:metrics] << 0
+      output[:Census][:metricsPass] << false
+      output[:Census][:metricsComments] << "Error with Surrounding Census Tract Density"
+      return [0, false]
     end
 
     censustractDensities = []
@@ -94,15 +124,14 @@ module Rurality
       end
     end
 
-    density =  censustractDensities.sort_by { |holder| holder[:tractdensity] }[0][:tractdensity].to_f.round(2)
+    density =  censustractDensities.sort_by { |h| h[:tractdensity] }[0][:tractdensity].to_f.round(2)
     pass = (density > SURR_CENSUS_TRACT_THRES)
-    comment = "> #{SURR_CENSUS_TRACT_THRES} houses/SqMi for tract: #{density} || Total of #{censustractDensities.uniq.size} tested."
+    comment = "> #{SURR_CENSUS_TRACT_THRES} houses/SqMi for tract: #{density} | Total of #{censustractDensities.uniq.size} tested."
 
-    output[:metrics][idx] = density
-    output[:metricsPass][idx] = pass
-    output[:metricsComments][idx] = comment
-    return output
-    # return [density, pass, comment]
+    output[:Census][:metrics] << density
+    output[:Census][:metricsPass] << pass
+    output[:Census][:metricsComments] << comment
+    return [density, pass]
   end
 
   # Function to check the census block density and houses
@@ -110,57 +139,56 @@ module Rurality
     # Get data via Census API
     density, houses, url = CensusApi.getBlockInfo(census_output)
     output[:urlsToHit] << url
-    den_idx = output[:metricsName].index("Census Block Density")
-    hou_idx = output[:metricsName].index("Census Block Houses")
-    # output = []
+
+    # Store values
+    output[:Census][:dataSource].push("Census", "Census")
+    output[:Census][:metricsUsage].push("Rurality", "Rurality")
+    output[:Census][:metricsNames].push("Census Block Density","Census Block Density")
 
     # If error with density?
     if density.nil?
-      output[:metrics][den_idx] = 0
-      output[:metricsPass][den_idx] = false
-      output[:metricsComments][den_idx] = "Error with Census Block Density"
-      # output << [0, false, "Error with Census Block Density"]
+      output[:Census][:metrics] << 0
+      output[:Census][:metricsPass]<< false
+      output[:Census][:metricsComments] << "Error with Census Block Density"
     else
-      pass = (density >= CENSUS_BLK_DENSITY_THRES)
+      den_pass = (density >= CENSUS_BLK_DENSITY_THRES)
       comment = "> #{CENSUS_BLK_DENSITY_THRES} Houses/SqMi for block: #{density}"
-      output[:metrics][den_idx] = density
-      output[:metricsPass][den_idx] = pass
-      output[:metricsComments][den_idx] = comment
-      # output << [density, pass, comment]
+
+      output[:Census][:metrics] << density
+      output[:Census][:metricsPass] << den_pass
+      output[:Census][:metricsComments] << comment
     end
 
     # If error with houses?
     if houses.nil?
-      output[:metrics][hou_idx] = 0
-      output[:metricsPass][hou_idx] = false
-      output[:metricsComments][hou_idx] = "Error with Census Block Houses"
-      # output << [0, false, "Error with Census Block Houses"]
+      output[:Census][:metrics] << 0
+      output[:Census][:metricsPass] << false
+      output[:Census][:metricsComments] << "Error with Census Block Houses"
     else
-      pass = (houses >= CENSUS_BLK_HH_THRES)
+      hou_pass = (houses >= CENSUS_BLK_HH_THRES)
       comment = "> #{CENSUS_BLK_HH_THRES} for block: #{houses}"
-      output[:metrics][hou_idx] = houses
-      output[:metricsPass][hou_idx] = pass
-      output[:metricsComments][hou_idx] = comment
-      # output << [density, pass, comment]
-    end
 
-    return output
+      output[:Census][:metrics] << houses
+      output[:Census][:metricsPass] << hou_pass
+      output[:Census][:metricsComments] << comment
+    end 
+    return [density, den_pass], [houses, hou_pass]
   end
 
-  def calcRuralityScore(output, prop_data)
-    # Define property locale
-    ['CA','WA','OR'].include? prop_data[:propState] ? loc = :West : loc = :East
+  def calcRuralityScore(output, score_inputs, loc)
+    output[:Census][:dataSource] << "Census"
+    output[:Census][:metricsUsage] << "Rurality"
+    output[:Census][:metricsNames] << "Rurality Score"
 
     # Get variables
-    urb_den = output[:metrics][output[:metricsNames].index("Urban Density")]
-    cen_tract_den = output[:metrics][output[:metricsNames].index("Census Tract Density")]
-    cen_blk_den = output[:metrics][output[:metricsNames].index("Census Block Density")]
-    cen_blk_hou = output[:metrics][output[:metricsNames].index("Census Block Houses")]
-    surr_cen_tract_den = output[:metricsPass][output[:metricsNames].index("Surrounding Census Tract Density")]
-    cen_tract_den_pass = output[:metricsPass][output[:metricsNames].index("Census Tract Density")]
+    urb_den = score_inputs[:ud][0]
+    cen_tract_den = score_inputs[:ctd][0]
+    cen_blk_den = score_inputs[:cbd][0]
+    cen_blk_hou = score_inputs[:cbh][0]
+    surr_cen_tract_den = score_inputs[:sctd][1]
+    cen_tract_den_pass = score_inputs[:ctd][1]
 
     # Compute Score
-    idx = output[:metricsName].index("Rurality Score")
     begin
       ruralityScore = (1.71820658968186 +
             (-15.41353150512030 * urb_den +
@@ -171,40 +199,65 @@ module Rurality
              -10000.0000000000 * (cen_tract_den_pass ? 0.0 : 1.0) +  
               0.0 ) /10000.0)
     rescue StandardError => e
-      output[:metrics][idx] = 1
-      output[:metricsPass][idx] = false
-      output[:metricsComments][idx] = "Error with calculating the Rurality Score"
-      return output
-      # return [1, false, "Error with calculating the Rurality Score"]
+      output[:Census][:metrics] << 1
+      output[:Census][:metricsPass] << false
+      output[:Census][:metricsComments] << "Error with calculating the Rurality Score"
+      return 1
     end
 
     value = (Math.exp(ruralityScore) / (1.0 + Math.exp(ruralityScore))).round(5)
     pass = (value <= RURALITY_SCORE_THRES[loc][:ruralityCutoff])
-    comment = "Probability of being rural || Rurality Exponent: #{ruralityScore.round(5)}"
+    comment = "Probability of being rural | Rurality Exponent: #{ruralityScore.round(5)}"
 
-    output[:metrics][idx] = value
-    output[:metricsPass][idx] = pass
-    output[:metricsComments][idx] = comment
-
-    return output
-    # return [value, pass, comment]
+    output[:Census][:metrics] << value
+    output[:Census][:metricsPass] << pass
+    output[:Census][:metricsComments] << comment
+    return value
   end
 
   # Must be done after MSA Distance and other rurality checks
-  def calcComboRural(output)
-    idx = output[:metricsName].index("Combo Rural")
-    r_score = output[:metrics][output[:metricsName].index("Rurality Score")]
+  def calcComboRural(output, r_score, loc, closest_cities)
+    output[:Census][:dataSource] << "Census"
+    output[:Census][:metricsUsage] << "Rurality"
+    output[:Census][:metricsNames] << "Combo Rural"
 
-    # Define property locale
-    ['CA','WA','OR'].include? prop_data[:propState] ? loc = :West : loc = :East
+    # Check if the rurality score is "in between" cutoffs for locale
+    if r_score > RURALITY_SCORE_THRES[loc][:ruralityLocalCutoff] && r_score <= RURALITY_SCORE_THRES[loc][:ruralityCutoff]
 
-    # if r_score > RURALITY_SCORE_THRES[loc][:ruralityLocalCutoff] && r_score > RURALITY_SCORE_THRES[loc][:ruralityCutoff]
+      # If there was an error in MSA Distance break out of function
+      if closest_cities[0] == "N/A"
+        output[:Census][:metricsNames] << 0
+        output[:Census][:metricsPass] << false
+        output[:Census][:metricsComments] << "Error in MSA distances. Cannot conduct Combo Rural | Rurality Score is: #{r_score}"
+        return
+      end
 
-    #   if
+      # Search for the ranges in the MsaDistance values
+      ranges = closest_cities.select { |c| c[2] }
+      comment = "Must be within 2/3 of a city range if Rurality Score is between #{RURALITY_SCORE_THRES[loc][:ruralityLocalCutoff]} and #{RURALITY_SCORE_THRES[loc][:ruralityCutoff]}"
 
+      # If so, check the ranges
+      if ranges[0] >= CR_RANGE_1
+        value = closest_cities[0][0]
+        pass = (value < [range[0].to_f*CR_FRAC, CR_CAP].min)
 
+      elsif range[1] >= CR_RANGE_1
+        value = closest_cities[1][0]
+        pass = (value < [range[1].to_f*CR_FRAC, CR_CAP].min)
+      else
+        value = closest_cities[2][0]
+        pass = (value < [range[2].to_f*CR_FRAC, CR_CAP].min)
+      end
 
+      # Store values
+      output[:Census][:metricsNames] << value
+      output[:Census][:metricsPass] << pass
+      output[:Census][:metricsComments] << comment
+
+    else
+      output[:Census][:metricsNames] << 0
+      output[:Census][:metricsPass] << true
+      output[:Census][:metricsComments] << "Test does not apply | Rurality Score is: #{r_score}"
+    end
   end
-
-
 end

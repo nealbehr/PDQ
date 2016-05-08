@@ -11,8 +11,22 @@ module Volatility
   RANGE_PRICE_DELTA_THRES = 0.80
   VOL_PROP_PRICE_THRES = 0.08
   CORR_THRES = 0.5
+  RET_VOL_FREQ = "Quarterly"
+  RET_VOL_THRES = 0.04
 
-  # Zillow Volatility Calculation
+  def propertyVolatility(output, prop_data, data_source)
+    # Get price time series depending on data source
+    price_data = getZillowVolData(output, prop_data) if data_source.to_s == "Zillow"
+
+    # Perform vol condition checks
+    calcStDevPriceDeltas(price_data, output, prop_data[:estimate], data_source)
+    calcRangePriceDeltas(price_data, output, prop_data[:estimate], data_source)
+    calcStDevPropPrice(price_data, output, prop_data[:estimate], data_source)
+    calcCorrelation(price_data, output, data_source, _type = "Returns")
+    calcPropReturnVol(price_data, output, data_source)
+  end
+
+  # Function to get zillow vol data
   def getZillowVolData(output, prop_data)
     # Get data as json
     begin
@@ -21,7 +35,7 @@ module Volatility
       response = Net::HTTP.get(url)
       json_result = JSON.parse(response)
     rescue StandardError => e
-      output[:urlsToHit] = "Error in the AJAX output"
+      output[:urlsToHit] = "Error in the Zillow Vol AJAX output"
       return vol_data = {}
     end
 
@@ -37,7 +51,7 @@ module Volatility
     prop_points = json_result[0]["points"]
 
     # Make sure neighborhood points exist, if not just return home prices
-    if json_result[].length < 2
+    if json_result.length < 2
       prop_points.each { |p| propPrices << p["y"] }
       output[:urlsToHit] << "Issues with neighborhood and deltas"
       return {:propPrices => propPrices}
@@ -56,103 +70,157 @@ module Volatility
   end
 
   # Calculates the standard deviation of the prop/neighborhood price differences relative to the value of the home
-  def calcStDevPriceDeltas(vol_data, output, home_est)
-    ind = output[:metricsName].index("Std. Dev. of Price Deltas")
+  def calcStDevPriceDeltas(vol_data, output, home_est, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsUsage] << "Volatility"
+    output[data_source.to_sym][:metricsNames] << "Std. Dev. of Price Deltas"
 
     # If difference data does not exist
     if vol_data[:diff].nil?
-      output[:metrics][ind] = "Unavailable"
-      output[:metricsPass][ind] = false
-      output[:metricsComments][ind] = "There was an error"
-      return output
+      output[data_source.to_sym][:metrics] <<"Unavailable"
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "There was an error"
+      return
     end
 
     value = (vol_data[:diff].standard_deviation/home_est).round(3)
-    pass = value < VOL_PRICE_DELTA_THRES)
-    comment = "< #{VOL_PRICE_DELTA_THRES} || Standard Deviation of price differences from neighborhood as a percentage of overall estimate"
+    pass = (value < VOL_PRICE_DELTA_THRES)
+    comment = "< #{VOL_PRICE_DELTA_THRES} | St. dev. of price differences from neighborhood as a % of estimate"
 
     # Current Return
-    output[:metrics][ind] = value
-    output[:metricsPass][ind] = pass
-    output[:metricsComments][ind] = comment
-
-    # return [value, pass, comment]
-    return output
+    output[data_source.to_sym][:metrics] << value
+    output[data_source.to_sym][:metricsPass] << pass
+    output[data_source.to_sym][:metricsComments] << comment
   end
 
   # Calculates the range of prop/neighborhood price differences relative to the value of the home
-  def calcRangePriceDeltas(vol_data, output, home_est)
-    ind = output[:metricsName].index("Range of Price Deltas")
+  def calcRangePriceDeltas(vol_data, output, home_est, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsUsage] << "Volatility"
+    output[data_source.to_sym][:metricsNames] << "Range of Price Deltas"
 
     # If difference data does not exist
     if vol_data[:diff].nil?
-      output[:metrics][ind] = "Unavailable"
-      output[:metricsPass][ind] = false
-      output[:metricsComments][ind] = "There was an error"
-      # return ["Unavailable", false, "There was an error"]
-      return output
+      output[data_source.to_sym][:metrics] << "Unavailable"
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "There was an error"
+      return
     end
 
     value = (vol_data[:diff].range/home_est).round(3)
-    pass = value < RANGE_PRICE_DELTA_THRES)
-    comment = "< #{RANGE_PRICE_DELTA_THRES} || Total range of price difference from neighborhood as a percentage of overall estimate"
+    pass = (value < RANGE_PRICE_DELTA_THRES)
+    comment = "< #{RANGE_PRICE_DELTA_THRES} | Total range of price difference from neighborhood as a % of estimate"
 
     # Current Return
-    output[:metrics][ind] = value
-    output[:metricsPass][ind] = pass
-    output[:metricsComments][ind] = comment
-
-    # return [value, pass, comment]
-    return output
+    output[data_source.to_sym][:metrics] << value
+    output[data_source.to_sym][:metricsPass] << pass
+    output[data_source.to_sym][:metricsComments] << comment
   end
 
   # Calculates the st. dev of the prop price relative to the value of the home
-  def calcStDevPropPrice(vol_data, output, home_est)
-    ind = output[:metricsName].index("Std. Dev. of Historical Home Price")
+  def calcStDevPropPrice(vol_data, output, home_est, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsUsage] << "Volatility"
+    output[data_source.to_sym][:metricsNames] << "Std. Dev. of Historical Home Price"
 
     # If difference data does not exist
     if vol_data[:propPrices].nil?
-      output[:metrics][ind] = "Unavailable"
-      output[:metricsPass][ind] = false
-      output[:metricsComments][ind] = "There was an error"
-      # return ["Unavailable", false, "There was an error"]
-      return output
+      output[data_source.to_sym][:metrics] << "Unavailable"
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "There was an error"
+      return
     end
 
     value = (vol_data[:propPrices].standard_deviation/home_est).round(3)
-    pass = value >= VOL_PROP_PRICE_THRES)
-    comment = ">= #{VOL_PROP_PRICE_THRES} || Standard Deviation of historical home price as a percentage of overall estimate"
+    pass = (value >= VOL_PROP_PRICE_THRES)
+    comment = ">= #{VOL_PROP_PRICE_THRES} | St. dev. of historical home price as a % of estimate"
 
     # Current Return
-    output[:metrics][ind] = value
-    output[:metricsPass][ind] = pass
-    output[:metricsComments][ind] = comment
+    output[data_source.to_sym][:metrics] << value
+    output[data_source.to_sym][:metricsPass] << pass
+    output[data_source.to_sym][:metricsComments] << comment
+  end
 
-    # return [value, pass, comment]
-    return output
+  # Calculates the volatility of the returns of the property price at a set frequency
+  def calcPropReturnVol(vol_data, output, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsUsage] << "Volatility"
+    output[data_source.to_sym][:metricsNames] << "Return Volatility"
+
+    # If difference data does not exist
+    if vol_data[:propPrices].nil?
+      output[data_source.to_sym][:metrics] << "Unavailable"
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "There was an error"
+      return
+    end
+
+    # Transform price series to desired frequency (if necessary)
+    rets = computePriceReturns(vol_data[:propPrices])
+
+    value = rets.standard_deviation.round(2)
+    pass = (value >= RET_VOL_THRES)
+    comment = ">= #{RET_VOL_FREQ} | Vol of historical #{RET_VOL_FREQ.downcase} returns"
+
+    # Current Return
+    output[data_source.to_sym][:metrics] << value
+    output[data_source.to_sym][:metricsPass] << pass
+    output[data_source.to_sym][:metricsComments] << comment
+    return rets
   end
 
   # Calculate the correlation between the prop and neighborhood prices
-  def calcCorrelation(vol_data)
-    # If difference data does not exist
-    return ["Unavailable", false, "There was an error"] if vol_data[:neighPrices].nil?
+  def calcCorrelation(vol_data, output, data_source, _type)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsUsage] << "Volatility"
+    output[data_source.to_sym][:metricsNames] << "Return Correlation of Property and Market"
 
-    # compute covariance and correlation
-    prods []
-    mean_prop = vol_data[:propPrices].mean()
-    mean_neigh = vol_data[:neighPrices].mean()
-    n = vol_data[:propPrices].length
-    for i in 0..n-1
-      prods << (vol_data[:propPrices][i] - mean_prop) * (vol_data[:neighPrices][i] - mean_neigh)
+    # If difference data does not exist
+    if vol_data[:neighPrices].nil?
+      output[data_source.to_sym][:metrics] << "N/A"
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "There was an error: neighborhood prices unavailable"
+      return
     end
 
-    cov = prods.sum()/(n-1)
-    corr = (cov/(vol_data[:propPrices].standard_deviation*vol_data[:neighPrices].standard_deviation)).round(3)
+    # Set up data depending on type of correlation measure
+    if _type == "Returns"
+      prop_data = computePriceReturns(vol_data[:propPrices])
+      neigh_data = computePriceReturns(vol_data[:neighPrices])
+    end
 
-    pass = value >= CORR_THRES)
-    comment = ">= #{CORR_THRES} || Correlation of historical home and neighborhood prices"
+    if _type == "Prices"
+      prop_data = vol_data[:propPrices]
+      neigh_data = vol_data[:neighPrices]
+    end
 
-    return [value, pass, comment]
-  end   
+    # Compute covariance and correlation
+    prods = []
+    mean_prop = prop_data.mean
+    mean_neigh = neigh_data.mean
+    n = prop_data.length
+    for i in 0..n-1
+      prods << (prop_data[i] - mean_prop) * (neigh_data[i] - mean_neigh)
+    end
+
+    cov = prods.sum/(n-1)
+    corr = (cov/(prop_data.standard_deviation*neigh_data.standard_deviation)).round(3)
+
+    pass = (corr >= CORR_THRES)
+    comment = ">= #{CORR_THRES} || Correlation of historical home and neighborhood prices (not used)"
+
+    # Save Values
+    output[data_source.to_sym][:metrics] << corr
+    output[data_source.to_sym][:metricsPass] << pass
+    output[data_source.to_sym][:metricsComments] << comment
+  end
+
+  # Compute returns
+  def computePriceReturns(prices)
+    rets = prices.map(&:to_f).each_cons(2).map{ |a, b| (b/a - 1) } if RET_VOL_FREQ == "Monthly"
+    rets = prices.map(&:to_f).each_cons(4).map { |a| (a[3]/a[0] - 1) } if RET_VOL_FREQ == "Quarterly"
+    rets = prices.map(&:to_f).each_cons(12).map { |a| (a[11]/a[0] - 1) } if RET_VOL_FREQ == "Annual"
+    return rets
+  end
 
 end

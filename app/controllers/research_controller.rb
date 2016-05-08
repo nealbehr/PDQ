@@ -21,7 +21,7 @@ class ResearchController < ApplicationController
                   "primary.price.listingPrice" => "[250000 TO 5000000]", # price condition
                   "mls.knownShortSale" => 'false',
                   "construction.yearBuilt" => "{* TO " + (Time.now.year.to_i-1).to_s + "}", # build year condition
-                  "primary.mpoPropType" => "(singleFamily OR condominium OR Loft OR Apartment Building)"}
+                  "primary.mpoPropType" => "(singleFamily OR condominium OR loft OR apartmentBuilding)"}
 
   # Pulls data items relevant to rurality
   def ruralityData

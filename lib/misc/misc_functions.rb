@@ -30,6 +30,7 @@ module MiscFunctions
 
   # Function to clean the address inputs
   def addressStringClean(s)
+    return s if s.nil?
     del_chars = "[]'#,."
     new_s = URI.unescape(s.to_s.upcase.delete(del_chars).gsub("+"," ").strip)
     return new_s

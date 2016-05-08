@@ -36723,6 +36723,4 @@ module UrbanAreaData
     return worker
   end
 
-  def getMSAbyCounty(county)
-
 end

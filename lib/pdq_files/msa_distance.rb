@@ -68,35 +68,32 @@ module MsaDistance
   ]
 
   # Updates the output hash with city distance check for the three closest cities
+  # This is independent of the data source, all data source hashes are updated the same
   def msaDistanceCheck(output, address)
     # Get the cities, distances, ranges (returned in array)
     closest_cities, google_url = getCityDistances(address)
-
     output[:urlsToHit] << google_url # Save url
 
-    # Get output indices and update results
-    ind = []
-    ind << output[:metricsName].index("Distance from MSA")
-    ind << output[:metricsName].index("Second Distance from MSA")
-    ind << output[:metricsName].index("Third Distance from MSA")
+    # Update Hash Values - only save in first 
+    output[:Google][:metricsNames].push("Distance from MSA", "Second Distance from MSA", "Third Distance from MSA")
+    output[:Google][:metricsUsage].push("MSA Dist.", "MSA Dist.", "MSA Dist.")
+    output[:Google][:dataSource].push("Google", "Google", "Google")
 
     # If error occurred
-    if closest_msas == "Error Retrieving Distances"
-      ind.each do |i|
-        output[:metrics][i] = "NA"
-        output[:metricsPass][i] = false
-        output[:metricsComments][i] = "Distance check failed"
-      end
+    if closest_cities == "Error Retrieving Distances"
+      output[:Google][:metrics].push("N/A", "N/A", "N/A")
+      output[:Google][:metricsPass].push(false, false, false)
+      output[:Google][:metricsComments].push("Distance check failed", "Distance check failed", "Distance check failed")
+      return ["N/A", "N/A", "N/A"]
     end
 
     # Store in outputs
     closest_cities.each_with_index do |c, i|
-      output[:metrics][ind[i]] = c[0] # distance
-      output[:metricsPass][ind[i]] = (c[0] <= c[2]) # true if distance less than range
-      output[:metricsComments][ind[i]] = "Distance in meters must be less than #{c[2]} | #{(i+1).ordinalize} Closest MSA: #{c[1]}" 
+      output[:Google][:metrics] << c[0] # distance
+      output[:Google][:metricsPass] << (c[0] <= c[2]) # true if distance less than range
+      output[:Google][:metricsComments] << "Distance in meters must be less than #{c[2]} | #{(i+1).ordinalize} Closest MSA: #{c[1]}"
     end
-
-    return output
+    return closest_cities # For use in combo rural
   end
 
   # Given an address, returns the distance, city, and range of the three closest cities to the address. Output included to store URL
