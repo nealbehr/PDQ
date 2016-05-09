@@ -63,13 +63,13 @@ module PdqEngine
     # Start timer
     start_time = Time.now
 
-    # FOR TESTING
-    #address.street = MiscFunctions.addressStringClean(address.street)
-    #address.citystatezip = MiscFunctions.addressStringClean(address.citystatezip)
+    # Clean the address strings
+    address.street = MiscFunctions.addressStringClean(address.street)
+    address.citystatezip = MiscFunctions.addressStringClean(address.citystatezip)
 
     # See if record already exists, if so, exit function
-    #output = Output.find_by(street: address.street, citystatezip: address.citystatezip)
-    #return nil if (!output.nil? && params[:path] != "gather")
+    output = Output.find_by(street: address.street, citystatezip: address.citystatezip)
+    return nil if (!output.nil? && params[:path] != "gather")
 
     # Set up storage
     output_data = {:urlsToHit => [], 
@@ -101,6 +101,16 @@ module PdqEngine
     
     # MLS INFO GATHERING
     if MLS_IND
+      if address.citystatezip.include? "SAN FRANCISCO"
+        # Get individual property attributes
+
+
+        # Get comp attributes
+
+
+      end
+
+
     end
 
     # FIRST AMERICAN INFO GATHERING
@@ -150,8 +160,6 @@ module PdqEngine
     
     #output_data[:runTime] = Time.now - start_time
     #puts Time.now - start_time
-    #return output_data, census_geo_info
-
     #return output_data
 
     # Get Decision

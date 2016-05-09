@@ -34,6 +34,11 @@ class ResearchController < ApplicationController
     render :json => @Output
   end
 
+  def mlstest()
+    @Output = MlsApi.getIndividualProperty()
+    render :json => @Output
+  end
+
   # Returns the output of a PDQ entry in a json form. Used to view historical data
   def getOutputValues
     # Error checking - see if we have a PDQ ID or address item in url
@@ -73,11 +78,12 @@ class ResearchController < ApplicationController
     render :json => @Output
   end
 
-
-
-
-
-
+  # URL to hit our MSA mapping db
+  def getMsa
+    census_geo, url = CensusApi.getGeoInfo(params[:lat], params[:lon])
+    @Output = MsaMapping.getMsaByGeo(census_geo[:partialGeoId])
+    render :json => @Output
+  end
 
   ### MLS Functions - can be transferred to python
   def mlsNewListings

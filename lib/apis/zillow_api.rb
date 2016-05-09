@@ -80,8 +80,8 @@ module ZillowApi
   # Function to get property info xml based on an address
   def getPropertyDeepSearchResults(address)
     # Construct url
-    esc_street = URI.escape(MiscFunctions.addressStringClean(address.street))
-    esc_csz = URI.escape(MiscFunctions.addressStringClean(address.citystatezip))
+    esc_street = URI.escape(address.street)
+    esc_csz = URI.escape(address.citystatezip)
     base_url = "http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=#{ZILLOW_TOKEN}" 
     base_url += "&address=#{esc_street}&citystatezip=#{esc_csz}"
 

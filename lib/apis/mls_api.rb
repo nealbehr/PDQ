@@ -7,27 +7,73 @@
 module MlsApi
   module_function
 
-  # Load in gems
-  require 'net/http'
-  require 'uri'
-  require 'nokogiri'
-  require 'rubygems'
-  require 'open-uri'
-  require 'json'
-  require 'openssl'
-  require 'date'
-  require 'time'
-  require 'mixpanel-ruby'
-  require 'httparty'
-
   MLS_TOKEN = "b49bd1d9d1932fc26ea257baf9395d26"
+  UNIT_TERMS = ["UNIT", "APT", "#", "APARTMENT", "SUITE", "STE"]
 
 #################################
 # Main Data Fetching functions
 #################################
   
   # Function needed in pdq
-  def getIndividualProperty(street, citystatezip)
+  def getIndividualProperty()
+    # Split out citystatezip
+    # csz_split = address.citystatezip.split()
+    # csz_split[-3] += ","
+    # csz = csz_split.join("\\ ") # need to escape the white space for the payload request
+
+    # # Split out street
+    # street_split = address.street.split()
+
+    # # Check if a number number exists and find/replace street abbrevs
+    # street_split.each do |x|
+    #   if UNIT_TERMS.include? x
+    #   end
+    # end
+
+    # street = street_split("\\ ")
+
+    # query_string = "primary.address.mpoAddress: #{street},\\ #{csz}"
+    # query_string += " AND primary.address.unitNum: #{unit_num}" if !unit_num.nil?
+
+    base_url = "https://api.mpoapp.com/v1/properties/_search?api_key=#{MLS_TOKEN}"
+
+    # Headers
+    h = {"Content-Type" => 'application/json; charset=UTF-8', "Cache-Control" => "no-cache"}
+    data = {:from => 0, :size => 10}
+
+    # Geo Poly
+    address_filter = {:bool => {:minimum_should_match => 1,
+                                :must => [
+                                  {:query_string => 
+                                    {:query => "primary.address.zipCode: 94117 AND 
+                                                primary.address.city: San\\ Francisco AND 
+                                                primary.address.streetNum: 714 AND 
+                                                primary.address.streetName: Cole AND
+                                                primary.address.streetSuffix: STREET AND
+                                                primary.address.state: CA"}
+                                    }
+                                ]
+                          }
+                }
+
+
+
+
+
+    # address_filter = {:bool => {:minimum_should_match => 1,
+    #                             :must => [
+    #                               {:query_string => 
+    #                                 {:fields => ["primary.address.city"],
+    #                                  :query => "San\\ Francisco"
+    #                                }
+    #                               }
+    #                             ]
+    #                           }
+    #                 }
+
+    data[:query] = address_filter
+    response = HTTParty.post(base_url, :body => data.to_json, :headers => h)
+    return response.to_json
   end
 
   # This function collects the neighbors/comps data in a defined 

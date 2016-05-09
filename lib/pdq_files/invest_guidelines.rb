@@ -19,7 +19,6 @@ module InvestGuidelines
 
   # Run the investment guidelines checks
   def propertyInvestmentGuidelines(output, prop_data, census_data, params, data_source)
-
     propertyValueCheck(output, prop_data, data_source)
     propertyMsaCheck(output, census_data, prop_data, data_source)
     propertyRecentSalesCheck(output, prop_data, params[:product], data_source)
