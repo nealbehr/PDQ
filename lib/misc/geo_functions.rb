@@ -10,6 +10,37 @@ module GeoFunctions
   # Constants
   EARTH_RAD_FT = 3959*5280 # ft
   EARTH_RAD_M = EARTH_RAD_FT*(1/3.28084) # meters
+  PROD_GOOG_API_KEY = "AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko" # Neals
+  TEST_GOOG_API_KEY = "AIzaSyCElExJi84Csi1WwouNB1eBn3hKd40dSZ8" # Brads
+
+  def getGooglePlaceId(street, csz)
+    address_str = [street, csz].join(" ")
+    base_url = "https://maps.googleapis.com/maps/api/geocode/json?address=#{address_str}&key=#{TEST_GOOG_API_KEY}"
+
+    # Get the response
+    uri = URI.parse(URI.escape(base_url))
+    response = Net::HTTP.get(uri)
+    json_result = JSON.parse(response)
+
+    # ERROR CATCH
+    return nil if json_result["status"] == "INVALID REQUEST"
+
+    place_results = json_result["results"][0]
+
+    # Define place id
+    place_id = place_results["place_id"]
+
+    # Collect unit number (if applicable)
+    address_components = json_result["results"][0]["address_components"]
+    address_components.each { |c| place_id += "+#{c["long_name"]}" if c["types"][0] == "subpremise" }
+
+    geo_data = {:placeId => place_id,
+                :lat => place_results["geometry"]["location"]["lat"],
+                :lon => place_results["geometry"]["location"]["lng"],
+                :format_add => place_results["formatted_address"]}
+
+    return geo_data
+  end
 
   # Compute the "as the crow flies" distance between to geo coordinates
   def getDistanceBetween(lat1, lon1, lat2, lon2)

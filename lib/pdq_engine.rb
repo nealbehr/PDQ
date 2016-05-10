@@ -3,7 +3,7 @@ module PdqEngine
 
   # Settings
   ZILLOW_IND = true
-  MLS_IND = true
+  MLS_IND = false
   FIRST_AM_IND = false
   REASON_CNT = 12
   DECISION_DATA_SOURCE = "Zillow"
@@ -67,19 +67,27 @@ module PdqEngine
     address.street = MiscFunctions.addressStringClean(address.street)
     address.citystatezip = MiscFunctions.addressStringClean(address.citystatezip)
 
+    # Get Google place id
+    goog_geo_data = GeoFunctions.getGooglePlaceId(address.street, address.citystatezip)
+
     # See if record already exists, if so, exit function
+    # output = Output.find_by(place_id: goog_geo_data[:placeId])
     output = Output.find_by(street: address.street, citystatezip: address.citystatezip)
     return nil if (!output.nil? && params[:path] != "gather")
 
     # Set up storage
     output_data = {:urlsToHit => [], 
-                   :runID => runId, 
+                   :runID => runId,
+                   output_data[:placeId] = goog_geo_data[:placeId],
                    :reason => [nil]*REASON_CNT}
     createEmptyStorage(output_data, "Google")
     createEmptyStorage(output_data, "Census")
     createEmptyStorage(output_data, "Zillow") if ZILLOW_IND
     createEmptyStorage(output_data, "MLS") if MLS_IND
     createEmptyStorage(output_data, "FA") if FIRST_AM_IND
+
+    # output_data[:lat] = goog_geo_data[:lat]
+    # output_data[:lon] = goog_geo_data[:lon]
 
     # ZILLOW INFO GATHERING
     if ZILLOW_IND
@@ -113,7 +121,7 @@ module PdqEngine
     end
 
     # Ping census website and save url
-    census_geo_info, census_url = CensusApi.getGeoInfo(zillow_kpd[:lat], zillow_kpd[:lon])
+    census_geo_info, census_url = CensusApi.getGeoInfo(goog_geo_data[:lat], goog_geo_data[:lon])
 
     # Store urls we hit
     output_data[:urlsToHit].push(zillow_data[:urls]).flatten! if ZILLOW_IND
@@ -155,6 +163,8 @@ module PdqEngine
 
     # Save output
     saveOutputRecord(address, output_data, params)
+
+    # Save comps
   end
 
 #################################
@@ -206,6 +216,7 @@ module PdqEngine
   # Save the output data for a property
   def saveOutputRecord(address, output, params)
     newOutput = Output.new
+    newOutput.place_id = output[:placeId]
     newOutput.street = address.street
     newOutput.citystatezip = address.citystatezip
     newOutput.date = Date.today  
