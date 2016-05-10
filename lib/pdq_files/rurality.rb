@@ -55,7 +55,7 @@ module Rurality
 
     density = UrbanAreaData.getaZCTADensity(zipcode.to_i).round(2)
     pass = (density > DENSITY_THRES)
-    comment = "< #{DENSITY_THRES} people/SqMi"
+    comment = "> #{DENSITY_THRES} people/SqMi"
 
     # Current Return
     output[:Census][:metrics] << density
@@ -81,7 +81,7 @@ module Rurality
     # Compute density and save
     density = (census_tract.hu.to_f / census_tract.area.to_f).round(2)
     pass = (density > CENSUS_TRACT_THRES)
-    comment = "< #{DENSITY_THRES} Houses/SqMi for tract #{census_tract.name} | USB ID: #{census_tract.home}"
+    comment = "> #{DENSITY_THRES} Houses/SqMi for tract #{census_tract.name} | USB ID: #{census_tract.home}"
 
     output[:Census][:metrics] << density
     output[:Census][:metricsPass] << pass

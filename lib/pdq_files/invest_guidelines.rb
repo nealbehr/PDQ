@@ -21,23 +21,34 @@ module InvestGuidelines
   def propertyInvestmentGuidelines(output, prop_data, census_data, params, data_source)
     propertyValueCheck(output, prop_data, data_source)
     propertyMsaCheck(output, census_data, prop_data, data_source)
-    propertyRecentSalesCheck(output, prop_data, params[:product], data_source)
+
+    # No recent sales data for MLS
+    propertyRecentSalesCheck(output, prop_data, params[:product], data_source) unless data_source.to_s == "MLS"
+
     propertyTypeCheck(output, prop_data, data_source)
-    propertyBuildYearCheck(output, prop_data, data_source) # Must run after recency check; correct
+    propertyBuildYearCheck(output, prop_data, data_source) # Must run after recency check
   end 
 
   # This function checks whether the property valuation is 
   # within the investment guidelines
   def propertyValueCheck(output, prop_data, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsNames] << "Estimated Value"
+    output[data_source.to_sym][:metricsUsage] << "Price Range"
+
+    if prop_data[:estimate].nil?
+      output[data_source.to_sym][:metrics] << "N/A"
+      output[data_source.to_sym][:metricsPass] << true
+      output[data_source.to_sym][:metricsComments] << "Data Not Available"
+      return
+    end
+
     # Perform check
     value = prop_data[:estimate]
     pass = (value <= PRICE_MAX && value >= PRICE_MIN)
     comment = "< #{PRICE_MAX} & > #{PRICE_MIN}"
 
     # Save values
-    output[data_source.to_sym][:dataSource] << data_source.to_s
-    output[data_source.to_sym][:metricsNames] << "Estimated Value"
-    output[data_source.to_sym][:metricsUsage] << "Price Range"
     output[data_source.to_sym][:metrics] << value
     output[data_source.to_sym][:metricsPass] << pass
     output[data_source.to_sym][:metricsComments] << comment
@@ -79,20 +90,24 @@ module InvestGuidelines
   # Function to check the build date of the property condition
   # Must run recency check before this one
   def propertyBuildYearCheck(output, prop_data, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsNames] << "Build Date"
+    output[data_source.to_sym][:metricsUsage] << "New Construction"
+
     # Initialize comment
     comment = "Can't be built this year or last"
 
     # If the year build field exists - perform the checks
-    if !prop_data[:buildYear].nil?
+    if !prop_data[:buildYear].nil? && prop_data[:buildYear].to_i > 0
       check_years = [Time.now.year.to_i, Time.now.year.to_i-1]
       value = prop_data[:buildYear]
       pass = !(check_years.include? value.to_i)
     end
 
     # If it does not - check the last sale date and use that if present
-    if prop_data[:buildYear].nil?
-      value << "Not available"
-      pass << false
+    if prop_data[:buildYear].nil? || prop_data[:buildYear].to_i == 0
+      value = "N/A"
+      pass = false
       if !prop_data[:lastSold].nil?
         comment = "Can't be built this year or last | approved based on sale date"
         pass = output[data_source.to_sym][:metricsPass][output[data_source.to_sym][:metricsNames].index("Last Sold History")]
@@ -100,9 +115,6 @@ module InvestGuidelines
     end
 
     # Save values
-    output[data_source.to_sym][:dataSource] << data_source.to_s
-    output[data_source.to_sym][:metricsNames] << "Build Date"
-    output[data_source.to_sym][:metricsUsage] << "New Construction"
     output[data_source.to_sym][:metrics] << value
     output[data_source.to_sym][:metricsPass] << pass
     output[data_source.to_sym][:metricsComments] << comment
@@ -110,7 +122,20 @@ module InvestGuidelines
 
   # Function to check the property type
   def propertyTypeCheck(output, prop_data, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsNames] << "Property Use"
+    output[data_source.to_sym][:metricsUsage] << "Property Type"
+
+    # Initialize comment
     comment = "Has to be Single family Condominium or Townhouse"
+
+    # Check if value is present
+    if prop_data[:propType].nil?
+      output[data_source.to_sym][:metrics] << "N/A" 
+      output[data_source.to_sym][:metricsPass] << true
+      output[data_source.to_sym][:metricsComments] << "Data Not Available"
+      return
+    end
 
     # If the property type field exists - perform the checks
     if !prop_data[:propType].nil?
@@ -122,16 +147,7 @@ module InvestGuidelines
       pass = acceptable_props.include? prop_data[:propType]
     end
 
-    if prop_data[:propType].nil?
-      value = "Not Available"
-      comment = "NA"
-      pass = true
-    end
-
     # Save values
-    output[data_source.to_sym][:dataSource] << data_source.to_s
-    output[data_source.to_sym][:metricsNames] << "Property Use"
-    output[data_source.to_sym][:metricsUsage] << "Property Type"
     output[data_source.to_sym][:metrics] << value
     output[data_source.to_sym][:metricsPass] << pass
     output[data_source.to_sym][:metricsComments] << comment
@@ -139,6 +155,10 @@ module InvestGuidelines
 
   # Function to check if the property was recently sold
   def propertyRecentSalesCheck(output, prop_data, product, data_source)
+    output[data_source.to_sym][:dataSource] << data_source.to_s
+    output[data_source.to_sym][:metricsNames] << "Last Sold History"
+    output[data_source.to_sym][:metricsUsage] << "Recent Sale"
+
     # If the value is present, perform the checks
     if !prop_data[:lastSoldDate].nil?
       date_value = Date.strptime(prop_data[:lastSoldDate], "%m/%d/%Y")
@@ -149,9 +169,10 @@ module InvestGuidelines
 
     # If the value is not present
     if prop_data[:lastSoldDate].nil?
-      date_str = "Not Available"
-      pass = true
-      comment = "NA"
+      output[data_source.to_sym][:metrics] << "N/A" 
+      output[data_source.to_sym][:metricsPass] << true
+      output[data_source.to_sym][:metricsComments] << "Data Not Available"
+      return
     end
 
     # Metric not used for RA
@@ -161,9 +182,6 @@ module InvestGuidelines
     end
 
     # Save values
-    output[data_source.to_sym][:dataSource] << data_source.to_s
-    output[data_source.to_sym][:metricsNames] << "Last Sold History"
-    output[data_source.to_sym][:metricsUsage] << "Recent Sale"
     output[data_source.to_sym][:metrics] << date_str
     output[data_source.to_sym][:metricsPass] << pass
     output[data_source.to_sym][:metricsComments] << comment

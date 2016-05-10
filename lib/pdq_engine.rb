@@ -3,7 +3,7 @@ module PdqEngine
 
   # Settings
   ZILLOW_IND = true
-  MLS_IND = false
+  MLS_IND = true
   FIRST_AM_IND = false
   REASON_CNT = 12
   DECISION_DATA_SOURCE = "Zillow"
@@ -75,7 +75,6 @@ module PdqEngine
     output_data = {:urlsToHit => [], 
                    :runID => runId, 
                    :reason => [nil]*REASON_CNT}
-
     createEmptyStorage(output_data, "Google")
     createEmptyStorage(output_data, "Census")
     createEmptyStorage(output_data, "Zillow") if ZILLOW_IND
@@ -102,15 +101,11 @@ module PdqEngine
     # MLS INFO GATHERING
     if MLS_IND
       if address.citystatezip.include? "SAN FRANCISCO"
-        # Get individual property attributes
+        mls_data = MlsApi.collectMlsInfo(address, params)
 
-
-        # Get comp attributes
-
-
+        # Store Key Mls Data
+        mls_kpd = MlsApi.getPropertyInfo(mls_data[:propResult])
       end
-
-
     end
 
     # FIRST AMERICAN INFO GATHERING
@@ -125,42 +120,29 @@ module PdqEngine
     output_data[:urlsToHit].push(census_url)
 
     ###### Begin Checks (row in output)
-    threads = []
-    # Investment Guidelines and Volatility
-    threads << Thread.new(output_data) {
-      InvestGuidelines.propertyInvestmentGuidelines(output_data, zillow_kpd, census_geo_info, params, "Zillow") if ZILLOW_IND
-      Volatility.propertyVolatility(output_data, zillow_kpd, "Zillow")
-    }
 
-    # Typicality and Volatility
-    threads << Thread.new(output_data) {
-      Liquidity.propertyLiquidity(output_data, zillow_data[:compsKeyValues], "Zillow")
-      Typicality.propertyTypicality(output_data, zillow_kpd, zillow_data[:compsKeyValues], census_geo_info, "Zillow")
-      Typicality.zillowNeighborsValues(output_data, zillow_kpd) if ZILLOW_IND # Typicality Neighbors
-    }
+    # DATA SOURCE INDEPENDENT
+    distance_info = MsaDistance.msaDistanceCheck(output_data, address)
+    Rurality.propertyRurality(output_data, address, census_geo_info, distance_info)
 
-    # Rurality (Census data requirement only; needs MSA to run first)
-    # MSA Distances (Google only - independent of property data source)
-    threads << Thread.new(output_data) {
-      distance_info = MsaDistance.msaDistanceCheck(output_data, address)
-      Rurality.propertyRurality(output_data, address, census_geo_info, distance_info)
-    }
+    # ZILLOW
+    InvestGuidelines.propertyInvestmentGuidelines(output_data, zillow_kpd, census_geo_info, params, "Zillow") if ZILLOW_IND
+    Liquidity.propertyLiquidity(output_data, zillow_data[:compsKeyValues], "Zillow") if ZILLOW_IND # Liquidity (must run before typicality)
+    Typicality.propertyTypicality(output_data, zillow_kpd, zillow_data[:compsKeyValues], census_geo_info, "Zillow") if ZILLOW_IND # Typicality using comps
+    Typicality.zillowNeighborsValues(output_data, zillow_kpd) if ZILLOW_IND # Typicality Neighbors
+    Volatility.propertyVolatility(output_data, zillow_kpd, "Zillow") if ZILLOW_IND # Volatility
 
-    threads.each { |t| t.join } # join threads
+    # MLS
+    if address.citystatezip.include? "SAN FRANCISCO"
+      InvestGuidelines.propertyInvestmentGuidelines(output_data, mls_kpd, census_geo_info, params, "MLS") if MLS_IND
+      Liquidity.propertyLiquidity(output_data, mls_data[:compsData], "MLS") if MLS_IND # Liquidity (must run before typicality)
+      Typicality.propertyTypicality(output_data, mls_kpd, mls_data[:compsData], census_geo_info, "MLS") if MLS_IND # Typicality using comps
+    end
 
-    # InvestGuidelines.propertyInvestmentGuidelines(output_data, zillow_kpd, census_geo_info, params, "Zillow") if ZILLOW_IND
-    # distance_info = MsaDistance.msaDistanceCheck(output_data, address)
-    # Rurality.propertyRurality(output_data, address, census_geo_info, distance_info)
-
-    # # Liquidity (must run before typicality)
-    # Liquidity.propertyLiquidity(output_data, zillow_data[:compsKeyValues], "Zillow")
-    # Typicality.propertyTypicality(output_data, zillow_kpd, zillow_data[:compsKeyValues], census_geo_info, "Zillow") # Typicality using comps
-    # Typicality.zillowNeighborsValues(output_data, zillow_kpd) if ZILLOW_IND # Typicality Neighbors
-    # Volatility.propertyVolatility(output_data, zillow_kpd, "Zillow") # Volatility
-    
-    #output_data[:runTime] = Time.now - start_time
-    #puts Time.now - start_time
-    #return output_data
+    # output_data[:runTime] = Time.now - start_time
+    # puts Time.now - start_time
+    # return output_data, mls_data, mls_kpd
+    # return output_data
 
     # Get Decision
     getDecision(output_data, DECISION_DATA_SOURCE)

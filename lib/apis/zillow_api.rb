@@ -58,21 +58,38 @@ module ZillowApi
 
   # Function to collect important property data from zillow xml into a hash
   def getPropertyInfo(zillow_prop_xml)
+    # Get objects (or nil if not present)
+    estimate = zillow_prop_xml.at_xpath('//results//result//zestimate//amount')
+    state = zillow_prop_xml.at_xpath('//results//address//state')
+    zipCode = zillow_prop_xml.at_xpath('//results//address//zipcode')
+    propType = zillow_prop_xml.at_xpath('//useCode')
+    lastSoldDate = zillow_prop_xml.at_xpath("//response//results//result//lastSoldDate")
+    buildYear = zillow_prop_xml.at_xpath('//yearBuilt')
+    lat = zillow_prop_xml.at_xpath('//result//address//latitude')
+    lon = zillow_prop_xml.at_xpath('//result//address//longitude')
+    bd = zillow_prop_xml.at_xpath('//result//bedrooms')
+    zpid = zillow_prop_xml.at_xpath('//zpid')
+    propSqFt = zillow_prop_xml.at_xpath('//response//result//finishedSqFt')
+    lotSqFt = zillow_prop_xml.at_xpath('//response//result//lotSizeSqFt')
+    estimateHigh = zillow_prop_xml.at_xpath('//zestimate//valuationRange//high')
+    estimateLow = zillow_prop_xml.at_xpath('//zestimate//valuationRange//low')
+
+    # Extract data if not nil
     key_prop_data = {
-      :estimate => zillow_prop_xml.at_xpath('//results//result//zestimate//amount').content.to_f,
-      :state => zillow_prop_xml.at_xpath('//results//address//state').content.to_s,
-      :zipCode => zillow_prop_xml.at_xpath('//results//address//zipcode').content.to_s,
-      :propType => zillow_prop_xml.at_xpath('//useCode').content.to_s,
-      :lastSoldDate => zillow_prop_xml.at_xpath("//response//results//result//lastSoldDate").content,
-      :buildYear => zillow_prop_xml.at_xpath('//yearBuilt').content,
-      :lat => zillow_prop_xml.at_xpath('//result//address//latitude').content,
-      :lon => zillow_prop_xml.at_xpath('//result//address//longitude').content,
-      :bd => zillow_prop_xml.at_xpath('//result//bedrooms').content.to_i,
-      :zpid => zillow_prop_xml.at_xpath('//zpid').content,
-      :propSqFt => zillow_prop_xml.at_xpath('//response//result//finishedSqFt').content.to_f,
-      :lotSqFt => zillow_prop_xml.at_xpath('//response//result//lotSizeSqFt').content.to_f,
-      :estimateHigh => zillow_prop_xml.at_xpath('//zestimate//valuationRange//high').content.to_f,
-      :estimateLow => zillow_prop_xml.at_xpath('//zestimate//valuationRange//low').content.to_f
+      :estimate => estimate.nil? ? nil : estimate.content.to_f,
+      :state => state.nil? ? nil : state.content.to_s,
+      :zipCode => zipCode.nil? ? nil : zipCode.content.to_s,
+      :propType => propType.nil? ? nil : propType.content.to_s,
+      :lastSoldDate => lastSoldDate.nil? ? nil : lastSoldDate.content,
+      :buildYear => buildYear.nil? ? nil : buildYear.content,
+      :lat => lat.nil? ? nil : lat.content,
+      :lon => lon.nil? ? nil : lon.content,
+      :bd => bd.nil? ? nil : bd.content.to_i,
+      :zpid => zpid.nil? ? nil : zpid.content,
+      :propSqFt => propSqFt.nil? ? nil : propSqFt.content.to_f,
+      :lotSqFt => lotSqFt.nil? ? nil : lotSqFt.content.to_f,
+      :estimateHigh => estimateHigh.nil? ? nil : estimateHigh.content.to_f,
+      :estimateLow => estimateLow.nil? ? nil : estimateLow.content.to_f
     }
     return key_prop_data
   end
