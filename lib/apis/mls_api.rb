@@ -357,4 +357,40 @@ module MlsApi
     return mls_hash
   end
 
+  def mlsAutoPreQual
+    daily_pdq_cnt = Output.where("runid LIKE ?", "%#{Time.now.to_date}").length
+    max_count = 400 - daily_pdq_cnt
+    puts "max_count: #{max_count}"
+
+    base_url = "https://api.mpoapp.com/v1/properties/_search?api_key=#{MLS_TOKEN}"
+    h = {"Content-Type" => 'application/json; charset=UTF-8', "Cache-Control" => "no-cache"}
+
+    data = {:from => 0, :size => 2, :sort => {:_created => {:order => "desc"}}} # max count
+
+    query_string = "primary.price.listingPrice: [250000 TO 5000000]" # price condition
+    query_string += " AND mls.onMarketDate:[#{(Time.now.to_date - 30).to_s} TO *]" # days on market
+    query_string += " AND construction.yearBuilt: {* TO #{(Time.now.year.to_i-1).to_s}}" # build year condition"
+
+    data[:query] = {:bool => {:minimum_should_match => 1, 
+                              :must => [
+                                          {:query_string => {:query => query_string}},
+                                          {:terms => {"primary.mpoPropType" => ["singleFamily", "condominium", "loft", "apartment"]}},
+                                          {:terms => {"primary.mpoStatus" => ["active"]}},
+                                          {:terms => {"mls.knownShortSale" => ["false"]}},
+                                          
+                                        ]
+                              }
+                    }
+
+    # Get Results
+    response = HTTParty.post(base_url, :body => data.to_json, :headers => h)
+    json_result = JSON.parse(response.to_json)
+    return json_result
+    
+    # Get Addresses
+    # Run through PDQ
+
+
+  end
+
 end

@@ -105,9 +105,12 @@ Rails.application.routes.draw do
 
   # IN TESTING
   get '/research/mlsbyloc', controller: 'research', action: 'mlsDataByGeo'
-  get '/research/mlstest', controller: 'research', action: 'mlstest'
   get '/research/getoutput(/:id)(/street/:street)(/csz/:citystatezip)', controller: 'research', action: 'getOutputValues'
   get '/research/getmsa/lat/:lat/lon/:lon', :constraints => {:lat => /\-?\d+(.\d+)?/, :lon => /\-?\d+(.\d+)?/}, controller: 'research', action: 'getMsa'
+
+  get '/research/mls/pdq/activeprops/:dayCount', controller: 'research', action: 'mlsAutoPreQual'
+
+  get "/getvalues/:placeid", :controller => "values", :action => "getvalues"
 
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".

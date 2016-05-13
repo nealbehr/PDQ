@@ -12,30 +12,32 @@ module PdqEngine
 #################################
 # Main function
 #################################
-  def computeDecision(address, params, runId)
+  def computeDecision(geo_data, params, runId)
     # Start timer
     start_time = Time.now
 
     # Check property counter - exit process if we have exceed the limit
     daily_pdq_cnt = Output.where("runid LIKE ?", "%#{Time.now.to_date}").length
+    puts "Current PDQ Call Count: #{daily_pdq_cnt}"
     return nil if daily_pdq_cnt > DAILY_CNT_THRES
 
-    # Clean the address strings
-    address.street = MiscFunctions.addressStringClean(address.street)
-    address.citystatezip = MiscFunctions.addressStringClean(address.citystatezip)
+    split_formatted_address = geo_data[:format_add].split(", ")
 
-    # Get Google place id
-    goog_geo_data = GeoFunctions.getGooglePlaceId(address.street, address.citystatezip)
+    # Create the address strings
+    address = Address.new
+    address.street = split_formatted_address[0].upcase
+    address.citystatezip = [split_formatted_address[1], split_formatted_address[2]].join(" ").upcase
 
     # See if record already exists, if so, exit function
     # output = Output.find_by(place_id: goog_geo_data[:placeId])
-    output = Output.find_by(street: address.street, citystatezip: address.citystatezip)
+    # output = Output.find_by(street: address.street, citystatezip: address.citystatezip)
+    output = Output.find_by(place_id: geo_data[:placeId])
     return nil if (!output.nil? && params[:path] != "gather")
 
     # Set up storage
     output_data = {:urlsToHit => [], 
                    :runID => runId,
-                   :placeId => goog_geo_data[:placeId],
+                   :placeId => geo_data[:placeId],
                    :reason => [nil]*REASON_CNT}
     createEmptyStorage(output_data, "Google")
     createEmptyStorage(output_data, "Census")
@@ -78,7 +80,7 @@ module PdqEngine
     end
 
     # Ping census website and save url
-    census_geo_info, census_url = CensusApi.getGeoInfo(goog_geo_data[:lat], goog_geo_data[:lon])
+    census_geo_info, census_url = CensusApi.getGeoInfo(geo_data[:lat], geo_data[:lon])
 
     # Store urls we hit
     output_data[:urlsToHit].push(zillow_data[:urls]).flatten! if ZILLOW_IND
@@ -122,6 +124,9 @@ module PdqEngine
     saveOutputRecord(address, output_data, params)
 
     # Save comps
+
+    # Return address (used for rendering view)
+    return address
   end
 
 #################################

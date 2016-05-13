@@ -43,22 +43,33 @@ class ValuesController < ApplicationController
     MiscFunctions.mixPanelTrack(params[:street], params[:citystatezip], params[:product])
 
     # Determine if this is a bulk run or single property
-    if params[:street].nil? || params[:citystatezip].nil?
+    if (params[:street].nil? || params[:citystatezip].nil?) && params[:placeid].nil?
       @addresses = Address.all
-      runID = "Run: " + addresses.size.to_s + ": "+ Date.today.to_s
-      
-    else # if single property, create new address record
-      a = Address.new
-      a.street = params[:street]
-      a.citystatezip = params[:citystatezip]
+      runID = "Run: #{addresses.size}: #{Date.today.to_s}"
 
-      # Save new address in a one element array
-      @addresses = [a]
-      runID = params[:path].to_s.capitalize + ": " + Date.today.to_s
+      # Loop over records and compute PDQ score
+      @addresses.each { |prop| PdqEngine.computeDecision(prop, params, runID) }
+      
+    else # if single property, create new address record or use place id if passed
+      runID = "#{params[:path].capitalize}: #{Date.today.to_s}"
+
+      if !params[:placeid].nil?
+        geo_data = GeoFunctions.getGoogleGeoByPlaceId(params[:placeid])
+        a = PdqEngine.computeDecision(geo_data, params, runID)
+
+      else
+        street = MiscFunctions.addressStringClean(params[:street])
+        citystatezip = MiscFunctions.addressStringClean(params[:citystatezip])
+
+        # Get Google place id
+        geo_data = GeoFunctions.getGoogleGeoByAddress(street, citystatezip)
+        a = PdqEngine.computeDecision(geo_data, params, runID)
+      end
     end
 
-    # Loop over records and compute PDQ score
-    @addresses.each { |prop| PdqEngine.computeDecision(prop, params, runID) }
+    # update parameters to match clean-address format
+    params[:street] = a.street
+    params[:citystatezip] = a.citystatezip
 
     # Aggregate all output and render
     @allOutput = Output.all

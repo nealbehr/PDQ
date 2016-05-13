@@ -13,7 +13,7 @@ module GeoFunctions
   PROD_GOOG_API_KEY = "AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko" # Neals
   TEST_GOOG_API_KEY = "AIzaSyCElExJi84Csi1WwouNB1eBn3hKd40dSZ8" # Brads
 
-  def getGooglePlaceId(street, csz)
+  def getGoogleGeoByAddress(street, csz)
     address_str = [street, csz].join(" ")
     base_url = "https://maps.googleapis.com/maps/api/geocode/json?address=#{address_str}&key=#{TEST_GOOG_API_KEY}"
 
@@ -41,6 +41,38 @@ module GeoFunctions
 
     return geo_data
   end
+
+  def getGoogleGeoByPlaceId(placeid)
+    # Check if google id appended with unit number
+    if placeid.include? "+"
+      place_split = placeid.split("+")
+      placeid_base = place_split[0]
+      unit_num = place_split[1]
+      base_url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=#{placeid_base}&key=#{TEST_GOOG_API_KEY}"
+    else
+      base_url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=#{placeid}&key=#{TEST_GOOG_API_KEY}"
+    end
+
+    # Get the response
+    uri = URI.parse(URI.escape(base_url))
+    response = Net::HTTP.get(uri)
+    json_result = JSON.parse(response)
+
+    # ERROR CATCH
+    return nil if json_result["status"] == "INVALID REQUEST"
+
+    place_results = json_result["results"][0]
+    format_add_split = place_results["formatted_address"].split(", ")
+    add_plus_unit = "#{format_add_split[0]} ##{unit_num}"
+    format_add = [add_plus_unit, format_add_split[1..-1]].join(", ")
+
+    geo_data = {:placeId => placeid,
+                :lat => place_results["geometry"]["location"]["lat"],
+                :lon => place_results["geometry"]["location"]["lng"],
+                :format_add => format_add}
+
+    return geo_data
+  end  
 
   # Compute the "as the crow flies" distance between to geo coordinates
   def getDistanceBetween(lat1, lon1, lat2, lon2)

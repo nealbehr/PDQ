@@ -10,9 +10,9 @@ module Volatility
   VOL_PRICE_DELTA_THRES = 0.25
   RANGE_PRICE_DELTA_THRES = 0.80
   VOL_PROP_PRICE_THRES = 0.08
-  CORR_THRES = 0.5
+  CORR_THRES = 0
   RET_VOL_FREQ = "Annual"
-  RET_VOL_THRES = 0.10
+  RET_VOL_THRES = 0
 
   def propertyVolatility(output, prop_data, data_source)
     # Get price time series depending on data source
@@ -207,7 +207,7 @@ module Volatility
     corr = (cov/(prop_data.standard_deviation*neigh_data.standard_deviation)).round(3)
 
     pass = (corr >= CORR_THRES)
-    comment = ">= #{CORR_THRES} || Correlation of historical home and neighborhood prices (not used)"
+    comment = ">= #{CORR_THRES} | Correlation of historical home and neighborhood prices (not used)"
 
     # Save Values
     output[data_source.to_sym][:metrics] << corr
