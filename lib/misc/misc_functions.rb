@@ -46,6 +46,7 @@ module MiscFunctions
       geo_data = GeoFunctions.getGooglePlaceId(i.street, i.citystatezip)
       i.place_id = geo_data[:placeId]
       i.save
+      
       # if i.place_id.nil?
       #   geo_data = GeoFunctions.getGooglePlaceId(i.street, i.citystatezip)
       #   i.place_id = geo_data[:placeId]

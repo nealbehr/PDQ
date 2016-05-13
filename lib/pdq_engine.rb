@@ -7,54 +7,7 @@ module PdqEngine
   FIRST_AM_IND = false
   REASON_CNT = 12
   DECISION_DATA_SOURCE = "Zillow"
-
-  # Pre-defined current metric names and usage
-  metric_usage = ["Price Range",
-                  "MSA Check",
-                   3.times.collect { "Liquidity" },
-                  11.times.collect { "Typicality" },
-                  "Recent Sale",
-                  "Property Type",
-                  "New Construction",
-                  6.times.collect { "Rurality" },
-                  3.times.collect { "MSA Dist"},
-                  "Combo Rural",
-                  3.times.collect { "Volatility" },
-                  "--End-Usage--"].flatten
-  metric_names = ["Estimated Value",
-                  "Pre-approval",
-                  "Comps Count",
-                  "Comps Recency",
-                  "Comps Score",
-                  "Properties Count",
-                  "Bedrooms Typicality",
-                  "SqFt Typicality - Comps",
-                  "Estimate Typicality - Comps",
-                  "Lot Size Typicality - Comps",
-                  "Comps Distance",
-                  "Comps Nearby",
-                  "Neighbors Available",
-                  "Estimate Typicality - Neighbors",
-                  "Bedrooms Typicality - Neighbors",
-                  "SqFt Typicality - Neighbors",
-                  "Last Sold History",
-                  "Property Type",
-                  "Build Date",
-                  "Urban Density",
-                  "Census Tract Density",
-                  "Surrounding Census Tract Density",
-                  "Census Block Density",
-                  "Census Block Houses",
-                  "Rurality Score",
-                  "Distance from MSA",
-                  "Second Distance from MSA",
-                  "Third Distance from MSA",
-                  "Combo Rural",
-                  "Std. Dev. of Price Deltas",
-                  "Range of Price Deltas",
-                  "Std. Dev. of Historical Home Price",
-                  "Schools",
-                  "--End-Names--"]
+  DAILY_CNT_THRES = 400
 
 #################################
 # Main function
@@ -62,6 +15,10 @@ module PdqEngine
   def computeDecision(address, params, runId)
     # Start timer
     start_time = Time.now
+
+    # Check property counter - exit process if we have exceed the limit
+    daily_pdq_cnt = Output.where("runid LIKE ?", "%#{Time.now.to_date}").length
+    return nil if daily_pdq_cnt > DAILY_CNT_THRES
 
     # Clean the address strings
     address.street = MiscFunctions.addressStringClean(address.street)
@@ -78,7 +35,7 @@ module PdqEngine
     # Set up storage
     output_data = {:urlsToHit => [], 
                    :runID => runId,
-                   output_data[:placeId] = goog_geo_data[:placeId],
+                   :placeId => goog_geo_data[:placeId],
                    :reason => [nil]*REASON_CNT}
     createEmptyStorage(output_data, "Google")
     createEmptyStorage(output_data, "Census")

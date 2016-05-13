@@ -16,7 +16,7 @@ module CensusApi
 
     # Loop to ping db
     loop_cnt = 0
-    while loop_cnt <= 25 do
+    while loop_cnt <= 5 do
       puts loop_cnt
       begin
         # Make the request
@@ -36,14 +36,14 @@ module CensusApi
       end
     end
 
-    geo_data = {:state => outputArea["result"]["geographies"]["Census Tracts"][0]["STATE"],
-                :county => outputArea["result"]["geographies"]["Census Tracts"][0]["COUNTY"],
-                :block => outputArea["result"]["geographies"]["2010 Census Blocks"][0]["BLOCK"],
-                :blkgrp =>outputArea["result"]["geographies"]["2010 Census Blocks"][0]["BLKGRP"],
-                :fullGeoId => outputArea["result"]["geographies"]["Census Tracts"][0]["GEOID"],
-                :partialGeoId => outputArea["result"]["geographies"]["Counties"][0]["GEOID"],
-                :tract => outputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"],
-                :areaLand => outputArea["result"]["geographies"]["2010 Census Blocks"][0]["AREALAND"]
+    geo_data = {:state => outputArea.empty? ? nil : outputArea["result"]["geographies"]["Census Tracts"][0]["STATE"],
+                :county => outputArea.empty? ? nil : outputArea["result"]["geographies"]["Census Tracts"][0]["COUNTY"],
+                :block => outputArea.empty? ? nil : outputArea["result"]["geographies"]["2010 Census Blocks"][0]["BLOCK"],
+                :blkgrp => outputArea.empty? ? nil : outputArea["result"]["geographies"]["2010 Census Blocks"][0]["BLKGRP"],
+                :fullGeoId => outputArea.empty? ? nil : outputArea["result"]["geographies"]["Census Tracts"][0]["GEOID"],
+                :partialGeoId => outputArea.empty? ? nil : outputArea["result"]["geographies"]["Counties"][0]["GEOID"],
+                :tract => outputArea.empty? ? nil : outputArea["result"]["geographies"]["Census Tracts"][0]["TRACT"],
+                :areaLand => outputArea.empty? ? nil : outputArea["result"]["geographies"]["2010 Census Blocks"][0]["AREALAND"]
     }
 
     return geo_data, URI.parse(base_url).to_s + " || " + (geo_data[:tract].nil? ? "Fail" : geo_data[:tract])
