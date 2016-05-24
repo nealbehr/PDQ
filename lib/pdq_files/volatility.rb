@@ -55,6 +55,11 @@ module Volatility
       item_type = r["regionType"]
       item_points.each { |p| propPrices << p["y"] } if item_type == "Home"
       item_points.each { |p| neighborhoodPrices << p["y"] } if accepted_neigh_terms.include? item_type
+
+      # use "City" level if no neighborhood or zip prices
+      if item_type == "City" && neighborhoodPrices.length == 0
+        item_points.each { |p| neighborhoodPrices << p["y"] }
+      end
     end
 
     # neigh_points = json_result[1]["points"]
