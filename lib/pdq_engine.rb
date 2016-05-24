@@ -87,18 +87,15 @@ module PdqEngine
     output_data[:urlsToHit].push(census_url)
 
     ###### Begin Checks (row in output)
-
-    # DATA SOURCE INDEPENDENT
-    distance_info = MsaDistance.msaDistanceCheck(output_data, address)
-    Rurality.propertyRurality(output_data, address, census_geo_info, distance_info)
-
     # ZILLOW
     InvestGuidelines.propertyInvestmentGuidelines(output_data, zillow_kpd, census_geo_info, params, "Zillow") if ZILLOW_IND
     Liquidity.propertyLiquidity(output_data, zillow_data[:compsKeyValues], "Zillow") if ZILLOW_IND # Liquidity (must run before typicality)
     Typicality.propertyTypicality(output_data, zillow_kpd, zillow_data[:compsKeyValues], census_geo_info, "Zillow") if ZILLOW_IND # Typicality using comps
     Typicality.zillowNeighborsValues(output_data, zillow_kpd) if ZILLOW_IND # Typicality Neighbors
 
-    # return output_data, zillow_kpd
+    # DATA SOURCE INDEPENDENT
+    distance_info = MsaDistance.msaDistanceCheck(output_data, address)
+    Rurality.propertyRurality(output_data, address, census_geo_info, distance_info)
 
     Volatility.propertyVolatility(output_data, zillow_kpd, "Zillow") if ZILLOW_IND # Volatility
 

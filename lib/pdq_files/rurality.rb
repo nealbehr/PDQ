@@ -233,20 +233,24 @@ module Rurality
       end
 
       # Search for the ranges in the MsaDistance values
-      ranges = closest_cities.select { |c| c[2] }
+      # puts closest_cities
+
+      ranges = closest_cities.collect { |c| c[2] }
       comment = "Must be within 2/3 of a city range if Rurality Score is between #{RURALITY_SCORE_THRES[loc][:ruralityLocalCutoff]} and #{RURALITY_SCORE_THRES[loc][:ruralityCutoff]}"
 
-      # If so, check the ranges
-      if ranges[0] >= CR_RANGE_1
-        value = closest_cities[0][0]
-        pass = (value < [range[0].to_f*CR_FRAC, CR_CAP].min)
+      puts ranges
 
-      elsif range[1] >= CR_RANGE_1
+      # If so, check the ranges
+      if ranges[0] >= CR_RANGE_THRES
+        value = closest_cities[0][0]
+        pass = (value < [ranges[0].to_f*CR_FRAC, CR_CAP].min)
+
+      elsif ranges[1] >= CR_RANGE_THRES
         value = closest_cities[1][0]
-        pass = (value < [range[1].to_f*CR_FRAC, CR_CAP].min)
+        pass = (value < [ranges[1].to_f*CR_FRAC, CR_CAP].min)
       else
         value = closest_cities[2][0]
-        pass = (value < [range[2].to_f*CR_FRAC, CR_CAP].min)
+        pass = (value < [ranges[2].to_f*CR_FRAC, CR_CAP].min)
       end
 
       # Store values

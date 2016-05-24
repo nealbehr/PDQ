@@ -44,6 +44,7 @@ module Volatility
     output[:urlsToHit] << url.to_s.gsub(",","THESENTINEL")
 
     # Set up storage
+    accepted_neigh_terms = ["Neighborhood", "Zipcode"]
     differencesInPrices = []
     neighborhoodPrices = []
     propPrices = []
@@ -53,7 +54,7 @@ module Volatility
       item_points = r["points"]
       item_type = r["regionType"]
       item_points.each { |p| propPrices << p["y"] } if item_type == "Home"
-      item_points.each { |p| neighborhoodPrices << p["y"] } if item_type == "Neighborhood"
+      item_points.each { |p| neighborhoodPrices << p["y"] } if accepted_neigh_terms.include? item_type
     end
 
     # neigh_points = json_result[1]["points"]

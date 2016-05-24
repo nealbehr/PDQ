@@ -7,9 +7,6 @@ module Typicality
   module_function
 
   # Constants
-  ZILLOW_TOKEN = "b49bd1d9d1932fc26ea257baf9395d26"
-
-  # NEED TO CAPITALIZE THESE
   BD_PCT_THRES = 0.20
   BD_CNT_THRES = 1
   BA_CNT_THRES = 1
@@ -129,6 +126,14 @@ module Typicality
     output[data_source.to_sym][:metricsUsage] << "Typicality"
     output[data_source.to_sym][:metricsNames] << "Lot Size Typicality - Comps"
 
+    # For Zillow - Check if the property is a condo - lot size condition does not apply
+    if data_source.to_s == "Zillow" && prop_type == "Condominium"
+      output[data_source.to_sym][:metrics] << 0
+      output[data_source.to_sym][:metricsPass] << true
+      output[data_source.to_sym][:metricsComments] << "Zillow - Does not apply to condominiums"
+      return
+    end
+
     # If the lot sqft is not present
     if prop_lotsize.nil?
       output[data_source.to_sym][:metrics] << 0 
@@ -145,14 +150,6 @@ module Typicality
       output[data_source.to_sym][:metrics] << 0
       output[data_source.to_sym][:metricsPass] << false
       output[data_source.to_sym][:metricsComments] << "No comp lot sizes found"
-      return
-    end
-
-    # For Zillow - Check if the property is a condo - lot size condition does not apply
-    if data_source.to_s == "Zillow" && prop_type == "Condominium"
-      output[data_source.to_sym][:metrics] << 0
-      output[data_source.to_sym][:metricsPass] << true
-      output[data_source.to_sym][:metricsComments] << "Zillow - Does not apply to condominiums"
       return
     end
 
@@ -365,27 +362,5 @@ module Typicality
     output[:Zillow][:metricsPass].push(cnt_pass, est_nb_pass, bd_nb_pass, sqft_nb_pass) 
     output[:Zillow][:metricsComments].push(cnt_comment, est_nb_comment, bd_nb_comment, sqft_nb_comment) 
   end
-
-
-
-
-  # Returns appropriate comparison data given mls comp data
-  # def mlsTypicality(output, prop_data, comp_data)
-  #   # Compute comps recent sold count
-  #   compsSold = comps_data[:sellInfo].select{ |i| (i["sellingPrice"] > 0 && i["sellingDate"].to_date > (Time.now.to_date - 180).to_date) }.length
-
-  #   # Compute and return results (compact removes nil values)
-  #   comp_results = {:avgBd => comp_data[:bd].mean, :medianBd => comp_data[:bd].median,
-  #                   :avgBa => comp_data[:ba].mean, :medianBa => comp_data[:ba].median,
-  #                   :avgValue => comp_data[:value].mean, :medianValue => comp_data[:value].median,
-  #                   :avgSqFt => comp_data[:sqFt].compact.mean, :sqFtCount => comp_data[:sqFt].compact.length,
-  #                   :avgLotSize => comp_data[:lotSize].compact.mean, :lotSizeCount => comp_data[:lotSize].compact.length,
-  #                   :compsCount => comps.length, :execTime => Time.now-start_time,
-  #                   :compsSoldCount => compsSold
-  #                 }
-
-  #   return comp_results
-  # end 
-
 
 end
