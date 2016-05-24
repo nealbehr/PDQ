@@ -27,7 +27,7 @@ module Liquidity
     if comp_data[:count] == 0
       score_value = 0
       score_pass = false
-      score_comment = "N/A"
+      score_comment = "No comps found"
     end
 
     # If comps are found
@@ -97,7 +97,7 @@ module Liquidity
     cnt_comment = "At least #{COMPS_COUNT_THRES} comparable properties found"
 
     # If no comps are found
-    cnt_comment = "N/A" if (comp_data[:count].nil? || comp_data[:count] == 0)
+    cnt_comment = "No comps found" if (comp_data[:count].nil? || comp_data[:count] == 0)
 
     # Store Values
     output[data_source.to_sym][:dataSource] << data_source.to_s

@@ -8,7 +8,7 @@
    <%= @addresses[q].citystatezip %> <br>
    <% localMetricsPass = @allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).passes.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub(" ","").split(",")  %>
    
-   Passed <%= localMetricsPass.count("true") %> tests in <%= @sectionTimes[q+1]%> seconds.<br>
+   Passed <%= localMetricsPass.count("true") %> tests in 5 seconds.<br>
    
    <b> <%= "Failed: " if !@allOutput.find_by(street: URI.unescape(@addresses[q].street.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip), citystatezip: URI.unescape(@addresses[q].citystatezip.to_s.upcase.gsub(",","").gsub("+"," ").gsub("."," ").strip)).reason.to_s.include? "Approved" %>
 

@@ -56,7 +56,7 @@ module Typicality
 
     # If the property estimate is not present
     if prop_estimate.nil?
-      output[data_source.to_sym][:metrics] << "N/A" 
+      output[data_source.to_sym][:metrics] << 0
       output[data_source.to_sym][:metricsPass] << false
       output[data_source.to_sym][:metricsComments] << "Property Estimate Not Available"
       return
@@ -68,7 +68,7 @@ module Typicality
     if comps_est_values.length == 0 # lacking zest comp data
       output[data_source.to_sym][:metrics] << 0
       output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "No Comp Ests found"
+      output[data_source.to_sym][:metricsComments] << "No comp ests found"
       return
     end
 
@@ -93,9 +93,9 @@ module Typicality
 
     # If the property sqft is not present
     if prop_sqft.nil? || prop_sqft == 0
-      output[data_source.to_sym][:metrics] << "N/A" 
+      output[data_source.to_sym][:metrics] << 0
       output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "Property SqFt 0 or Not Available"
+      output[data_source.to_sym][:metricsComments] << "Property sqft 0 or not available"
       return
     end
 
@@ -106,7 +106,7 @@ module Typicality
     if comps_sqft_values.length == 0
       output[data_source.to_sym][:metrics] << 0
       output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "No Comp SqFt found"
+      output[data_source.to_sym][:metricsComments] << "No comp sqft ests found"
       return
     end
 
@@ -131,9 +131,9 @@ module Typicality
 
     # If the lot sqft is not present
     if prop_lotsize.nil?
-      output[data_source.to_sym][:metrics] << "N/A" 
+      output[data_source.to_sym][:metrics] << 0 
       output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "Property Lot SqFt Not Available"
+      output[data_source.to_sym][:metricsComments] << "Property lot sqft not available"
       return
     end
 
@@ -144,7 +144,7 @@ module Typicality
     if (comp_lot_sizes.length == 0 || prop_lotsize.nil?)
       output[data_source.to_sym][:metrics] << 0
       output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "Unknown Lot Size"
+      output[data_source.to_sym][:metricsComments] << "No comp lot sizes found"
       return
     end
 
@@ -180,7 +180,7 @@ module Typicality
     if num_bds.nil?
       output[data_source.to_sym][:metrics] << "N/A"
       output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "Property Bd Count Not Available"
+      output[data_source.to_sym][:metricsComments] << "Property bd count not available"
       return
     end
 
@@ -239,7 +239,7 @@ module Typicality
     if num_bas.nil?
       output[data_source.to_sym][:metrics] << "N/A"
       output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "Property Ba Count Not Available"
+      output[data_source.to_sym][:metricsComments] << "Property ba count not available"
       return
     end
 
@@ -268,7 +268,7 @@ module Typicality
     if comps_distances.length == 0 
       output[data_source.to_sym][:metrics].push(0, 0)
       output[data_source.to_sym][:metricsPass].push(false, false)
-      output[data_source.to_sym][:metricsComments].push("N/A", "N/A")
+      output[data_source.to_sym][:metricsComments].push("No comps found", "No comps found")
       return
     end
 
@@ -285,7 +285,7 @@ module Typicality
     # Eliminate double failing
     if !nearby_pass && !dist_pass
       nearby_pass = true
-      nearby_comment = "We only count one if both Comps Nearby and Comps Distance fails"
+      nearby_comment = "We do not double penalize if both Comps Nearby and Comps Distance fails"
     end
 
     if !count_pass

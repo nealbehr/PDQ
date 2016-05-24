@@ -112,6 +112,8 @@ Rails.application.routes.draw do
 
   get "/getvalues/:placeid", :controller => "values", :action => "getvalues"
 
+  get "/research/mls/getvalues/:street/:citystatezip", :controller => "research", :action => "getprequal"
+
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".
 

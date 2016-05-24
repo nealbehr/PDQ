@@ -13,6 +13,7 @@ module Volatility
   CORR_THRES = 0
   RET_VOL_FREQ = "Annual"
   RET_VOL_THRES = 0
+  MIN_DATA_PTS = 6
 
   def propertyVolatility(output, prop_data, data_source)
     # Get price time series depending on data source
@@ -47,23 +48,28 @@ module Volatility
     neighborhoodPrices = []
     propPrices = []
 
-    # Extract graph points
-    prop_points = json_result[0]["points"]
-
-    # Make sure neighborhood points exist, if not just return home prices
-    if json_result.length < 2
-      prop_points.each { |p| propPrices << p["y"] }
-      output[:urlsToHit] << "Issues with neighborhood and deltas"
-      return {:propPrices => propPrices}
+    # Extract graph points: Loop over the json results and collect points for property and neighborhood
+    json_result.each do |r|
+      item_points = r["points"]
+      item_type = r["regionType"]
+      item_points.each { |p| propPrices << p["y"] } if item_type == "Home"
+      item_points.each { |p| neighborhoodPrices << p["y"] } if item_type == "Neighborhood"
     end
 
-    neigh_points = json_result[1]["points"]
-    max_ind = [prop_points.length, neigh_points.length].min()
+    # neigh_points = json_result[1]["points"]
+    max_ind = [propPrices.length, neighborhoodPrices.length].min()
+
+    # Make sure neighborhood points exist, if not just return home prices
+    if max_ind == 0
+      output[:urlsToHit] << "Missing property or neighborhood price data preventing differencing"
+      return {:propPrices => propPrices, :neighPrices => neighborhoodPrices, :diff => []}
+    end
+
+    propPrices = propPrices[0..max_ind-1]
+    neighborhoodPrices = neighborhoodPrices[0..max_ind-1]
 
     for i in 0..max_ind-1
-      propPrices << prop_points[i]["y"]
-      neighborhoodPrices << neigh_points[i]["y"]
-      differencesInPrices << prop_points[i]["y"] - neigh_points[i]["y"]
+      differencesInPrices << (propPrices[i] - neighborhoodPrices[i])
     end
     vol_data = {:propPrices => propPrices, :neighPrices => neighborhoodPrices, :diff => differencesInPrices}
     return vol_data
@@ -76,10 +82,18 @@ module Volatility
     output[data_source.to_sym][:metricsNames] << "Std. Dev. of Price Deltas"
 
     # If difference data does not exist
-    if vol_data[:diff].nil?
-      output[data_source.to_sym][:metrics] <<"Unavailable"
+    if vol_data[:diff].length == 0
+      output[data_source.to_sym][:metrics] <<"N/A"
       output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "There was an error"
+      output[data_source.to_sym][:metricsComments] << "There was an error in computing property/neighborhood price differences"
+      return
+    end
+
+    # If we are missing property prices
+    if vol_data[:propPrices].length == 0
+      output[data_source.to_sym][:metrics] <<"N/A"
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "Missing property price data"
       return
     end
 
@@ -100,10 +114,18 @@ module Volatility
     output[data_source.to_sym][:metricsNames] << "Range of Price Deltas"
 
     # If difference data does not exist
-    if vol_data[:diff].nil?
-      output[data_source.to_sym][:metrics] << "Unavailable"
+    if vol_data[:diff].length == 0
+      output[data_source.to_sym][:metrics] << "N/A"
       output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "There was an error"
+      output[data_source.to_sym][:metricsComments] << "There was an error in computing property/neighborhood price differences"
+      return
+    end
+
+    # If we are missing property prices
+    if vol_data[:propPrices].length == 0
+      output[data_source.to_sym][:metrics] <<"N/A"
+      output[data_source.to_sym][:metricsPass] << false
+      output[data_source.to_sym][:metricsComments] << "Missing property price data"
       return
     end
 
@@ -124,10 +146,10 @@ module Volatility
     output[data_source.to_sym][:metricsNames] << "Std. Dev. of Historical Home Price"
 
     # If difference data does not exist
-    if vol_data[:propPrices].nil?
-      output[data_source.to_sym][:metrics] << "Unavailable"
+    if vol_data[:propPrices].length == 0
+      output[data_source.to_sym][:metrics] << "N/A"
       output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "There was an error"
+      output[data_source.to_sym][:metricsComments] << "Missing property price data"
       return
     end
 
@@ -148,15 +170,23 @@ module Volatility
     output[data_source.to_sym][:metricsNames] << "Return Volatility"
 
     # If difference data does not exist
-    if vol_data[:propPrices].nil?
-      output[data_source.to_sym][:metrics] << "Unavailable"
-      output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "There was an error"
+    if vol_data[:propPrices].length == 0
+      output[data_source.to_sym][:metrics] << "N/A"
+      output[data_source.to_sym][:metricsPass] << true # currently not counting in decision
+      output[data_source.to_sym][:metricsComments] << "Missing property price data"
       return
     end
 
     # Transform price series to desired frequency (if necessary)
     rets = computePriceReturns(vol_data[:propPrices])
+
+    # check if there is sufficient data
+    if rets.length < 2
+      output[data_source.to_sym][:metrics] << "N/A"
+      output[data_source.to_sym][:metricsPass] << true # currently not counting in decision
+      output[data_source.to_sym][:metricsComments] << "There is insufficient data: Only #{rets.length} obs; #{RET_VOL_FREQ.downcase} freq"
+      return
+    end
 
     value = rets.standard_deviation.round(2)
     pass = (value >= RET_VOL_THRES)
@@ -176,10 +206,10 @@ module Volatility
     output[data_source.to_sym][:metricsNames] << "Return Correlation of Property and Market"
 
     # If difference data does not exist
-    if vol_data[:neighPrices].nil?
+    if vol_data[:neighPrices].length == 0
       output[data_source.to_sym][:metrics] << "N/A"
-      output[data_source.to_sym][:metricsPass] << false
-      output[data_source.to_sym][:metricsComments] << "There was an error: neighborhood prices unavailable"
+      output[data_source.to_sym][:metricsPass] << true # currently not counting in decision
+      output[data_source.to_sym][:metricsComments] << "Neighborhood prices unavailable"
       return
     end
 
@@ -192,6 +222,14 @@ module Volatility
     if _type == "Prices"
       prop_data = vol_data[:propPrices]
       neigh_data = vol_data[:neighPrices]
+    end
+
+    # check if there is sufficient data
+    if prop_data.length < 2
+      output[data_source.to_sym][:metrics] << "N/A"
+      output[data_source.to_sym][:metricsPass] << true # currently not counting in decision
+      output[data_source.to_sym][:metricsComments] << "There is insufficient data: #{prop_data.length} obs (#{_type}; #{RET_VOL_FREQ.downcase} freq)"
+      return
     end
 
     # Compute covariance and correlation
@@ -215,12 +253,12 @@ module Volatility
     output[data_source.to_sym][:metricsComments] << comment
   end
 
-  # Compute returns
+  # Compute returns - length checks to guarantee at least 2 return obs by frequency
   def computePriceReturns(prices)
-    rets = prices.map(&:to_f).each_cons(2).map{ |a, b| (b/a - 1) } if RET_VOL_FREQ == "Monthly"
-    rets = prices.map(&:to_f).each_cons(4).map { |a| (a[3]/a[0] - 1) } if RET_VOL_FREQ == "Quarterly"
-    rets = prices.map(&:to_f).each_cons(12).map { |a| (a[11]/a[0] - 1) } if RET_VOL_FREQ == "Annual"
+    rets = []
+    rets = prices.map(&:to_f).each_cons(2).map{ |a, b| (b/a - 1) } if (RET_VOL_FREQ == "Monthly" && price.length > 2)
+    rets = prices.map(&:to_f).each_cons(4).map { |a| (a[3]/a[0] - 1) } if (RET_VOL_FREQ == "Quarterly" && prices.length > 4)
+    rets = prices.map(&:to_f).each_cons(12).map { |a| (a[11]/a[0] - 1) } if (RET_VOL_FREQ == "Annual" && prices.length > 12)
     return rets
   end
-
 end

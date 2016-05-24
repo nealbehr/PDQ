@@ -51,7 +51,7 @@ class ValuesController < ApplicationController
       @addresses.each { |prop| PdqEngine.computeDecision(prop, params, runID) }
       
     else # if single property, create new address record or use place id if passed
-      runID = "#{params[:path].capitalize}: #{Date.today.to_s}"
+      runID = "#{params[:path].to_s.capitalize}: #{Date.today.to_s}"
 
       if !params[:placeid].nil?
         geo_data = GeoFunctions.getGoogleGeoByPlaceId(params[:placeid])
@@ -65,7 +65,11 @@ class ValuesController < ApplicationController
         geo_data = GeoFunctions.getGoogleGeoByAddress(street, citystatezip)
         a = PdqEngine.computeDecision(geo_data, params, runID)
       end
+      @addresses = [a]
     end
+
+    puts a.street
+    puts a.citystatezip
 
     # update parameters to match clean-address format
     params[:street] = a.street
@@ -75,7 +79,8 @@ class ValuesController < ApplicationController
     @allOutput = Output.all
     return render 'getvalues' if params[:path].nil?
 
-    @calcedurl = "/inspect/" + params[:street] + "/" + params[:citystatezip]
+    @calcedurl = URI.escape("/inspect/#{params[:street]}/#{params[:citystatezip]}")
+    puts @calcedurl
     return render 'blank'
   end
 

@@ -7,7 +7,7 @@ module CensusApi
   module_function
 
   # Constant
-  CENSUS_KEY = "e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac"
+  CENSUS_KEY = ApiToken.census_key
 
   # Function to get the census track for the property being analyzed (based on lat/lon)
   def getGeoInfo(lat, lon)

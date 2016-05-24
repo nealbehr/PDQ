@@ -196,4 +196,28 @@ class ResearchController < ApplicationController
     render 'outputs/index'
   end
 
+  # Short API call to get a pass/fail decision (used for MLS)
+  def getprequal
+    street = MiscFunctions.addressStringClean(params[:street])
+    citystatezip = MiscFunctions.addressStringClean(params[:citystatezip])
+    geo_data = GeoFunctions.getGoogleGeoByAddress(street, citystatezip)
+
+    # PDQ params
+    pdq_params = {:path => "Mls"}
+    runID = "#{pdq_params[:path]}: #{Date.today.to_s}"
+
+    # Run PDQ (if needed)
+    a = PdqEngine.computeDecision(geo_data, params, runID)
+
+    output = Output.find_by(place_id: geo_data[:placeId])
+
+    if output.reason.to_s.include? "Approved"
+      decision = "Approved"
+    else
+      decision = output.reason.to_s.gsub("[","").gsub("]","").gsub("\"","").gsub("\"","").gsub("nil","").gsub(",","").strip()
+    end
+
+    render :json => decision.to_json
+  end
+
 end

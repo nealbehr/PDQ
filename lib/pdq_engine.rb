@@ -7,7 +7,7 @@ module PdqEngine
   FIRST_AM_IND = false
   REASON_CNT = 12
   DECISION_DATA_SOURCE = "Zillow"
-  DAILY_CNT_THRES = 400
+  DAILY_PDQ_CNT_THRES = 400
 
 #################################
 # Main function
@@ -16,23 +16,23 @@ module PdqEngine
     # Start timer
     start_time = Time.now
 
-    # Check property counter - exit process if we have exceed the limit
-    daily_pdq_cnt = Output.where("runid LIKE ?", "%#{Time.now.to_date}").length
-    puts "Current PDQ Call Count: #{daily_pdq_cnt}"
-    return nil if daily_pdq_cnt > DAILY_CNT_THRES
-
+    # Create the address strings
     split_formatted_address = geo_data[:format_add].split(", ")
 
-    # Create the address strings
     address = Address.new
     address.street = split_formatted_address[0].upcase
     address.citystatezip = [split_formatted_address[1], split_formatted_address[2]].join(" ").upcase
+
+    # Check property counter - exit process if we have exceed the limit
+    daily_pdq_cnt = Output.where("runid LIKE ?", "%#{Time.now.to_date}").length
+    puts "Current PDQ Call Count: #{daily_pdq_cnt}"
+    return nil if daily_pdq_cnt > DAILY_PDQ_CNT_THRES
 
     # See if record already exists, if so, exit function
     # output = Output.find_by(place_id: goog_geo_data[:placeId])
     # output = Output.find_by(street: address.street, citystatezip: address.citystatezip)
     output = Output.find_by(place_id: geo_data[:placeId])
-    return nil if (!output.nil? && params[:path] != "gather")
+    return address if (!output.nil? && params[:path] != "gather")
 
     # Set up storage
     output_data = {:urlsToHit => [], 
@@ -56,7 +56,7 @@ module PdqEngine
       # Confirm whether property was found, exit function if not found
       # not_found_check with be a boolean
       not_found_check = zillowNotFoundCheck(output_data, zillow_data[:propRawXml], address, params)
-      return nil if not_found_check
+      return address if not_found_check
 
       # Store Zillow key prop data (kpd)
       zillow_kpd = ZillowApi.getPropertyInfo(zillow_data[:propRawXml])
@@ -97,6 +97,9 @@ module PdqEngine
     Liquidity.propertyLiquidity(output_data, zillow_data[:compsKeyValues], "Zillow") if ZILLOW_IND # Liquidity (must run before typicality)
     Typicality.propertyTypicality(output_data, zillow_kpd, zillow_data[:compsKeyValues], census_geo_info, "Zillow") if ZILLOW_IND # Typicality using comps
     Typicality.zillowNeighborsValues(output_data, zillow_kpd) if ZILLOW_IND # Typicality Neighbors
+
+    # return output_data, zillow_kpd
+
     Volatility.propertyVolatility(output_data, zillow_kpd, "Zillow") if ZILLOW_IND # Volatility
 
     # MLS
@@ -127,6 +130,7 @@ module PdqEngine
 
     # Return address (used for rendering view)
     return address
+    # <%= @sectionTimes[q+1]%>
   end
 
 #################################

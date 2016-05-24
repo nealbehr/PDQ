@@ -10,12 +10,13 @@ module GeoFunctions
   # Constants
   EARTH_RAD_FT = 3959*5280 # ft
   EARTH_RAD_M = EARTH_RAD_FT*(1/3.28084) # meters
-  PROD_GOOG_API_KEY = "AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko" # Neals
-  TEST_GOOG_API_KEY = "AIzaSyCElExJi84Csi1WwouNB1eBn3hKd40dSZ8" # Brads
+  GOOGLE_TOKEN = ApiTokens.google_key
+  # PROD_GOOG_API_KEY = "AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko" # Neals
+  # TEST_GOOG_API_KEY = "AIzaSyCElExJi84Csi1WwouNB1eBn3hKd40dSZ8" # Brads
 
   def getGoogleGeoByAddress(street, csz)
     address_str = [street, csz].join(" ")
-    base_url = "https://maps.googleapis.com/maps/api/geocode/json?address=#{address_str}&key=#{TEST_GOOG_API_KEY}"
+    base_url = "https://maps.googleapis.com/maps/api/geocode/json?address=#{address_str}&key=#{GOOGLE_TOKEN}"
 
     # Get the response
     uri = URI.parse(URI.escape(base_url))
@@ -48,9 +49,9 @@ module GeoFunctions
       place_split = placeid.split("+")
       placeid_base = place_split[0]
       unit_num = place_split[1]
-      base_url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=#{placeid_base}&key=#{TEST_GOOG_API_KEY}"
+      base_url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=#{placeid_base}&key=#{GOOGLE_TOKEN}"
     else
-      base_url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=#{placeid}&key=#{TEST_GOOG_API_KEY}"
+      base_url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=#{placeid}&key=#{GOOGLE_TOKEN}"
     end
 
     # Get the response
