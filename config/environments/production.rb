@@ -77,4 +77,12 @@ ENV["SSL_CERT_FILE"] = "C:/RailsInstaller/Ruby2.1.0/lib/ruby/2.1.0/rubygems/ssl_
 
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
+
+  # Set the api tokens
+  config.after_initialize do
+    ApiTokens.zillow_key = 'X1-ZWz1euzz31vnd7_5b1bv' # Neal's Key
+    ApiTokens.google_key = "AIzaSyBXyPuglN-wH5WGaad7o1R7hZsOzhHCiko" # Neal's Key
+    ApiTokens.census_key = "e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac" # Same for prod and test
+    ApiTokens.mls_key = "b49bd1d9d1932fc26ea257baf9395d26" # Same for prod and test
+  end
 end

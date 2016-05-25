@@ -30,9 +30,30 @@ module MiscFunctions
 
   # Function to clean the address inputs
   def addressStringClean(s)
-    del_chars = "[]'#,."
+    return s if s.nil?
+    del_chars = "[]',."
     new_s = URI.unescape(s.to_s.upcase.delete(del_chars).gsub("+"," ").strip)
     return new_s
+  end
+
+  # One time script to update the Output data table values with place_ids
+  def addGooglePlace
+    outputs = Output.all
+    cnt = 1
+
+    outputs.each do |i|
+      puts cnt if cnt % 10 == 0
+      geo_data = GeoFunctions.getGooglePlaceId(i.street, i.citystatezip)
+      i.place_id = geo_data[:placeId]
+      i.save
+      
+      # if i.place_id.nil?
+      #   geo_data = GeoFunctions.getGooglePlaceId(i.street, i.citystatezip)
+      #   i.place_id = geo_data[:placeId]
+      #   i.save
+      # end
+      cnt += 1
+    end
   end
 
 end

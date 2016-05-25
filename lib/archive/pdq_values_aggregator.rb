@@ -160,7 +160,8 @@ module PdqValuesAggregator
                                      :metricsComments => [],
                                      :metricsUsage => [], 
                                      :urlsToHit => [], 
-                                     :reason => [], 
+                                     :reason => [],
+                                     :dataSource => [], 
                                      :runID => runId}
   end
   

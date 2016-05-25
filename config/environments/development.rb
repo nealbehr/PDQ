@@ -32,6 +32,14 @@ ENV["SSL_CERT_FILE"] = "C:/RailsInstaller/Ruby2.1.0/lib/ruby/2.1.0/rubygems/ssl_
   # Raises helpful error messages.
   config.assets.raise_runtime_errors = true
 
+  # Set the api tokens
+  config.after_initialize do
+    ApiTokens.zillow_key = 'X1-ZWz19qut1tazuz_1fz14' # Brad's Key
+    ApiTokens.google_key = "AIzaSyCElExJi84Csi1WwouNB1eBn3hKd40dSZ8" # Brad's Key
+    ApiTokens.census_key = "e07fac6d4f1148f54c045fe81ce1b7d2f99ad6ac" # Same for prod and test
+    ApiTokens.mls_key = "b49bd1d9d1932fc26ea257baf9395d26" # Same for prod and test
+  end
+
   # Raises error for missing translations
   # config.action_view.raise_on_missing_translations = true
 end

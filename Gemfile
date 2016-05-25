@@ -1,18 +1,17 @@
 source 'http://rubygems.org'
 
+# Gems added by Neal
 gem 'nokogiri'
 gem 'mixpanel-ruby'
 gem 'basecrm'
-
 gem 'json'
-
-
 gem 'devise', '3.5.8'
-
 gem 'easystats'
 
 # Gems added by Brad
 gem 'httparty' # for POST JSON requests
+gem 'certified' # for SSL certs
+gem 'StreetAddress' # Extracts address items from full address strings
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.2.1'
